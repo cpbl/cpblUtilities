@@ -49,7 +49,7 @@ def getIndexedColormap(cmap_name,N):
     2014Feb: if a list is given, instead of N, then a dict is returned, which is a lookup from the elements of the list N to colors.
     """
     import numpy as np
-    if N.__class__ in [list, np.array, np.ndarray, tuple]:
+    if N.__class__ in [list, np.ndarray, tuple]:
         return(dict(zip(N,getIndexedColormap(cmap_name,len(N)))))
     import numpy as np 
     import matplotlib.cm as cm 
@@ -105,20 +105,21 @@ I ought to have another option: discretizeColours, which would ensure that there
     """
     if Nlevels is None:
         Nlevels=256 # This is how detailed our colormaps will always be, except in multiple-segment ones, they'll have this many colours per segment.
-
+    if isinstance(zs,list): zs=np.array(zs)
+        
     splitdataat= []  if splitdataat is None else splitdataat
-    splitdataat= splitdataat if splitdataat.__class__ in (list,np.array) else [splitdataat]
+    splitdataat= splitdataat if splitdataat.__class__ in (list,np.ndarray) else [splitdataat]
     if isinstance(RGBpoints_or_cmaps,dict) or isinstance(RGBpoints_or_cmaps,str):
         RGBpoints_or_cmaps=[RGBpoints_or_cmaps]
-    if isinstance(RGBpoints_or_cmaps,list) and  isinstance(RGBpoints_or_cmaps[0],str):
+    if isinstance(RGBpoints_or_cmaps,(list,np.ndarray)) and  isinstance(RGBpoints_or_cmaps[0],str):
         # Assume they're all strings:
         # Let's turn it into a list of RGB-lists, each of length 256:
         loloRGBs=[getIndexedColormap(acmap,Nlevels) for acmap in RGBpoints_or_cmaps]
     # You can specify a list of cdicts:
-    elif isinstance(RGBpoints_or_cmaps,list) and isinstance(RGBpoints_or_cmaps[0],dict):
+    elif isinstance(RGBpoints_or_cmaps,(list,np.ndarray)) and isinstance(RGBpoints_or_cmaps[0],dict):
         loloRGBs=[ cdict_to_list_of_colors(cdict,N=256) for cdict in RGBpoints_or_cmaps]
     # You can specify just a list of RGB values: one per breakpoint
-    elif isinstance(RGBpoints_or_cmaps,list) and RGBpoints_or_cmaps[0][0].__class__ in [float,int]:
+    elif isinstance(RGBpoints_or_cmaps,(list,np.ndarray)) and RGBpoints_or_cmaps[0][0].__class__ in [float,int,np.float64]:
         assert len(RGBpoints_or_cmaps)==len(splitdataat)+2 
         # Reorganize this into a list of pairs of colours which bound the segments: ie duplicate each interior colour which forms a transition/split point:
         loloRGBs=[ np.array([RGBpoints_or_cmaps[ii],RGBpoints_or_cmaps[ii+1]])  for ii in range(len(RGBpoints_or_cmaps)-1) ]
@@ -139,9 +140,9 @@ def _assignSegmentedColormapEvenly_bycolorsets(RGBpoints,zs,splitdataat=None,asD
     categorical=False
     assert splitdataat is not None #splitdataat= splitdataat if splitdataat is not None else []
     assert Nlevels is not None
-    if splitdataat.__class__ in (int,float): splitdataat=[splitdataat]
+    if splitdataat.__class__ in (int,float,np.float64): splitdataat=[splitdataat]
     splitdataat=[-big]+list(splitdataat)+[big]
-    if 0 and isinstance(zs,list) and isinstance(zs[0],str):
+    if 0 and isinstance(zs,(list,np.ndarray)) and isinstance(zs[0],str):
         iCategories=range(len(zs))
         szs=range(len(zs))
         asDict=True
@@ -363,6 +364,7 @@ def addColorbarNonimage(mindata,maxdata=None,useaxis=None,ylabel=None,cmap=None,
 
 Comments:    This should get used in my scatterplot functions.
 
+2014: Nov: still not accepting interp1 functions?
     """
     import matplotlib as mpl
     def check_if_numeric(a): # Tell a float or numpy float from  arrays, strings
@@ -393,7 +395,7 @@ Comments:    This should get used in my scatterplot functions.
     elif check_if_numeric(mindata): #scalar 
         assert check_if_numeric(maxdata)
         cmap=cmapD
-    elif mindata.__class__ in [list, np.array]: # Calling format 1b: the data are passed along with a colormap
+    elif mindata.__class__ in [list, np.ndarray]: # Calling format 1b: the data are passed along with a colormap
         assert maxdata is None
         mindata,maxdata=min(mindata), max(mindata)
         cmap=cmapD
@@ -418,15 +420,186 @@ def reverse_cdict(cdict):
 
 
 
-def cpblColorDemos():
-    """
-    assignSegmentedColormapEvenly([[0.0,0.0,1.0],[0.0,0.0,0],[1.0,0.0,0.0]], mydata,  0.0)
 
-This can also be achieved using the two-segment application of this function, with its default colours.
+
+
+
+
+
+
+def demoCPBLcolormapFunctions():
+    """
+I believe the following may be out of date. Moved (nov2014) here fro cpblUtilitiesMathGraph but doesn't yet work.
+
+    Agh. I've clearly got too many functions! So try to make sense of them.
+    This is only a start; I need comments and differentiation.
+
+    Btw, n.b. assigncolormapevenly takes the output of getindexedcolormap as an argument...
+
+    Maybe should I make a wrapper called assignColormap which takes mode "linear" or "ordinal" for how it stretches out the colors.
+
+
+    Here are all the cases one needs to deal with:
+
+    (1) - simple: take a given dataset and linearly apply an existing/built-in colormap to it.
+
+        - get a mapping from data values to colours
+        - add a colorbar to any figure
+
+    (2) - nonlinear: take a given dataset and a built-in colormap but use the colors to maximum effect by spreading them out of data by ordinal position rather than by cardinal value
+        - get a mapping from data values to colours
+        - generate a new colormap object/type which is stretched in the same way
+        - add a colorbar to any figure
+
+    (3) - segment a colormap, e.g. for polarity: take a given dataset but make a colormap which has different color scheme for different polarity of data values (or at other breakpoints)
+        - get a mapping from data values to colours
+        - generate a new colormap object/type which is stretched in the same way
+        - add a colorbar to any figure
+
+    (4) - take a set of discrete categories, and assign colours to them (in order), using a built-in color scheme /order
+    
+
+    The following are used below:
+    
+addColorbarNonimage
+getIndexedColormap
+assignColormapEvenly
+_colorAssignmentToColormap # Nope! This is now only for use within addColorbarNonimage, since I don't think it's useful except for plotting.
+plot_biLinearColorscale
+
+    """
+    from cpblUtilitiesColor import addColorbarNonimage, getIndexedColormap
+    import random
+
+    x=np.arange(10,1200,.9)
+    y=np.sin(x/50.0)#+random.random()*x
+
+    plt.figure(1)
+    plt.clf()
+    lclL=linearColormapLookup('hot',y)
+    for ii in range(len(y)):    plt.scatter(x[ii],-.5,color=lclL(y[ii]),s=500,linewidths=0,edgecolors='none')
+    plt.show()
+    ax=plt.gca()
+
+    addColorbarNonimage(min(y),max(y),useaxis=None,ylabel=None, cmap = mpl.cm.hot)
+    plt.show()
+    
+    plt.axes(ax)
+    aceInterp=assignColormapEvenly(getIndexedColormap('hot',len(y)),
+                             y,asDict=False,missing=[1,1,1]) # T#plt.cm.hot
+    aceLookup=assignColormapEvenly(getIndexedColormap('hot',len(y)),
+                             y,asDict=True,missing=[1,1,1]) # T#plt.cm.hot
+    for ii in range(len(y)):
+        plt.scatter(x[ii],.5,color=aceInterp(y[ii]),s=500,linewidths=0,edgecolors='none')
+    plt.show()
+
+    addColorbarNonimage(aceLookup,useaxis=ax,ylabel=None) # Use new custom-map feature!
+
+    plt.show()
+
+    # Check that we got it right:
+    plt.axes(ax)
+    for ii in arange(-.999,.999,.01):    plt.scatter(1400,ii,color=aceInterp(ii),s=500,linewidths=0,edgecolors='none')
+    plt.ylim([-1,1])
+    plt.show()
+    
+    plt.figure(2)
+    xx=plot_biLinearColorscale(None,y)
+    plt.show()
+
+    return
+
+
+def cpblColorDemos():
+
+    mydata=[4,5,6,3,21,4,6,7,4,3,6,8,8,9,8,7,7,55,-3,-7,-1]
+
+    data2colorDict=assignSplitColormapEvenly(mydata,splitdataat=0.0, RGBpoints=None) # An application of  assignSegmentedColormapEvenly(), with just two regions.
+    addColorbarNonimage(data2colorDict,useaxis=None,ylabel=None)
+    foiuwer
+
+    data2colorInterpFcn=assignSegmentedColormapEvenly([[0.0,0.0,1.0],[0.0,0.0,0],[1.0,0.0,0.0]], mydata,  0.0)
+    data2colorDict=assignSegmentedColormapEvenly([[0.0,0.0,1.0],[0.0,0.0,0],[1.0,0.0,0.0]], mydata,  0.0,asDict=True)
+    data2colorDict=assignSegmentedColormapEvenly(mydata,  splitdataat=0.0,asDict=True)
+    addColorbarNonimage(data2colorDict,useaxis=None,ylabel=None)
+    fart
+    #This can also be achieved using the two-segment application of this function, with its default colours.
     assignSplitColormapEvenly(mydata, splitdataat=0.0, RGBpoints=None)
 
-    An even simpler application (replacing my old function for this) is for data with a single colour scheme. This maps data optimally onto a blue-red gradient:
+    #An even simpler application (replacing my old function for this) is for data with a single colour scheme. This maps data optimally onto a blue-red gradient:
 
     assignSegmentedColormapEvenly([[0.0,0.0,1.0],[1.0,0.0,0.0]], mydata)
+    foi
 
+    addColorbarNonimage(mindata,maxdata,useaxis=None,ylabel=None,cmap=None)
+    addColorbarNonimage(mindata,maxdata=None,useaxis=None,ylabel=None,cmap=None)
+    addColorbarNonimage(data,useaxis=None,ylabel=None,cmap=None)
+
+    #    --> Specify a colormap, and assume that it is being spread linearly between the minimum and maximum datavalues. Thus, display the colormap linearly with axis indicating corresponding data values
+      
+    addColorbarNonimage(data2colorLookup,useaxis=None,ylabel=None)
+
+    #    --> Specify a mapping between data values and RGB 3-tuples.  This can be a nonlinear mapping built from a standard colormap using assignColormapEvenly() .... [ie a dict or a pd.Series lookup]
+    #I've noticed that some boundary values may not get defined (due to rounding errors?) if a function interp1 is passed.  So let's just reject any values that result in nan:
+
+
+#################### CAUTION: linearColormapLookup and assignColormapEvenly are not yet sanctioned to be in this file. Ascertain whether it can be obseleted.
+
+def assignColormapEvenly(cmap,zs,asDict=False,missing=[1,1,1]):
+    from cpblUtilitiesColor import assignSegmentedColormapEvenly
+    assert missing== [1,1,1]  #Ignored!!!!!!!
+    if cmap is None:
+        cmap='jet'
+    print('   assignColormapEvenly is now replaced by assignSegmentedColormapEvenly, and is deprecated. ')
+    return(assignSegmentedColormapEvenly(cmap,zs,splitdataat=None,asDict=asDict,missing=missing))
+
+def linearColormapLookup(cmap,zs,extendedLimits=None):#,returnformat='function'):
     """
+    Right now this takes a string or a LinearSegmentedColormap.
+    To reverse a colormap order, just tack "_r" onto the name.
+
+    You have some data. You want to associated a colormap, scaled to the data.
+    This returns a lookup/interpolate *function* by default. But it can do a lookup instead (no, not as of 2013Oct. Never used.
+
+    e.g. use: For a id->data dataframe df,
+    Just use df.map(linearColormapLookup(cmap,df.values)) if you want a lookup from data to colours, and zs
+
+    2013Dec: also can request to extend the limits to include the top and bottom colour.
+    extendedLimits = True
+    extendedLimits = [-99999,99999]
+    
+    """
+
+    returnformat='function'
+    import numpy as np 
+    import matplotlib.cm as cm 
+    #    def make_N_colors(cmap_name, N): 
+    #    cmap = cm.get_cmap(cmap_name, N) 
+    #    return cmap(np.arange(N))[:,:-1]
+    N=100
+    if cmap is None:
+        cmap='jet'
+    if cmap.__class__ not in [mpl.colors.LinearSegmentedColormap ]:
+        assert isinstance(cmap,str)
+        cmap = cm.get_cmap(cmap, N) 
+    cmapLU=cmap(np.arange(N))[:,:-1]
+    from scipy import interpolate
+    if extendedLimits is None:
+        lookupfunc=interpolate.interp1d(np.linspace(min(zs),max(zs),num=N),np.array(cmapLU).T)
+    else:
+        if extendedLimits is True:
+            extendedLimits=[min(zs)-10*(max(zs)-min(zs)),  max(zs)+10*(max(zs)-min(zs))]
+        assert len(extendedLimits)==2
+        cmapLUe=np.vstack([cmapLU[0],  cmapLU,   cmapLU[-1]])         # Now length N+2
+        lookupfunc=interpolate.interp1d(extendedLimits[:1] + np.linspace(min(zs),max(zs),num=N).tolist()+extendedLimits[-1:] ,np.array(cmapLUe).T)
+
+    if returnformat in ['function']:
+        return(lookupfunc)
+    elif returnformat in ['pandas']:
+        return(pd.Series(dict([[zz,lookupfunc(zz)] for zz in zs])))
+
+if __name__ == '__main__':
+    import pylab as plt
+    import matplotlib as mpl
+    cpblColorDemos()
+#    demoCPBLcolormapFunctions()    

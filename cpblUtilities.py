@@ -1534,7 +1534,7 @@ try:
 except:
     print "can't import cpblUtilitiesColor"
 
-try: #What! This can't be here.. [July 2010][okay, now it's failsafe]
+try: #This dependency should be excised....
     import cpblMake
     cpblRequire=cpblMake.cpblRequire
 except:

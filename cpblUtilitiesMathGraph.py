@@ -4388,136 +4388,13 @@ legend("topleft",legend = c("95% Quantile regression", "95% Quantile LOESS"), fi
 
 """
 
-def demoCPBLcolormapFunctions():
-    """
-    Agh. I've clearly got too many functions! So try to make sense of them.
-    This is only a start; I need comments and differentiation.
-
-    Btw, n.b. assigncolormapevenly takes the output of getindexedcolormap as an argument...
-
-    Maybe should I make a wrapper called assignColormap which takes mode "linear" or "ordinal" for how it stretches out the colors.
-
-
-    Here are all the cases one needs to deal with:
-
-    (1) - simple: take a given dataset and linearly apply an existing/built-in colormap to it.
-
-        - get a mapping from data values to colours
-        - add a colorbar to any figure
-
-    (2) - nonlinear: take a given dataset and a built-in colormap but use the colors to maximum effect by spreading them out of data by ordinal position rather than by cardinal value
-        - get a mapping from data values to colours
-        - generate a new colormap object/type which is stretched in the same way
-        - add a colorbar to any figure
-
-    (3) - segment a colormap, e.g. for polarity: take a given dataset but make a colormap which has different color scheme for different polarity of data values (or at other breakpoints)
-        - get a mapping from data values to colours
-        - generate a new colormap object/type which is stretched in the same way
-        - add a colorbar to any figure
-
-    (4) - take a set of discrete categories, and assign colours to them (in order), using a built-in color scheme /order
-    
-
-    The following are used below:
-    
-addColorbarNonimage
-getIndexedColormap
-assignColormapEvenly
-_colorAssignmentToColormap # Nope! This is now only for use within addColorbarNonimage, since I don't think it's useful except for plotting.
-plot_biLinearColorscale
-
-    """
-    import random
-
-    x=np.arange(10,1200,.9)
-    y=np.sin(x/50.0)#+random.random()*x
-
-    figure(1)
-    clf()
-    lclL=linearColormapLookup('hot',y)
-    for ii in range(len(y)):    plt.scatter(x[ii],-.5,color=lclL(y[ii]),s=500,linewidths=0,edgecolors='none')
-    plt.show()
-    ax=gca()
-
-    addColorbarNonimage(min(y),max(y),useaxis=None,ylabel=None, cmap = mpl.cm.hot)
-    plt.show()
-    
-    plt.axes(ax)
-    aceInterp=assignColormapEvenly(getIndexedColormap('hot',len(y)),
-                             y,asDict=False,missing=[1,1,1]) # T#plt.cm.hot
-    aceLookup=assignColormapEvenly(getIndexedColormap('hot',len(y)),
-                             y,asDict=True,missing=[1,1,1]) # T#plt.cm.hot
-    for ii in range(len(y)):
-        plt.scatter(x[ii],.5,color=aceInterp(y[ii]),s=500,linewidths=0,edgecolors='none')
-    plt.show()
-
-    addColorbarNonimage(aceLookup,useaxis=ax,ylabel=None) # Use new custom-map feature!
-
-    plt.show()
-
-    # Check that we got it right:
-    plt.axes(ax)
-    for ii in arange(-.999,.999,.01):    plt.scatter(1400,ii,color=aceInterp(ii),s=500,linewidths=0,edgecolors='none')
-    plt.ylim([-1,1])
-    plt.show()
-    
-    figure(2)
-    xx=plot_biLinearColorscale(None,y)
-    plt.show()
-
-    return
-
 
 
     
     
-def linearColormapLookup(cmap,zs,extendedLimits=None):#,returnformat='function'):
-    """
-    Right now this takes a string or a LinearSegmentedColormap.
-    To reverse a colormap order, just tack "_r" onto the name.
-
-    You have some data. You want to associated a colormap, scaled to the data.
-    This returns a lookup/interpolate *function* by default. But it can do a lookup instead (no, not as of 2013Oct. Never used.
-
-    e.g. use: For a id->data dataframe df,
-    Just use df.map(linearColormapLookup(cmap,df.values)) if you want a lookup from data to colours, and zs
-
-    2013Dec: also can request to extend the limits to include the top and bottom colour.
-    extendedLimits = True
-    extendedLimits = [-99999,99999]
-    
-    """
-
-    returnformat='function'
-    import numpy as np 
-    import matplotlib.cm as cm 
-    #    def make_N_colors(cmap_name, N): 
-    #    cmap = cm.get_cmap(cmap_name, N) 
-    #    return cmap(np.arange(N))[:,:-1]
-    N=100
-    if cmap is None:
-        cmap='jet'
-    if cmap.__class__ not in [mpl.colors.LinearSegmentedColormap ]:
-        assert isinstance(cmap,str)
-        cmap = cm.get_cmap(cmap, N) 
-    cmapLU=cmap(np.arange(N))[:,:-1]
-    from scipy import interpolate
-    if extendedLimits is None:
-        lookupfunc=interpolate.interp1d(np.linspace(min(zs),max(zs),num=N),array(cmapLU).T)
-    else:
-        if extendedLimits is True:
-            extendedLimits=[min(zs)-10*(max(zs)-min(zs)),  max(zs)+10*(max(zs)-min(zs))]
-        assert len(extendedLimits)==2
-        cmapLUe=np.vstack([cmapLU[0],  cmapLU,   cmapLU[-1]])         # Now length N+2
-        lookupfunc=interpolate.interp1d(extendedLimits[:1] + np.linspace(min(zs),max(zs),num=N).tolist()+extendedLimits[-1:] ,array(cmapLUe).T)
-
-    if returnformat in ['function']:
-        return(lookupfunc)
-    elif returnformat in ['pandas']:
-        return(pd.Series(dict([[zz,lookupfunc(zz)] for zz in zs])))
 
     
-def assignColormapEvenly(cmap,zs,asDict=False,missing=[1,1,1]):
+def OBSELETE_assignColormapEvenly(cmap,zs,asDict=False,missing=[1,1,1]):
     from cpblUtilitiesColor import assignSegmentedColormapEvenly
     assert missing== [1,1,1]  #Ignored!!!!!!!
     if cmap is None:
