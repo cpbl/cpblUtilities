@@ -3503,7 +3503,7 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,fig=None,clearf
     ylabel('Number')# of streets (edges)')
     xlabel(pvar)
     ax=plt.gca()
-    from cpblUtilities import addColorbarNonimage
+    from cpblUtilitiesColor import addColorbarNonimage
     cbax=addColorbarNonimage(colors,ylabel=cvar.replace('_',' '))#'YEAR')   # min(allyears),max(allyears)
     plt.axes(ax)
     return(ax,cbax,colorsf)

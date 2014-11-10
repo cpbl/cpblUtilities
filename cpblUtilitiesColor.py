@@ -10,7 +10,7 @@ Background: Colormap functions in Matplotlib are confusingly many and a bit spre
 Here are some ways I might specify the color sequence in a colorbar (ie, what is usually called a colormap, but it's a mapping from [0,1] to colours, not from some arbitrary data).
 
  -  the name (string) of a built-in colormap
- -  something called a cdict (a dict), which seems the "right" way to efficiently code an arbitrary color sequence [To see one for a built-in colormap, just use plt.cm.datad['jet']
+ -  something called a cdict (a dict), which seems the "right" way to efficiently code an arbitrary color sequence [To see one for a built-in colormap, just use plt.cm.datad['jet']. In each triplet, the first number (x) is an index for position in your colormap between 0 and 1; the second and third (y) are often the same value; they are  the amount of a certain primary color. When different, the 2nd is the limit value for y when x comes from below; the third is the limiting y value for x comes from above.
  -  a simple list/sequence of colours, which are assumed to be equally spaced along the color bar (ie [0,1] mapping)
 
 In general, I want to be able to construct color mappings between some *data values* and some colours, and I want to be able to render a colorbar for that mapping (but where I'm not using the image functions, which coordinate colorbars for you).
@@ -33,7 +33,7 @@ n.b. Others have used similar language (nonlinear colormap) and wanted the same 
 
 """
 def cdict_to_list_of_colors(cdict,N=256):
-    # Why do I have to give it a name? (None, below)
+    # One has to give new colormaps names; here it is None
     return(plt.cm.colors.LinearSegmentedColormap(None,cdict)(np.arange(N)))
 
 # oh shoot... I already had that:  Or this one is better for discrete values...
@@ -62,7 +62,7 @@ def assignSplitColormapEvenly(zdata,splitdataat=0.0, RGBpoints=None): # An appli
         RGBpoints=[[0.0,0.0,1.0],[0.0,0.0,0],[1.0,0.0,0.0]]  # Blue is low, cutpoint is black, red is high, 
     return(assignSegmentedColormapEvenly(RGBpoints,zdata,splitdataat=[splitdataat]))
 
-def assignSegmentedColormapEvenly(RGBpoints_or_cmaps,zs,splitdataat=None,asDict=False,missing=[1,1,1],Nlevels=None):
+def assignSegmentedColormapEvenly(RGBpoints_or_cmaps,zs,splitdataat=None,asDict=False,missing=[1,1,1],Nlevels=None,zlim=None):
     """
 
 Comments need updating. See general introduction at top of file.
@@ -102,6 +102,7 @@ So lets convert from the various input forms to get to the list of list of RGBpo
 
 
 I ought to have another option: discretizeColours, which would ensure that there were a smaller (256?) set of colours used in the return lookup for the case of asDict=True.  Or maybe I should have that always happen for asDict=True.
+
     """
     if Nlevels is None:
         Nlevels=256 # This is how detailed our colormaps will always be, except in multiple-segment ones, they'll have this many colours per segment.
@@ -317,8 +318,8 @@ def _colorAssignmentToColorbarmap(lookup,cmapname=None):
     WAIT! I need to use a cumsum of index, not the index of unique(): no? Do a harsher test of this than currently in demo...
     """
     if cmapname is None: cmapname='tmpcm'
-    # lookup should give an RGB 3-tuple for any data value given to it
-    zs=sorted(np.unique(np.asarray(lookup.keys())[np.isfinite(lookup.keys())]))
+    # lookup should give an RGB 3-tuple for any data value given to it.   Ensure data are floats, not ints:
+    zs=1.0 * np.array(  sorted(np.unique(np.asarray(lookup.keys())[np.isfinite(lookup.keys())]))  )
     izs=np.arange(len(zs))*1.0/len(zs)
     izs[-1]=1.0
 
@@ -332,11 +333,18 @@ def _colorAssignmentToColorbarmap(lookup,cmapname=None):
         for ic,cc in enumerate(cccs):
             cdict[cc].append([izs[ii],lookup[zz][ic],lookup[zz][ic]])
 
+    if 1:     # Check validity of cdict. This section is only for debuggin:
+        def strictly_increasing(L):
+            return all(x<y for x, y in zip(L, L[1:]))
+        for kk in cdict:
+            assert strictly_increasing([a for a,b,c in cdict[kk]])
 
     plt.register_cmap(name=cmapname, data=cdict)
+
     return(plt.get_cmap(cmapname))
 
 
+#def addColorbarNonimage(mindata,maxdata=None,useaxis=None,ylabel=None,cmap=None,colorbarfilename=None,location=None):
 def addColorbarNonimage(mindata,maxdata=None,useaxis=None,ylabel=None,cmap=None,colorbarfilename=None,location=None):
     """
     It adds a colorbar on the side to show a third dimension to a plot.
@@ -351,11 +359,15 @@ def addColorbarNonimage(mindata,maxdata=None,useaxis=None,ylabel=None,cmap=None,
     
     2013 Oct: New calling forms:
 
+     Below, cmap can be 
+            - a dict or an interp1 function, either way a mapping from data values to RGB colours
+            - a simple colormap, named and registered with plt.cm. In this case we  assume that it is being spread linearly between the minimum and maximum datavalues. Thus, display the colormap linearly with axis indicating corresponding data values
     addColorbarNonimage(mindata,maxdata,useaxis=None,ylabel=None,cmap=None)
-    addColorbarNonimage(mindata,maxdata=None,useaxis=None,ylabel=None,cmap=None)
+###    addColorbarNonimage(mindata,maxdata=None,useaxis=None,ylabel=None,cmap=None)
     addColorbarNonimage(data,useaxis=None,ylabel=None,cmap=None)
+    
 
-        --> Specify a colormap, and assume that it is being spread linearly between the minimum and maximum datavalues. Thus, display the colormap linearly with axis indicating corresponding data values
+        --> Specify a colormap, and
       
     addColorbarNonimage(data2colorLookup,useaxis=None,ylabel=None)
 
@@ -367,24 +379,42 @@ Comments:    This should get used in my scatterplot functions.
 2014: Nov: still not accepting interp1 functions?
     """
     import matplotlib as mpl
+    import scipy
     def check_if_numeric(a): # Tell a float or numpy float from  arrays, strings
        try:
            float(a)
        except (ValueError,TypeError) as e: 
            return False
        return True
+
+    if useaxis is None: useaxis=plt.gca()
+
     # Prepare a cmap for if it's not specified.
     print cmap
-
     if isinstance(cmap,str): # cmap can be pass as a string or a cmap
         cmapD=plt.cm.get_cmap(cmap)
     if cmap is None:
         cmapD = mpl.cm.jet
-    else: # Assume it's a 
-        assert cmap.__class__ in [mpl.colors.LinearSegmentedColormap]
+    elif cmap.__class__ in [mpl.colors.LinearSegmentedColormap]:
         cmapD=cmap 
+    else:        
+        D2Cfunc=cmap # If we're passed an interp1 function, we need explicit limits for the colorbar
+        assert isinstance(D2Cfunc,scipy.interpolate.interpolate.interp1d)
+        # And it wouldn't make sense for a pd.Series or dict to have been passed, since that would give us redundant/conflicting info
+        assert  mindata.__class__ in [list, np.ndarray]  or   (check_if_numeric(mindata) and check_if_numeric(maxdata) )
+        if mindata.__class__ in [list, np.ndarray]:
+            # Make a custom colormap from a dict based on the data provided and the lookup function:
+            cmapName='_tmp'+str(min(mindata))+str(max(mindata))
+            cmapD=  _colorAssignmentToColorbarmap(dict([[xx,D2Cfunc(xx)] for xx in mindata]),cmapname=cmapName )
+            plt.register_cmap(cmap=cmapD)
 
-    if useaxis is None: useaxis=plt.gca()
+        else:   # mindata, maxdata must be floats. Hard-code here to make a colormap using a linspace 256 long?!  May have edge value problems?
+            dx=maxdata-mindata
+            _datavals=arange(mindata,maxdata+dx*1.0/256,dx*1.0/256)
+            cmapName='_tmp'+str(mindata)+str(maxdata)
+            cmapD=  _colorAssignmentToColorbarmap(dict([[xx,D2Cfunc(xx)] for xx in _datavals]),cmapname=cmapName)
+            plt.register_cmap(cmap=cmapD)
+
     if isinstance(mindata,pd.Series):  # Calling format 2: either a dict or a pandas series is passed: a data-to-colour lookup table
         mindata=mindata.to_dict()
     if isinstance(mindata,dict):
@@ -511,18 +541,108 @@ plot_biLinearColorscale
 
 
 def cpblColorDemos():
+    from pylab import close, figure, imshow, colorbar, show,title,hist,gca,subplot
+    close('all')
 
-    mydata=[4,5,6,3,21,4,6,7,4,3,6,8,8,9,8,7,7,55,-3,-7,-1]
+    shiftedColorMap_example()
+    show()
 
-    data2colorDict=assignSplitColormapEvenly(mydata,splitdataat=0.0, RGBpoints=None) # An application of  assignSegmentedColormapEvenly(), with just two regions.
-    addColorbarNonimage(data2colorDict,useaxis=None,ylabel=None)
+    mydata=1.0*np.array([4,5,6,3,21,4,6,7,4,3,6,8,8,9,8,7,7,55,-3,-7,-1])
+
+    figure(871)
+    title('addColorbarNonimage(min(mydata),max(mydata))')
+    addColorbarNonimage(min(mydata),max(mydata),useaxis=None,ylabel=None,cmap=None)
+
+    figure(872)
+    hist(mydata,bins=50)
+    title('addColorbarNonimage(mydata)')
+    addColorbarNonimage(mydata)
+
+    figure(873)
+    #We can capture the data-to-color mapping with an interp1 lookup function, as here, or with a dict, as in the next example
+    data2colorInterpFcn=assignSplitColormapEvenly(mydata,splitdataat=0.0,)# RGBpoints=None) # An application of  assignSegmentedColormapEvenly(), with just two regions.
+    hcb= addColorbarNonimage(mydata,cmap=data2colorInterpFcn)
+    title('addColorbarNonimage(mydata,cmap=  assignSplitColormapEvenly(mydata,splitdataat=0.0,) ) ')
+
+
+
+    # Make some illustrative fake data:
+    x = np.arange(-10,10, 0.1)
+    y = np.arange(-10,10, 0.1)
+    X, Y = np.meshgrid(x,y)
+    Z = X+Y
+
+    x = np.arange(0, np.pi, 0.1)
+    y = np.arange(0, 2*np.pi, 0.1)
+    X, Y = np.meshgrid(x,y)
+    Z = np.cos(X) * np.sin(Y) * 10
+
+    figure(875)
+    pc1,pc2= [[0,0,1],[0,.3,0],[1,0,0]], [[1,0,0],[0,.3,0],[0,0,1]] # Red / dark green / blue    (and its reverse)
+    pc1,pc2= [[0,0,1],[.1,0,.1],[1,0,0]], [[1,0,0],[.1,0,.1],[0,0,1]] # Red / purple / blue    (and its reverse)
+    pc1,pc2= [[0,0,1],[1,1,1],[1,0,0]], [[1,0,0],[1,1,1],[0,0,1]] # Red / white / blue    (and its reverse)  [I want to make the middle transparent, not white!]
+    data2color=assignSegmentedColormapEvenly(pc2, mydata,0.0,asDict=True) # asDict=False,missing=[1,1,1], noplot=True, mapname='stwotwo')
+    # And note that once I know my data->colors lookup as a dict, I can get from there to a mpl cmap object like this:
+    mycmap=_colorAssignmentToColorbarmap(data2color)
+    # One can always look inside a colormap object by first *registering it*, and then accessing it by name (in this case, a temporary one)
+    # Actually, let's ovewrite the name:
+    #mycmap.name= 'test_cmap'
+    plt.register_cmap(cmap=mycmap)
+    # Check that mpl now knows it:
+    mycmap.name in sorted( plt.colormaps() )
+    #    print(plt.cm.datad[mycmap.name])
+
+    subplot(141)
+    hist(mydata,bins=50)
+    ax=plt.gca()
+    hcb=addColorbarNonimage(mydata,cmap=mycmap)
+    subplot(142)
+    plt.title("Don't do this!")
+    hist(mydata,bins=50)
+    # Here is a gotcha: Remember that a cmap is not a data mapping; it knows nothing about data values (despite the yticks shown on the colorbar!). So addColorbarNonimage cannot show a subset of the full data range if you generated the colormap with the full range. So do NOT do:
+    hcb2=addColorbarNonimage(min(mydata),5,cmap=mycmap)#,useaxis=ax)
+    subplot(143)
+    plt.title("Don't do this either!")
+    # Instead, you must draw the colorbar using the data range used to make the colormap.  
+    # Then, if you want to change the ylim, make sure to use the scaled ylim values, ie in the range 0 to 1.
+    # For some reason, that also shrinks the bar and moves it up, with a bug in the border line for it:
+    hist(mydata,bins=50)
+    hcb3=addColorbarNonimage(mydata,cmap=mycmap)#,useaxis=ax)
+    hcb3.set_ylim(0, ( 5-min(mydata)) /   (max(mydata)-min(mydata)))
+
+    subplot(144)
+    
+
+    # What is the correct way? If I want to have my color mapping resolution go beyond what is shown on the colorbar, I can't just truncate the data I pass when making the colorbar.
+    # I think it will be inside addcolorbarnonimage, take the final colormap, create a cdict from it?! and edit the cdict (laborious!) to have the colormap end at the appropriate place. Hard.
+
+    plt.show()
     foiuwer
+
+    plt.imshow(Z, interpolation='nearest', cmap='_tmp-755')
+    plt.colorbar()
+    hcb=addColorbarNonimage(mydata,cmap=data2colorInterpFcn)
+    title('addColorbarNonimage(mydata,cmap=  assignSplitColormapEvenly(mydata,splitdataat=0.0,) ) ')
+
+
+    plt.show()
+    foiuwer
+
+    
+    data2colorInterpFcn=assignSplitColormapEvenly(mydata,splitdataat=0.0, RGBpoints=None) # An application of  assignSegmentedColormapEvenly(), with just two regions.
+    addColorbarNonimage(mydata,cmap=data2colorInterpFcn,useaxis=None,ylabel=None)
+
+    plt.figure(7777)
+    plt.imshow(Z, interpolation='nearest', cmap='_tmp-755')
+    plt.colorbar()
+
+
 
     data2colorInterpFcn=assignSegmentedColormapEvenly([[0.0,0.0,1.0],[0.0,0.0,0],[1.0,0.0,0.0]], mydata,  0.0)
     data2colorDict=assignSegmentedColormapEvenly([[0.0,0.0,1.0],[0.0,0.0,0],[1.0,0.0,0.0]], mydata,  0.0,asDict=True)
     data2colorDict=assignSegmentedColormapEvenly(mydata,  splitdataat=0.0,asDict=True)
     addColorbarNonimage(data2colorDict,useaxis=None,ylabel=None)
-    fart
+    fossssssssssssssssart
     #This can also be achieved using the two-segment application of this function, with its default colours.
     assignSplitColormapEvenly(mydata, splitdataat=0.0, RGBpoints=None)
 
