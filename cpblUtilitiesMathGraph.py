@@ -812,6 +812,21 @@ def yTicksIncome(nticks=7,natlog=False,tenlog=False,kticks=None,dollarsign=True,
     )
 
 
+def xticksExponentiate(base10=False):
+    """
+    The x-values are log or log10, but I want the labels to show the unlogged values
+    """
+    def pow2base10(vv,pos): #'The two args are the value and tick position'
+        if int(vv)==vv:
+            if vv<2 and vv>=0:
+                return(str(int(pow(10,vv))))
+            return(r'10$^{%s}$'%int(vv)  )
+        return('') # Hide all non-integer values!?
+
+
+    if base10:
+        gca().xaxis.set_major_formatter( mpl.ticker.FuncFormatter(pow2base10))
+
 ##############################################################################
 ##############################################################################
 #
@@ -3503,8 +3518,8 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,fig=None,clearf
     ylabel('Number')# of streets (edges)')
     xlabel(pvar)
     ax=plt.gca()
-    from cpblUtilitiesColor import addColorbarNonimage
-    cbax=addColorbarNonimage(colors,ylabel=cvar.replace('_',' '))#'YEAR')   # min(allyears),max(allyears)
+    from cpblUtilitiesColor import addColorbarNonImage
+    cbax=addColorbarNonImage(data2color=colors,ylabel=cvar.replace('_',' '))#'YEAR')   # min(allyears),max(allyears)
     plt.axes(ax)
     return(ax,cbax,colorsf)
     countyname=dfn.county.unique()[0] if len(dfn.county.unique())==1 else 'Entire USA'
