@@ -1448,7 +1448,10 @@ def dgetgetOLD(adict,key1=None,key2=None,key3=None,key4=None,key5=None,key6=None
 
 
 
-from cpblTablesTex import *
+try: # Where is this needed? Should import it only where needed.        
+    from cpblTablesTex import *
+except ImportError:
+    print("Unable to find CPBL's tables TeX package")
 
 
         
@@ -1960,6 +1963,9 @@ def pandasReadTSV(tsvF,dtypeoverrides=None):
         dataDF=pd.read_table(fn,dtype=dt)
     return(dataDF)
 
-from cpblUnicodeEtc import *
+try: # Where is this needed? Should import it only where needed.        
+    from cpblUnicodeEtc import *
+except ImportError:
+    print("Unable to find CPBL's hacked together unicode kludges")
 
 
