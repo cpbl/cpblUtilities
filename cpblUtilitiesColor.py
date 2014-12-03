@@ -189,7 +189,9 @@ def _assignSegmentedColormapEvenly_bycolorsets(RGBpoints,zs,splitdataat=None,asD
     # Now build an interpreter from the actual data value to colours:
     allD,allC=np.concatenate( datagroups),  np.concatenate(colorgroups)
     # By default, extend the mapping to +/- infinity. (With algorithm above, this is also necessary to catch top value)
-    dataToC=interpolate.interp1d(np.concatenate([[-big],allD[1:-1],[big]]) ,allC, axis=0)
+    #dataToC=interpolate.interp1d(np.concatenate([[-big],allD[1:-1],[big]]) ,allC, axis=0)
+    dataToC=interpolate.interp1d(np.concatenate([[-big],allD,[big]]), np.concatenate([[allC[0]], allC,[allC[-1]]]), axis=0)
+
     if asDict is False:
         return(dataToC) # This is a function; give it a scalar or vector of data, and it gives you a color array.
     # Do we really want to allow calling by this method? Useful for categorical data, but that's not supported anymore/just now...
@@ -346,19 +348,21 @@ def _colorAssignmentToColorbarmap(lookup,cmapname=None):
 def addColorbarNonimage(data=None,datarange=None,data2color=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None):
     Sorry_USE_NEW_FORMAT_NEW_NAME
 #def addColorbarNonimage(mindata,maxdata=None,useaxis=None,ylabel=None,cmap=None,colorbarfilename=None,location=None):
-def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None):
+def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None):
     """
     It adds a colorbar on the side to show a third dimension to a plot.
 
     "location" is not yet shown in docs, below, or in examples. It is passed straight to colobar.make_axes: [`None`|'left'|'right'|'top'|'bottom']
 
-     Returns handle to colorbar axis.
+    Returns handle to colorbar object.
      
     colorbarfilename: if given, we want to generate an SVG(?) file containing just the colorbar (probably to add to a geographic/svg map).
 
+    ticks: a list of data values; sets the tick values for the colorbar
+
     Calling forms:
     
-    Case 1: Use a colormap, named and registered with plt.cm, and spread it out "linearly" over the given range of data.
+    Case 1: Use a matplotlib colormap, named and registered with plt.cm, and spread it out "linearly" over the given range of data.
         Here cmap can be: None (in which case 'jet' is used), a string name of a registered colormap like "hot", or cm.colormap object thingy (CHECK)
 
         addColorbarNonimage(data=data, cmap=cmap)
@@ -372,6 +376,7 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
 
         addColorbarNonimage(d2cdict)
         addColorbarNonimage(data2color= d2cdict)
+        addColorbarNonimage(datarange=[low,high],data2color= d2cdict) # This may not work yet. Restrict the dict to have just the desired range.
 
         Case 2a: an interp1 function is known
 
@@ -430,7 +435,7 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
         elif isinstance(data2color,scipy.interpolate.interpolate.interp1d):
             if data is None: # Hard-code here to make a colormap using a linspace 256 long.  May have edge value problems?
                 dx=maxdata-mindata
-                data=arange(mindata,maxdata+dx*1.0/256,dx*1.0/256)
+                data=np.arange(mindata,maxdata+dx*1.0/256,dx*1.0/256)
             d2cDict=dict([[xx,data2color(xx)] for xx in sorted(data)]) # series? ...
         else:
             raise('Cannot make d2c dict... Stuck')
@@ -442,12 +447,12 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
     # Now, I believe the following is good, although maybe not if there are numerous duplicates in case when a lookup is passed (?)
     cnorm = mpl.colors.Normalize(vmin=mindata,vmax=maxdata)
     cb1 = mpl.colorbar.ColorbarBase(mpl.colorbar.make_axes(useaxis,pad=0,location=location)[0], cmap=cmap,norm=cnorm,orientation='horizontal' if location in ['top','bottom'] else 'vertical')
-
+    if ticks is not None: cb1.set_ticks(ticks)
     cbax=plt.gca()
 
     if ylabel is not None:
         cbax.set_ylabel(ylabel)
-    return(cbax)
+    return(cb1)#cbax)
 
     """ OLD COMMENTS BELOW ARE TRASH.nov2014
 
@@ -618,7 +623,8 @@ def cpblColorDemos():
     plt.register_cmap(cmap=mycmap)
     # Check that mpl now knows it:
     mycmap.name in sorted( plt.colormaps() )
-    #    print(plt.cm.datad[mycmap.name])
+    # We can recover the details of a cm with:
+    print(plt.cm.datad[mycmap.name])
 
     subplot(141)
     hist(mydata,bins=50)
