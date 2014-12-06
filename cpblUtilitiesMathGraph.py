@@ -552,7 +552,7 @@ def savefigall(fn,transparent=True,ifany=None,fig=None,skipIfExists=False,pauseF
 
     ifany must be an artist subclass taken by matplotlib.findobj(match=)
 
-Do not forget to use cpblStata's
+Do not forget to use pystata's
  (self,figname=None,caption=None,texwidth=None,title=None,onlyPNG=False)
  if you're using a cpbl latex object!
 
@@ -5043,7 +5043,7 @@ def weightedQuantilesByGroup(pandasDF,quantilesOf,byGroup=None,weightVar='weight
     ##########################################################################
     """
 
-2013 Jan: This is derived from cpblStata's generateRankingData() for stata data, but this one takes pandas DataFrame instead. And we don't include ginis! (ugh). And leave plotting to a separate function, since we could return data.
+2013 Jan: This is derived from pystata's generateRankingData() for stata data, but this one takes pandas DataFrame instead. And we don't include ginis! (ugh). And leave plotting to a separate function, since we could return data.
 
 e.g.: generateRankingData(pandasDF,'income', varsByQuantile=None,byGroup='year PRuid',weightVar='weight',suffix='',skipPlots=True,rankfileprefix=None,returnFilenamesOnly=False,forceUpdate=False,groupNames=None,parallelSafe=None):
 
@@ -5452,7 +5452,7 @@ def surveyMeans():
     My Nth attempt over the years to find the right way to efficiently calculate group means or conditional/subset means or etc from Stata Data, when there are sample (probability) weights on observations and when I want standard errors of means.
     2013 Feb: Do it with a WLS using python, applied to a DataFrame.
     oh.. actually, wait on this until Apollo is fixed to have statsmodels (for WLS).
-    In the mean time, I'm implementing the same idea using regression in Stata. See cpblStata. 
+    In the mean time, I'm implementing the same idea using regression in Stata. See pystata. 
 
     Yes, I could have done this much more nicely all along using regression in Stata. However, that doesn't also get me other stats when I want them. I now use dataframes in pandas and groupby; see/use  weightedMeansByGroup().
     """
@@ -5638,7 +5638,7 @@ Example usage:
 
 
 if __name__ == '__main__':
-    from cpblStata import *
+    from pystata import *
     demoCPBLcolormapFunctions()
     hu
     weightedQuantile(0,0,test=True)

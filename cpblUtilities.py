@@ -1553,7 +1553,7 @@ def doSystemLatex(fname,latexPath=None,launch=None,launchViewer=None,tex=None,vi
     """
     Compiles latex. Give it a filename of the .tex file. Optionally, Supply tex code to overwrite that file.
 
-    This is tailored very much to cpblStata's usage. Be careful before changing the default behaviour...
+    This is tailored very much to pystata's usage. Be careful before changing the default behaviour...
     cpbl, 2007-2011
 
 
@@ -1964,8 +1964,8 @@ def pandasReadTSV(tsvF,dtypeoverrides=None):
     return(dataDF)
 
 try: # Where is this needed? Should import it only where needed.        
-    from cpblUnicodeEtc import *
+    from cpblUtilitiesUnicode import *
 except ImportError:
-    print("Unable to find CPBL's hacked together unicode kludges")
+    print("Unable to find CPBL's ragged unicode converstions module")
 
 
