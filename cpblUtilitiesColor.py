@@ -318,21 +318,49 @@ def _colorAssignmentToColorbarmap(d2cDict,cmapname=None):
 
     WAIT! IS THIS ONLY USEFUL FOR PLOTTING COLORBARS? Is it used only by addcolorbarnonimage? If so, it should be inside there, no?
     WAIT! I need to use a cumsum of index, not the index of unique(): no? Do a harsher test of this than currently in demo...
+    2014Dec: Without dealing with the above questions, I've rewritten this to make it more robust against repeated index values.
     """
     def strictly_increasing(L):
         return all(y-x>1e-16 for x, y in zip(L, L[1:]))
+    """
     def strongly_increasing(L):
         return all(y-x>.0001 for x, y in zip(L, L[1:]))
     def thinned_cdict(acdict):
         okaysteps= [[y-x>.0001 for x, y in zip([a for a,b,c in cdict[kk]], [a for a,b,c in cdict[kk]][1:])] for kk in cdict] 
-        """
+        "
         allokay = 
         tokeep={}
         for kk in acdict:
             tokeep[kk]=[y-x>.0001 for x, y in zip(L, L[1:])]
-        """
+        "
+    """
     if cmapname is None: cmapname='tmpcm'
 
+    allkeys=d2cDict.keys()
+    # Drop inifinite values? or explain here why they arise.
+    assert all( np.isfinite(allkeys) )
+
+    kmin=min(allkeys)
+    kmax=max(allkeys)
+    dk=kmax-kmin
+    # Put the values in order; and Scale the range to [0,1], using an integer index; 
+    lookup3=sorted([[int(1e6*(a-kmin)/dk), a]+list(b)  for a,b in d2cDict.items()])
+    # And use the integer index to get rid of duplicates, so as to ensure strictly increasing values:
+    z2,ii=np.unique([L[0] for L in lookup3] , return_index=True)
+    lookup=  [[a*1.0/1e6,b,c,d,e] for a,b,c,d,e in np.array(lookup3)[ii]]  # Recreate a dict with the subset of distinct values
+    lookup[-1][0]=1.0
+    assert strictly_increasing([a for a,b,c,d,e in lookup]) # By construction!
+
+    ii,zz,rr,gg,bb=zip(*lookup)
+    cccs=['red','green','blue']
+    rgb=[rr,gg,bb]
+    cdict=dict([ [cc,        np.array([ii,rgb[jj],rgb[jj]]).T]        for jj,cc in enumerate(['red','green','blue'])])
+
+    plt.register_cmap(name=cmapname, data=cdict)
+    return(plt.get_cmap(cmapname))
+
+
+    goiu
     # Careful. unique doesn't work well on floating point arithmetic. So start by rounding all the z values (to 5 decimal places):
     lookup3=[[a]+list(b)  for a,b in d2cDict.items()]
     z2,ii= np.unique(np.round([L[0] for L in lookup3],decimals=5)   , return_index=True)
