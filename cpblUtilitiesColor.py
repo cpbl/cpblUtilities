@@ -309,7 +309,7 @@ def shiftedColorMap_example():
 def _colorAssignmentToColormap(lookup,cmapname=None):
     print("This is deprecated. Use the new name.")
     return(_colorAssignmentToColorbarmap(lookup,cmapname=cmapname))
-def _colorAssignmentToColorbarmap(lookup,cmapname=None):
+def _colorAssignmentToColorbarmap(d2cDict,cmapname=None):
     """
     2013 Oct: I think I need yet another function. This one takes an assignment between data values and colors, in particular when they are not linearly interpolable from the data values, and generates a new colormap which, if scaled to the data range, would match the color assignment.
 
@@ -319,13 +319,32 @@ def _colorAssignmentToColorbarmap(lookup,cmapname=None):
     WAIT! IS THIS ONLY USEFUL FOR PLOTTING COLORBARS? Is it used only by addcolorbarnonimage? If so, it should be inside there, no?
     WAIT! I need to use a cumsum of index, not the index of unique(): no? Do a harsher test of this than currently in demo...
     """
+    def strictly_increasing(L):
+        return all(y-x>1e-16 for x, y in zip(L, L[1:]))
+    def strongly_increasing(L):
+        return all(y-x>.0001 for x, y in zip(L, L[1:]))
+    def thinned_cdict(acdict):
+        okaysteps= [[y-x>.0001 for x, y in zip([a for a,b,c in cdict[kk]], [a for a,b,c in cdict[kk]][1:])] for kk in cdict] 
+        """
+        allokay = 
+        tokeep={}
+        for kk in acdict:
+            tokeep[kk]=[y-x>.0001 for x, y in zip(L, L[1:])]
+        """
     if cmapname is None: cmapname='tmpcm'
+
+    # Careful. unique doesn't work well on floating point arithmetic. So start by rounding all the z values (to 5 decimal places):
+    lookup3=[[a]+list(b)  for a,b in d2cDict.items()]
+    z2,ii= np.unique(np.round([L[0] for L in lookup3],decimals=5)   , return_index=True)
+    lookup=  dict([[a,[b,c,d]] for a,b,c,d in np.array(lookup3)[ii]])  # Recreate a dict with the subset of distinct values
+
     # lookup should give an RGB 3-tuple for any data value given to it.   Ensure data are floats, not ints:
-    zs=1.0 * np.array(  sorted(np.unique(np.asarray(lookup.keys())[np.isfinite(lookup.keys())]))  )
+    zs=1.0 * np.array(  sorted(np.unique(       np.asarray(lookup.keys())[np.isfinite(lookup.keys())]    ))  )
+
     izs=np.arange(len(zs))*1.0/len(zs)
     izs[-1]=1.0
 
-    # We want the index to be in cardinal values!
+    # We want the index to be in cardinal values
     izs=zs -min(zs)
     izs=izs/max(izs)
 
@@ -336,6 +355,7 @@ def _colorAssignmentToColorbarmap(lookup,cmapname=None):
             cdict[cc].append([izs[ii],lookup[zz][ic],lookup[zz][ic]])
 
     if 1:     # Check validity of cdict. This section is only for debuggin:
+
         def strictly_increasing(L):
             return all(x<y for x, y in zip(L, L[1:]))
         for kk in cdict:

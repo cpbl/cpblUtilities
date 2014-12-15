@@ -1442,8 +1442,14 @@ def labelLine(lines):
     text(aline._x[-1],aline._y[-1],alabel,color=aline.get_color())
     return(lines)
 
-def dfPlotWithEnvelope(df,xv,yv,nse=1.96,linestyle='-',color=None,linecolor=None,facecolor=None,alpha=0.5,label=None,labelson='lines',laxSkipNaNsSE=False,laxSkipNaNsXY=False,skipZeroSE=False,ax=None,laxFail=True,demo=False, lineLabel=None,patchLabel=None):
+def dfPlotWithEnvelope(df,xv,yv,nse=1.96,linestyle='-',color=None,linecolor=None,facecolor=None,alpha=0.5,label=None,labelson='lines',laxSkipNaNsSE=False,laxSkipNaNsXY=False,skipZeroSE=False,ax=None,laxFail=True,demo=False, 
+                       # Deprecated:
+                       lineLabel=None,patchLabel=None):
     """ interface to plotWithEnvelope for pandas DataFrames
+
+    Try: 
+    dfPlotWithEnvelope(None,None,None,demo=True)
+
     When you specify the name of a yvariable, we will automatically look for variables with prefixes se_ to figure out the upper and lower bounds for the envelopes (confidence intervals).
 
     If you want to specify labels explicitly (rather than using the column name), you can use label.
@@ -1482,6 +1488,9 @@ def dfPlotWithEnvelope(df,xv,yv,nse=1.96,linestyle='-',color=None,linecolor=None
         transLegend(loc='best')
         subplot(2,2,3)
         dfPlotWithEnvelope( df,'x',['y','z'],labelson='patch',label=['Upper','Downer'])
+        transLegend()
+        subplot(2,2,4)
+        dfPlotWithEnvelope( df,'x',['y','z'],label=['Upper','Downer'])
         transLegend()
         return()
     if demo is True:
