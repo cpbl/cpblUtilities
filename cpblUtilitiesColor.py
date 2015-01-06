@@ -393,6 +393,41 @@ def _colorAssignmentToColorbarmap(d2cDict,cmapname=None):
 
     return(plt.get_cmap(cmapname))
 
+def addColorbarNonImage_vDraft(customcmap):
+    """ Dec 2014: I found this: https://datasciencelab.wordpress.com/2013/12/21/beautiful-plots-with-pandas-and-matplotlib/
+    which might have a nicer (kludged!) way of adding a colorbar.  S/he cites http://stackoverflow.com/questions/8342549/
+# matplotlib-add-colorbar-to-a-sequence-of-line-plots.
+
+Actually, this does not do all that mine does, but some of its tricks might be useful to import.
+TODO: absorb tricks and delete this function.
+    """
+    # Create a fake colorbar
+    ctb = LinearSegmentedColormap.from_list('custombar', customcmap, N=2048)
+    # Trick from http://stackoverflow.com/questions/8342549/
+    # matplotlib-add-colorbar-to-a-sequence-of-line-plots
+    sm = plt.cm.ScalarMappable(cmap=ctb, norm=plt.normalize(vmin=72, vmax=84))
+    # Fake up the array of the scalar mappable
+    sm._A = []
+
+    # Set colorbar, aspect ratio
+    cbar = plt.colorbar(sm, alpha=0.05, aspect=16, shrink=0.4)
+    cbar.solids.set_edgecolor("face")
+    # Remove colorbar container frame
+    cbar.outline.set_visible(False)
+    # Fontsize for colorbar ticklabels
+    cbar.ax.tick_params(labelsize=16)
+    # Customize colorbar tick labels
+    mytks = range(72,86,2)
+    cbar.set_ticks(mytks)
+    cbar.ax.set_yticklabels([str(a) for a in mytks], alpha=a)
+
+    # Colorbar label, customize fontsize and distance to colorbar
+    cbar.set_label('Age expectancy (in years)', alpha=a, 
+                   rotation=270, fontsize=20, labelpad=20)
+    # Remove color bar tick lines, while keeping the tick labels
+    cbarytks = plt.getp(cbar.ax.axes, 'yticklines')
+    plt.setp(cbarytks, visible=False)
+
 def addColorbarNonimage(data=None,datarange=None,data2color=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None):
     Sorry_USE_NEW_FORMAT_NEW_NAME
 #def addColorbarNonimage(mindata,maxdata=None,useaxis=None,ylabel=None,cmap=None,colorbarfilename=None,location=None):

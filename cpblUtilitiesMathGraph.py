@@ -1796,6 +1796,10 @@ n.b.  a clf() erases size settings on a figure!
 
     """
     figsizelookup={'paper':(4.6,4),'quarter':(1.25,1) ,None:None}
+    try:
+        figsize=figsizelookup[figsize]
+    except TypeError:
+        pass
     params = {#'backend': 'ps',
            'axes.labelsize': 16,
            'text.fontsize': 14,
@@ -1804,7 +1808,7 @@ n.b.  a clf() erases size settings on a figure!
            'ytick.labelsize': 16,
            'text.usetex': True,
            'text.usetex.unicode': True,
-           'figure.figsize': figsizelookup.get(figsize,figsize)
+           'figure.figsize': figsize
         }
            #'figure.figsize': fig_size}
     if uniform is not None:
@@ -1817,7 +1821,7 @@ n.b.  a clf() erases size settings on a figure!
            'ytick.labelsize': uniform,
            'text.usetex': True,
            'text.usetex.unicode': True,
-           'figure.figsize': figsizelookup.get(figsize,figsize)
+           'figure.figsize': figsize
            }
     plt.rcParams.update(params)
     plt.rcParams['text.latex.unicode']=True
@@ -5666,7 +5670,78 @@ if __name__ == '__main__':
     fff
 
 
+def localPolynomialRegression(df,xvar,yvar, demo=True):
     """
+    Use pyqt_fit package (custom download / easy_install) to generate a non-parametric fit and confidence intervals.
+    Also optionally show a  kernel density plot of the underlying data (ie rather than scatter?)
+
+    2014Dec: This is very promising, but it has no ability to weight observations (right?), and its bootstrap is really slow. How does Stata do its c.i. so fast?
+
+    apt-get install cython
+
+    worked, but didn't help. It's still not using cython.
+    """
+
+    import numpy as np
+    def f(x):
+        return 3*np.cos(x/2) + x**2/5 + 3
+    # Then, we will generate our data:
+
+    xs = np.random.rand(200) * 10
+    ys = f(xs) + 2*np.random.randn(*xs.shape)
+    # We can then visualize the data:
+
+    import matplotlib.pyplot as plt
+    grid = np.r_[0:10:512j]
+    plt.plot(grid, f(grid), 'r--', label='Reference')
+    plt.plot(xs, ys, 'o', alpha=0.5, label='Data')
+    plt.legend(loc='best')
+
+    plt.show()
+
+
+
+    import pyqt_fit.nonparam_regression as smooth
+    from pyqt_fit import npr_methods
+
+
+    k1 = smooth.NonParamRegression(xs, ys, method=npr_methods.LocalPolynomialKernel(q=1))
+    k2 = smooth.NonParamRegression(xs, ys, method=npr_methods.LocalPolynomialKernel(q=2))
+    k3 = smooth.NonParamRegression(xs, ys, method=npr_methods.LocalPolynomialKernel(q=3))
+    k12 = smooth.NonParamRegression(xs, ys, method=npr_methods.LocalPolynomialKernel(q=12))
+    k1.fit(); k2.fit(); k3.fit(); k12.fit()
+    plt.figure()
+    plt.plot(xs, ys, 'o', alpha=0.5, label='Data')
+    plt.plot(grid, k12(grid), 'b', label='polynom order 12', linewidth=2)
+    plt.plot(grid, k3(grid), 'y', label='cubic', linewidth=2)
+    plt.plot(grid, k2(grid), 'k', label='quadratic', linewidth=2)
+    plt.plot(grid, k1(grid), 'g', label='linear', linewidth=2)
+    plt.plot(grid, f(grid), 'r--', label='Target', linewidth=2)
+    plt.legend(loc='best')
+    plt.show()
+
+
+    plt.figure()
+    import pyqt_fit.bootstrap as bs
+    grid = np.r_[0:10:20]
+    def fit(xs, ys):
+      est = smooth.NonParamRegression(xs, ys, method=npr_methods.LocalPolynomialKernel(q=2))
+      est.fit()
+      return est
+    print('Starting bootstrap')
+    result = bs.bootstrap(fit, xs, ys, eval_points = grid, CI = (95,99))
+
+
+    plt.plot(xs, ys, 'o', alpha=0.5, label='Data')
+    plt.plot(grid, result.y_fit(grid), 'r', label="Fitted curve", linewidth=2)
+    plt.plot(grid, result.CIs[0][0,0], 'g--', label='95% CI', linewidth=2)
+    plt.plot(grid, result.CIs[0][0,1], 'g--', linewidth=2)
+    plt.fill_between(grid, result.CIs[0][0,0], result.CIs[0][0,1], color='g', alpha=0.25)
+    plt.legend(loc=0)
+
+
+
+"""
 2013 OCT: CAN I COMBINE SVGs SIDE BY SIDE WITH SOMETHING LIKE THIS: (assuming no labels collision)
 
 <code>
@@ -5696,3 +5771,5 @@ output_file.write(etree.tostring(base_svg, pretty_print=True))
 
     """
 
+if 0:
+    localPolynomialRegression(None,None,None,True)
