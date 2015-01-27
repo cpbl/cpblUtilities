@@ -5,10 +5,7 @@
 
 2014: colorize_svg() is the latest function to fill in colours according to data in an svg geographic map, created from SHP files, typically (see our convert_to_svg.py).
 
-
-
- # # # # Comments below are old and scattered.
-
+# # # # Comments below are old and scattered.
 
 Sept 2011: okay, working to use AlexSchultz's program to make a tool., svgcountrymap()
 
@@ -292,7 +289,9 @@ def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data
         fooo
     assert geo2color is not None
     geo2hexcolor=geo2color.map(lambda zx: rgb_to_hex(tuple(zx)))
-    
+
+    #assert '24663329'  in geo2data_or_color.index
+
 
     # Fill the svg:
     svgfilled=_hexcolors_into_svg(geo2hexcolor,svg,CF  ,hideElementsWithoutData= hideElementsWithoutData)
