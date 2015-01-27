@@ -305,6 +305,7 @@ def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data
     # Add a javascript tool for web zooming:
     import re
     svgfilled=re.sub('(<svg.*?>)',r'\1'+"""\n   <script xlink:href="/js/SVGPan.js"/> \n  """,svgfilled)
+    assert 'SVGPan.js' in svgfilled
 
     if addcolorbar is False and outfilename is not None:
         with codecs.open(outfilename,'w','utf8') as f: 
