@@ -912,6 +912,7 @@ def orderListByRule(alist,orderRule,listKeys=None,dropIfKey=None):
     """ Reorder alist according to the order specified in orderRule. The orderRule lists the order to be imposed on a set of keys. The keys are alist, if listkeys==None, or listkeys otherwise.  That is, the length of listkeys must be the same as of alist. That is, listkeys are the tags on alist which determine the ordering.  orderRule is a list of those same keys and maybe more which specifies the desired ordering.
     There is an optional dropIfKey which lists keys of items that should be dropped outright.
     """
+    alist=list(alist)
     assert isinstance(alist,list) and isinstance(orderRule,list)
     alist=deepcopy(alist) #Let's not overwrite the passed array! to be safe and inefficient
 

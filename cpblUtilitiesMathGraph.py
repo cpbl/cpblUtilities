@@ -519,9 +519,16 @@ def figureToGrayscaleOld(): # This is a disaster for envelopes, no!? it sets all
 
     return()
 
-def tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=True):
+def tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=False):
     """Makes POSIX-specific OS calls. Need xvfb installed. If it fails anyway, could always resort to use_xvfb=False
  """
+    # Why is xvfb failing 2015 still?
+
+    #if use_xvfb is None:
+    #    try:
+    #        import os
+    #        os.system('xvfb-run pwd')
+    #    except: 
     if infile.endswith('.pdf'):
         infile=infile[:-4]
     if outfile is None:
@@ -678,7 +685,7 @@ inkscape -f %(fn)sTMPTMPTMP.svg --verb=FitCanvasToDrawing  --verb=FileSave  --ve
 inkscape -f %(fn)sTMPTMPTMP.svg -A %(fn)s-autotrimmed.pdf
  """%{'fn':root+tail})
 
-            tightBoundingBoxInkscape(root+tail,use_xvfb=False) # ARGH March 2014: I'm getting an error from xvfb. So do it with GUI popping up!
+            tightBoundingBoxInkscape(root+tail)#,use_xvfb=True) # ARGH March 2014: I'm getting an error from xvfb. So do it with GUI popping up!
        
     if svg:
         plt.savefig(root+tail+'.svg',transparent=transparent,facecolor=facecolor)
@@ -1442,7 +1449,7 @@ def labelLine(lines):
     text(aline._x[-1],aline._y[-1],alabel,color=aline.get_color())
     return(lines)
 
-def dfPlotWithEnvelope(df,xv,yv,nse=1.96,linestyle='-',color=None,linecolor=None,facecolor=None,alpha=0.5,label=None,labelson='lines',laxSkipNaNsSE=False,laxSkipNaNsXY=False,skipZeroSE=False,ax=None,laxFail=True,demo=False, 
+def dfPlotWithEnvelope(df,xv,yv,ylow=None,yhigh=None,nse=1.96,linestyle='-',color=None,linecolor=None,facecolor=None,alpha=0.5,label=None,labelson='lines',laxSkipNaNsSE=False,laxSkipNaNsXY=False,skipZeroSE=False,ax=None,laxFail=True,demo=False, 
                        # Deprecated:
                        lineLabel=None,patchLabel=None):
     """ interface to plotWithEnvelope for pandas DataFrames
@@ -1459,6 +1466,8 @@ def dfPlotWithEnvelope(df,xv,yv,nse=1.96,linestyle='-',color=None,linecolor=None
     """
     # 2014June: if given a list for yv but not anything else, loop over them: 
     # 2014 Sept: This is broken! Ignores most other arguments of original call. And doesn't interpret other things sent as lists, like label or colors...  [Partially solved: sep2014]
+    # 2015: Adding ylow,yhigh: rather than specify s.e.'s, we may want to give the name of columns explicitly giving the limits.
+
     from cpblUtilitiesColor import getIndexedColormap
 
     # Sep 2014: Changed labels. I guess you now canont label both lines and patches! Oops. 
@@ -1500,6 +1509,8 @@ def dfPlotWithEnvelope(df,xv,yv,nse=1.96,linestyle='-',color=None,linecolor=None
 
 
     if yv.__class__ == list:
+        assert yhigh is None and ylow is None # Smply not supported yet.
+        owiuerowieuwoieu
         return( [dfPlotWithEnvelope(df,xv,ayv,nse=1.96,linestyle='-',
                                     color=color if (color is not None and not hasattr(color,'__iter__')) else getIndexedColormap('jet',len(yv))[ii] if color is None else color[ii],
                                     linecolor=None if linecolor is None else linecolor if not hasattr(linecolor,'__iter__') else linecolor[ii], 
@@ -1513,8 +1524,15 @@ def dfPlotWithEnvelope(df,xv,yv,nse=1.96,linestyle='-',color=None,linecolor=None
                                     label= ayv if label is None else label if  not hasattr(label,'__iter__') else label[ii],
                                     laxSkipNaNsSE=laxSkipNaNsSE,laxSkipNaNsXY=laxSkipNaNsXY,skipZeroSE=skipZeroSE,ax=ax,laxFail=laxFail) for ii,ayv in enumerate( yv) ] )
 
-    yLow=df[yv].values - nse * df['se_'+yv].values
-    yHigh=df[yv].values + nse * df['se_'+yv].values
+    # Can specify envelope range as standard errors or as explicit bottom, top:
+    if ylow is None:
+        yLow=df[yv].values - nse * df['se_'+yv].values
+    else:
+        yLow=df[ylow].values
+    if yhigh is None:
+        yHigh=df[yv].values + nse * df['se_'+yv].values
+    else:
+        yHigh=df[yhigh].values
     return( plotWithEnvelope( df[xv].values,df[yv].values,yLow=yLow,yHigh=yHigh,linestyle=linestyle,color=color,linecolor=linecolor,facecolor=facecolor,alpha=alpha,label=None,
                               lineLabel=None if labelson in ['patches','envelopes','envelope','patch'] else yv if label is None else label,
                               patchLabel=None if labelson in ['lines','line'] else yv if label is None else label,
