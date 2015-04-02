@@ -521,6 +521,7 @@ def figureToGrayscaleOld(): # This is a disaster for envelopes, no!? it sets all
 
 def tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=False):
     """Makes POSIX-specific OS calls. Need xvfb installed. If it fails anyway, could always resort to use_xvfb=False
+
  """
     # Why is xvfb failing 2015 still?
 
@@ -549,7 +550,7 @@ def tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=False):
 ##############################################################################
 ##############################################################################
 #
-def savefigall(fn,transparent=True,ifany=None,fig=None,skipIfExists=False,pauseForMissing=True,onlyPNG=False,jpeg=False,jpeghi=False,svg=False,pdf=True,bw=False,FitCanvasToDrawing=False,eps=False,tikz=False,rv=None,facecolor='None'):
+def savefigall(fn,transparent=True,ifany=None,fig=None,skipIfExists=False,pauseForMissing=True,onlyPNG=False,jpeg=False,jpeghi=False,svg=False,pdf=True,bw=False,FitCanvasToDrawing=False,eps=False,tikz=False,rv=None,facecolor='None',dpi=1000):
     ##########################################################################
     ##########################################################################
     """
@@ -595,6 +596,11 @@ rv="both" and rv=None
 
 June 2013: I still think use of facecolor and transparent in savefig is horribly buggy. I'm getting blue borders around all my figures now, except with rv. :(
 
+2015: default resolution is now 1000 dpi (!), ie publication quality.
+
+dpi:  Resolution used for png format only.
+
+Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pdf and png work okay.
 """
     #transparent=True # Huh? 2013 June: commenting this out.
 
@@ -655,13 +661,13 @@ June 2013: I still think use of facecolor and transparent in savefig is horribly
 
     def stupidOnlyUseGivenArguments(name,transparent=None,facecolor=None): #June 2013
         if transparent and facecolor in ['None','none',None,False]:
-            fig.savefig(name,transparent=transparent)
+            fig.savefig(name,transparent=transparent,dpi=dpi)
         elif  transparent:
-            fig.savefig(name,transparent=transparent,facecolor=facecolor)
+            fig.savefig(name,transparent=transparent,facecolor=facecolor,dpi=dpi)
         elif  facecolor in ['None','none',None,False]:
-            fig.savefig(name)
+            fig.savefig(name,dpi=dpi)
         else:
-            fig.savefig(name,facecolor=facecolor)
+            fig.savefig(name,facecolor=facecolor,dpi=dpi)
         
     print 'Saving graphics: '+root+tail+' (+ext)'
     stupidOnlyUseGivenArguments(root+tail+'.png',transparent=transparent,facecolor=facecolor)
@@ -1510,7 +1516,7 @@ def dfPlotWithEnvelope(df,xv,yv,ylow=None,yhigh=None,nse=1.96,linestyle='-',colo
 
     if yv.__class__ == list:
         assert yhigh is None and ylow is None # Smply not supported yet.
-        owiuerowieuwoieu
+
         return( [dfPlotWithEnvelope(df,xv,ayv,nse=1.96,linestyle='-',
                                     color=color if (color is not None and not hasattr(color,'__iter__')) else getIndexedColormap('jet',len(yv))[ii] if color is None else color[ii],
                                     linecolor=None if linecolor is None else linecolor if not hasattr(linecolor,'__iter__') else linecolor[ii], 
@@ -1816,7 +1822,7 @@ n.b.  a clf() erases size settings on a figure!
     figsizelookup={'paper':(4.6,4),'quarter':(1.25,1) ,None:None}
     try:
         figsize=figsizelookup[figsize]
-    except TypeError:
+    except KeyError,TypeError:
         pass
     params = {#'backend': 'ps',
            'axes.labelsize': 16,
@@ -1825,7 +1831,6 @@ n.b.  a clf() erases size settings on a figure!
            'xtick.labelsize': 16,
            'ytick.labelsize': 16,
            'text.usetex': True,
-           'text.usetex.unicode': True,
            'figure.figsize': figsize
         }
            #'figure.figsize': fig_size}
@@ -1838,7 +1843,7 @@ n.b.  a clf() erases size settings on a figure!
            'xtick.labelsize': uniform,
            'ytick.labelsize': uniform,
            'text.usetex': True,
-           'text.usetex.unicode': True,
+           'text.latex.unicode': True,
            'figure.figsize': figsize
            }
     plt.rcParams.update(params)

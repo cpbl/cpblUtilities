@@ -1262,7 +1262,6 @@ def str2pathname(ss):
 
 
 def fileOlderThan(afile,bfiles,ageWarning=True):
-    ##return(False) # Ahh! no scp on BC ferries. temp, obviously
     """ ie says whether the first fiel, afile, needs updating based on its parent, bfile.  ie iff afile does not exist or is older than bfile, this function returns true.
 
 bfile can also be a list of files. in this case, the function returns true if any  of the bfiles is younger than the target file, afile; ie afile needs to be updated based on its antecedents, bfiles.

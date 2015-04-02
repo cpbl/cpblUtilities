@@ -430,6 +430,7 @@ TODO: absorb tricks and delete this function.
 
 def addColorbarNonimage(data=None,datarange=None,data2color=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None):
     Sorry_USE_NEW_FORMAT_NEW_NAME
+    MUST_not_pass_anything_without_explicit_keyword_in_new_format
 #def addColorbarNonimage(mindata,maxdata=None,useaxis=None,ylabel=None,cmap=None,colorbarfilename=None,location=None):
 def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None):
     """
@@ -443,7 +444,7 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
 
     ticks: a list of data values; sets the tick values for the colorbar
 
-    Calling forms:
+    Calling forms: (Always specify keywords explicitly! )
     
     Case 1: Use a matplotlib colormap, named and registered with plt.cm, and spread it out "linearly" over the given range of data.
         Here cmap can be: None (in which case 'jet' is used), a string name of a registered colormap like "hot", or cm.colormap object thingy (CHECK)
@@ -481,7 +482,7 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
         if datarange is not None: return(datarange)
         if isinstance(data, (list, np.ndarray, pd.Series)):
             return(min(data),max(data))
-        if isinstance(data2color, (np.ndarray,pd.Series)):
+        if isinstance(data2color, (list, np.ndarray,pd.Series)):
             return(min(data2color),max(data2color))
         if isinstance(data2color, dict):
             return(min(data2color.keys()),max(data2color.keys()))
@@ -490,7 +491,7 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
     assert data is None or data.__class__ in [list, np.ndarray]
     assert datarange is None or isinstance(datarange,(list, np.ndarray))
     # We need information on the range of data:
-    assert data is not None or ( isinstance(datarange,(list, np.ndarray))   and len(datarange)==2 ) or isinstance(data2color,dict)
+    assert data is not None or ( isinstance(datarange,(list, np.ndarray))   and len(datarange)==2 ) or ( isinstance(data2color,(list, np.ndarray))   and len(data2color)==2 ) or isinstance(data2color,dict)
     # Specify either a color sequence (mapped from [0,1]) or a mapping from data values to RBG colours
     assert cmap is None or data2color is None 
     # We can specify cmap in two different ways, or induce the default value (with None)
@@ -499,6 +500,8 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
 
     mindata,maxdata=get_data_range(data,datarange,data2color)
 
+    # Need to explicitly figure out calling form...
+    
     knowncmap=  data2color is None
 
     if knowncmap: # cmap can be passed as a string or a cmap or an mpl.colors.LinearSegmentedColormap
