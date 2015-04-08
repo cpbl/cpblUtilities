@@ -1826,7 +1826,8 @@ n.b.  a clf() erases size settings on a figure!
         pass
     params = {#'backend': 'ps',
            'axes.labelsize': 16,
-           'text.fontsize': 14,
+        #'text.fontsize': 14,
+        'font.size': 14,
            'legend.fontsize': 10,
            'xtick.labelsize': 16,
            'ytick.labelsize': 16,
@@ -1838,7 +1839,8 @@ n.b.  a clf() erases size settings on a figure!
         assert isinstance(uniform,int)
         params = {#'backend': 'ps',
            'axes.labelsize': uniform,
-           'text.fontsize': uniform,
+            #'text.fontsize': uniform,
+           'font.size': uniform,
            'legend.fontsize': uniform,
            'xtick.labelsize': uniform,
            'ytick.labelsize': uniform,
@@ -2816,6 +2818,16 @@ def transAnnotation(comments,loc=None,removeOldLegends=True,title=None,titlesize
     oops. Adding "loc" for sensible compatibility! I started with pos for no good reason
 
     oops! Why am I not using axes coordinates?? why would i use data coords? without taking into account log, etc....
+
+    See comment below:   
+             this is not finished. and no auto placement!. Actually, you shoul djust use a one-line boxed text, e.g.:
+
+                gca().text(.252,-.13,'Chris Barrington-Leigh\n                         McGill', ha='left', va="center", size=7,  bbox=dict(boxstyle="round", fc="w", ec="0.5", alpha=0.9))
+        gca().text(.328,-.13,r'$\pm$1 s.e. shown', ha='right', va="center", size=7,  bbox=dict(boxstyle="round", fc="w", ec="0.5", alpha=0.9))
+       # Better: use axes fraction coords. (2015)
+            adf.ax.annotate(adf.shortname, xy=(.05,.95),xycoords='axes fraction',ha='left', va="center", size=7,  bbox=dict(boxstyle="round", fc="w", ec="0.5", alpha=0.9))
+
+
     """
     #assert pos is None # June 2012: phase it out. comment this out to bypass..
     #assert not pos or not loc

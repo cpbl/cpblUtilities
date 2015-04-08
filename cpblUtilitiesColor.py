@@ -3,6 +3,7 @@ import pandas as pd
 import  numpy as np
 import pylab as plt
 from scipy import interpolate
+import matplotlib as mpl
 
 """
 Background: Colormap functions in Matplotlib are confusingly many and a bit spread out. Documentated examples are insufficient. e.g. What does "normalize" mean, precisely, in the cm context?

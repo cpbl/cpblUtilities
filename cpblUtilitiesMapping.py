@@ -3,36 +3,22 @@
 
 """
 
-2014: colorize_svg() is the latest function to fill in colours according to data in an svg geographic map, created from SHP files, typically (see our convert_to_svg.py).
+2014: colorize_svg() is the latest function to fill in colours according to data in an svg geographic map (created from SHP files, typically; e.g. see our convert_to_svg.py).  It is a replacement to its predecessors, fillTaggedSVGmap and, earlier, svgcountrymap.
+This method is extremely fast and simple, compared with plotting.
 
-# # # # Comments below are old and scattered.
+2015: The maps made by coorize_svg() now have javascript that makes them zoomable and pannable when in an html layer.
 
-Sept 2011: okay, working to use AlexSchultz's program to make a tool., svgcountrymap()
+2015: It seems colorize_svg() is still in need of better documentation of its several calling syntaxes. Some may still need to be fleshed out, too.
 
-Sept 2010: Oh, revolution. People are using an SVG map of the world with tagged regions and then using beautifulsoup to simply insert colours into the data, by country. unbelievably fast and simple! Forget plotting.
-Pick any of these...
-http://commons.wikimedia.org/wiki/Category:Blank_SVG_maps_of_the_world
-See AlexSchultz's stuff (I've downloaded it all in GIS/)
-
-
-Sept 2010: Situation similar...?
-
-polipoly: someone made a nice few tools for working with US geo codes of various kinds.
-
-Someone Aug 2010 says:  The country data basemap 
-uses are lines, not polygons. You will have to find another (shapefile?) 
-dataset that provides country polygons for the countries you are 
-interested in. 
+Also nice, when you do want to plot, is Basemap. I use this when I want to color lines, rather than fill regions.
+   You can set an area threshold ie resolution, which makes plotting reallly fast.
 
 
+Some references:
 
---------------------------------
-Sept 2009: Another attempt at getting this junk to work osgeo is able to read my shapefile, but I don't knwo what coordinates it's in and I can't move it over to basemap to plot with it. 
- Basemap's interface is very nice. You can set an area threshold ie resolution, which makes plotting reallly fast.
+- http://commons.wikimedia.org/wiki/Category:Blank_SVG_maps_of_the_world
+- polipoly: someone made a nice few tools for working with US geo codes of various kinds.
 
-The basemap demo below works well. (but only on csrv; no basemap on cpbl).
-
-(I think I gave up and switched to QGIS or something, didn't I???)
 """
 
 
@@ -56,7 +42,6 @@ what about mpl.colors.rgb2hex? (okay, but it doesn't deal with nan's. maybe that
         rgb=(rgb[0]*rgb[3],   rgb[1]*rgb[3],  rgb[2]*rgb[3])
     return '#%02x%02x%02x' %tuple(np.array(rgb)*255.0)
 
-                
 
 
 def demoBetterDirectLoadSHAPE():
@@ -71,67 +56,6 @@ def demoBetterDirectLoadSHAPE():
 
 import pylab as plt
 #import matplotlib.pyplot as plt
-
-
-def try_osgeo():
-    try:
-      from osgeo import ogr
-    except:
-      import ogr
-
-
-
-
-    import re
-    import os
-    import cpblUtilities
-    reload(cpblUtilities)
-    from cpblUtilities import unique, doSystem,tsvToDict
-    from cpblUtilitiesMathGraph import  tonumeric, overplotLinFit,xTicksLogIncome
-    from copy import deepcopy
-    import cpblDefaults
-    reload(cpblDefaults)
-    defaults=cpblDefaults.defaults()
-    import cpblStata
-    reload(cpblStata)
-    #from cpblStata import *
-    #from pylab import *
-    import pylab
-
-
-
-
-
-    from matplotlib.mlab import prctile_rank
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.basemap import Basemap as Basemap
-
-    # cities colored by population rank.
-
-    m = Basemap()
-
-    #following fails: no epxlanation. grrrrrrrrrrr!
-    shp_info = m.readshapefile(defaults['inputPath']+'healthRegions/shp/test','HRuid')
-    #woeiur Following fails: needs conversion by mapproj??
-    shp_info = m.readshapefile(defaults['inputPath']+'healthRegions/shp/HR000b07_PZ','HRuid')
-    woeiur
-    shp_info = m.readshapefile('/home/cpbl/tmp/cities','cities')
-    x, y = zip(*m.cities)
-    pop = []
-    for item in m.cities_info:
-        population = item['POPULATION']
-        if population < 0: continue # population missing
-        pop.append(population)
-    popranks = prctile_rank(pop,100)
-    colors = []
-    for rank in popranks:
-        colors.append(plt.cm.jet(float(rank)/100.))
-    m.drawcoastlines()
-    m.fillcontinents()
-    m.scatter(x,y,25,colors,marker='o',edgecolors='none',zorder=10)
-    plt.title('City Locations colored by Population Rank')
-    plt.show()
-
 
 
 
@@ -169,6 +93,11 @@ def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data
     hideElementsWithoutData uses visible:none to get rid (with least computation in rendering) all elements that do not have a data value.
 
     2014Dec: Add a javascript hook in these, now, to make them zoomable inside a web viewing portal.
+
+There are a number of calling formats. 
+colorize_svg(demo=True)  is supposed to demonstrate them.
+
+
     """
     if demo:
         _demo_colorize_svg()
@@ -206,6 +135,7 @@ def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data
             )
 
         elif os.path.split(ablanksvgfile)[1] in ['countriesCPBL.svg']:
+            print('   I recognized countriesCPBL.svg ...')
             CF=dict(cbarpar=dict(expandx=1, movebartox=540,movebartoy=80,scalebar=0.75),
             path_style="""1;stroke:#ffffff;stroke-width:0.99986994;stroke-miterlimit:3.97446823;stroke-dasharray:none;stroke-opacity:1;fill:""",
             groupsare='g',
@@ -216,6 +146,9 @@ def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data
 
 
     def _hexcolors_into_svg(_geo2hex,svgtext,customfeatures,   hideElementsWithoutData= None ):
+        """
+        This is the core piece of the whole function; it inserts colours into an SVG. This method, using beautiful soup, worked very nicely in 2009-2014, but in 2015 beautiful soup is completely corrupting the SVG by excluding the actual borders from their corresponding groups <g /g> 
+        """
         #assert egvalue.__class__ in [str] # Check that we have a hex-color lookup table!
         #assert cmap is None # It doesn't make sense to pass a cmap if we've given an explicit colour lookup
         ####import csv
@@ -232,6 +165,7 @@ def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data
         for p in paths:
             if p['id'] not in ["State_Lines", "separator"]:
                 try:
+                    fog
                     dval=_geo2hex[p['id']]  
                     assert isinstance(dval,str)
                     p['style'] = CF['path_style'] +dval
@@ -241,16 +175,41 @@ def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data
                     continue
 
         return( soup.prettify())
+    def _hexcolors_into_svg2015(_geo2hex,svgtext,customfeatures,   hideElementsWithoutData= None ):
+        """
+BeautifulSoup stopped working for me in 2015. :(  (3.2.1)
+I'm going to do it by hand. :( :(  Just for international map, a tthe moment.
+
+        """
+        #assert egvalue.__class__ in [str] # Check that we have a hex-color lookup table!
+        #assert cmap is None # It doesn't make sense to pass a cmap if we've given an explicit colour lookup
+        ####import csv
+
+        assert len(_geo2hex) == len(_geo2hex.index.unique()) # No duplicate data to colour entries
+
+        import re
+        print('    Finding groups..')
+        groups=re.findall(r'(<g\s.*?</g>)',svgtext,re.DOTALL)
+        for gg in groups:
+            ids=re.findall('id="(..)"',gg)  # Two-letter country codes
+            assert len(ids) in [0,1]
+            if ids and ids[0] in _geo2hex:
+                styles=re.findall('style="(.*?)"',gg)  # Two-letter country codes
+                replacementtext=gg.replace(styles[0],CF['path_style']+_geo2hex[ids[0]]  )
+                svgtext=svgtext.replace(gg,replacementtext)
+                #print(ids[0]+' ...')
+        return( svgtext)
 
     # The blank svg info could be passed as a string rather than a filename:
     assert blanksvgfile is not None
-    if '\n' in blanksvgfile or len(blanksvgfile)>1000:
+    SVGcodeWasPassed='\n' in blanksvgfile or len(blanksvgfile)>1000
+    if SVGcodeWasPassed:
         svg=blanksvgfile
     else:
         svg = codecs.open(blanksvgfile, 'r','utf8').read()
 
 
-    if svg is not None:
+    if SVGcodeWasPassed:# is not None:
         if customfeatures is None:
             print(' You passed SVG code, rather than a filename, to colorize_svg. We will use our best guess for how to interpret it and where to place a colorbar. Use the customfeatures flag to specify more behaviour.')
         CF=dict(cbarpar=  dict(expandx=1.2, movebartox=540,movebartoy=80,scalebar=0.75), 
@@ -284,9 +243,12 @@ def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data
         data2color=linearColormapLookup(cmap,geo2data_or_color.values)
         geo2color=geo2data.map(data2color)
     elif geo2dataWerePassed and data2color.__class__ is pd.Series:
-        ConvolveHere
-    else:
-        fooo
+        convolveHere
+    else: # We have geo2data but do not know anything??? about data2color?
+        cmap='jet'
+        data2color=linearColormapLookup(cmap,geo2data.values)
+        geo2color=geo2data.map(data2color)
+
     assert geo2color is not None
     geo2hexcolor=geo2color.map(lambda zx: rgb_to_hex(tuple(zx)))
 
@@ -294,18 +256,21 @@ def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data
 
 
     # Fill the svg:
-    svgfilled=_hexcolors_into_svg(geo2hexcolor,svg,CF  ,hideElementsWithoutData= hideElementsWithoutData)
+    svgfilled=_hexcolors_into_svg2015(geo2hexcolor,svg,CF  ,hideElementsWithoutData= hideElementsWithoutData)
     # We shouldn't need to save it, in general, until we've added the colorbar. But: [[ 2014Jan: Saving as file is only needed for TX and CA (!) state bg maps, at the moment, but do it anyway, for all. For some reason, sg.fromfile works but not sg.fromstring on those two maps.  (I reuse the temporary file below, anyway.)
                 # Until Dec 2013, I used svgutils, and could pass the map without colorbar as a text string. But does svg_stack allow that? For now, create a temporary file]]
    #    filledMapfilename=
+
     if geo2dataWerePassed and addcolorbar is None:
+        print('     Turning on colorbar since geo2data were passed...')
         addcolorbar is True
 
 
     # Add a javascript tool for web zooming:
     import re
-    svgfilled=re.sub('(<svg.*?>)',r'\1'+"""\n   <script xlink:href="/js/SVGPan.js"/> \n  """,svgfilled)
-    assert 'SVGPan.js' in svgfilled
+    if 0: #Whoops!! This failed in 15.04!
+        svgfilled=re.sub('(<svg.*?>)',r'\1'+"""\n   <script xlink:href="/js/SVGPan.js"/> \n  """,svgfilled)
+        assert 'SVGPan.js' in svgfilled
 
     if addcolorbar is False and outfilename is not None:
         with codecs.open(outfilename,'w','utf8') as f: 
@@ -434,7 +399,7 @@ def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data
                 layout1 = ss.HBoxLayout()
                 layout1.addSVG(filledMapfilename,alignment=ss.AlignTop|ss.AlignHCenter)
                 layout1.addSVG(CBfilename,alignment=ss.AlignCenter)#,stretch=0.5)
-
+                noThisIsDrafty
     #layout2 = ss.VBoxLayout()
 
     #layout2.addSVG(C,alignment=ss.AlignCenter)
@@ -495,7 +460,7 @@ def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data
             plt.close(6354)
             return
         elif addcolorbar is False:
-            return(colorize_svg(region2colours,cmap=cmap,blanksvgfile=blanksvgfile,outfilename=outfilename,addcolorbar=addcolorbar,colorbarlimits=colorbarlimits))
+            return(colorize_svg( region2colours,cmap=cmap,blanksvgfile=blanksvgfile,outfilename=outfilename,addcolorbar=addcolorbar,colorbarlimits=colorbarlimits))
         else:
             unhandledStophere
     elif egvalue.__class__ in [np.ndarray]:#  We got an RGB lookup table
@@ -510,6 +475,67 @@ def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data
 
         return(colorize_svg(hexlookup,cmap=cmap,blanksvgfile=blanksvgfile,outfilename=outfilename,colorbarlimits=colorbarlimits))
 
+
+
+
+def ___try_osgeo():
+    try:
+      from osgeo import ogr
+    except:
+      import ogr
+
+
+
+
+    import re
+    import os
+    import cpblUtilities
+    reload(cpblUtilities)
+    from cpblUtilities import unique, doSystem,tsvToDict
+    from cpblUtilitiesMathGraph import  tonumeric, overplotLinFit,xTicksLogIncome
+    from copy import deepcopy
+    import cpblDefaults
+    reload(cpblDefaults)
+    defaults=cpblDefaults.defaults()
+    import cpblStata
+    reload(cpblStata)
+    #from cpblStata import *
+    #from pylab import *
+    import pylab
+
+
+
+
+
+    from matplotlib.mlab import prctile_rank
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.basemap import Basemap as Basemap
+
+    # cities colored by population rank.
+
+    m = Basemap()
+
+    #following fails: no epxlanation. grrrrrrrrrrr!
+    shp_info = m.readshapefile(defaults['inputPath']+'healthRegions/shp/test','HRuid')
+    #woeiur Following fails: needs conversion by mapproj??
+    shp_info = m.readshapefile(defaults['inputPath']+'healthRegions/shp/HR000b07_PZ','HRuid')
+    woeiur
+    shp_info = m.readshapefile('/home/cpbl/tmp/cities','cities')
+    x, y = zip(*m.cities)
+    pop = []
+    for item in m.cities_info:
+        population = item['POPULATION']
+        if population < 0: continue # population missing
+        pop.append(population)
+    popranks = prctile_rank(pop,100)
+    colors = []
+    for rank in popranks:
+        colors.append(plt.cm.jet(float(rank)/100.))
+    m.drawcoastlines()
+    m.fillcontinents()
+    m.scatter(x,y,25,colors,marker='o',edgecolors='none',zorder=10)
+    plt.title('City Locations colored by Population Rank')
+    plt.show()
 
 
 
