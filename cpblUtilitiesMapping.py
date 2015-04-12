@@ -46,52 +46,6 @@ what about mpl.colors.rgb2hex? (okay, but it doesn't deal with nan's. maybe that
     return '#%02x%02x%02x' %tuple(np.array(rgb)*255.0)
 
 
-def colorize_country_svg(twolettercodes_to_data=None, outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
-                         demo=False,customfeatures=None,colorbarlimits=None,testingRaiseSVGs=False, hideElementsWithoutData=False, blankworldfile=None, scratchpath=None):
-    """cpbl:2015
- This idea is being revived as a separate function in 2015, with better method.
-Returns the actual svg text (but also saves it if outfilename is provided).
-
-blankworldfile: Supplying this speeds things up a lot; otherwise we will download the file from the web. See below for which file to use/save/provide.
-"""
-    from cpblUtilitiesMapping import colors_for_filling_svg, addColorbar_to_svg
-    hexlookup,d2c_cb=colors_for_filling_svg(geo2data_or_color=twolettercodes_to_data, data2color=data2color,
-                 demo=demo,colorbarlimits=colorbarlimits)
-    if scratchpath is None:
-        try:
-            from cpblDefaults import paths
-            scratchpath=paths['scratch']
-        except(ValueError) as e:
-            scratchpath = '/tmp/'#'./____tmp_'# if scratchpath is None else os.path.split(outfilename)[0]+'/____tmp_'
-    import codecs
-    if blankworldfile is None:
-        import urllib2
-        response = urllib2.urlopen('http://upload.wikimedia.org/wikipedia/commons/1/1f/BlankMap-World6%2C_compact.svg')
-        svgraw = response.read()
-    else:        
-        #blankworldfile=IP+'svgmaps/BlankMap-World6-noAntarctica.svg'
-        svgraw=codecs.open(blankworldfile,'r','utf8').read()
-    colortables=''.join(["""
- .%s   {  fill:       %s;   }
-    """%(cc,hh) for cc,hh in hexlookup.to_dict().items() if len(cc)==2])
-    if '/*COLOURINGCOUNTRIES*/' in svgraw:
-        outsvg=svgraw.replace('/*COLOURINGCOUNTRIES*/',colortables)
-    else:
-        substring="""/*\n * Additional style rules"""
-        assert substring in svgraw
-        outsvg=svgraw.replace(substring,colortables+'\n'+substring)
-    if 0 and outfilename is not None: # This is only for debugging; turn it off later.
-        with open(outfilename.replace('.svg','-withoutCB.svg'),'w') as fout:
-            fout.write(outsvg)
-            print('Wrote '+outfilename+' No colorbar yet')
-    finalsvg=addColorbar_to_svg(outsvg,data2color=d2c_cb, scratchpath=scratchpath, colorbarlimits=colorbarlimits, colorbar_ylabel=cbylabel,
-                       colorbar_location= dict(expandx=4,  movebartox=100,movebartoy=600,scalebar=2),) # This is complete black magic. I cannot get this svg mixing to do what I want.
-    if outfilename is not None:
-        with open(outfilename,'w') as fout:
-            fout.write(finalsvg)
-            print('     Wrote '+outfilename)
-    return(finalsvg)
-
 
 
 def demoBetterDirectLoadSHAPE():
@@ -136,16 +90,18 @@ def _demo_colorize_svg():
     #  END OF DEMO MODE
     return
 
-#See  colorize_country_svg(twolettercodes_to_data=None, outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
-# in bin/osm/analysis.py for an implementation which makes use of the tools below and can be generalized to recreate the colorize_svg() below.
-    
-def colorize_svg(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
+#colorize_svg=colorize_svg_by_class
+def colorize_svg_by_class(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
                  demo=False,scratchpath=None,customfeatures=None,colorbarlimits=None,testingRaiseSVGs=False, hideElementsWithoutData=False):
-    """
-See the example colorize_country_svg to rebuild this (2015 April)
+###def colorize_country_svg(twolettercodes_to_data=None, outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,  demo=False,customfeatures=None,colorbarlimits=None,testingRaiseSVGs=False, hideElementsWithoutData=False, blankworldfile=None, scratchpath=None):
+    """cpbl:2015: better method: If it's possible to have the regions defined as classes in CSS, then use this. It simply inserts a section of CSS color styles by region (class)
+    Returns the actual svg text (but also saves it if outfilename is provided).
+
+For this to work, the SVG must already contain the string "/*COLOURINGREGIONS*/".  A good place for this might be right after the svg tag or style tag at the beginning.
+This is replaced with CSS code to define fill colours for regions.  Those regions (paths) must have region-identifying tags in their class definitions (e.g. class="ky") to be used by the CSS code. So if the identifying tag is called something else, you should change it to "class". This is a problem if there are other classes also applying to them, because such classes should be defined all at once in CSS: class="class1 class2 class3".
+The other/older approoach is to substitute a style inside each path or path group to specify the fill colour there. That is the colorize_svg_by_id approach.
+
 """
-    outs=colors_for_filling_svg(geo2data_or_color=geo2data_or_color, data2color=data2color,
-                 demo=demo,colorbarlimits=colorbarlimits)
     if scratchpath is None:
         try:
             from cpblDefaults import paths
@@ -153,14 +109,40 @@ See the example colorize_country_svg to rebuild this (2015 April)
         except(ValueError) as e:
             scratchpath = './____tmp_'# if scratchpath is None else os.path.split(outfilename)[0]+'/____tmp_'
 
-    # Add a javascript tool for web zooming:
-    import re
-    if 0: #Whoops!! This failed in 15.04.  I think you also need a xmlns:xlink="http://www.w3.org/1999/xlink" inside the svg tag.
-        svgfilled=re.sub('(<svg.*?>)',r'\1'+"""\n   <script xlink:href="/js/SVGPan.js"/> \n  """,svgfilled)
-        assert 'SVGPan.js' in svgfilled
+    from cpblUtilitiesMapping import colors_for_filling_svg, addColorbar_to_svg
+    hexlookup,d2c_cb=colors_for_filling_svg(geo2data_or_color=geo2data_or_color, data2color=data2color, demo=demo,colorbarlimits=colorbarlimits)
 
-            
-    foo
+    import codecs
+    if '\n' in blanksvgfile:
+        svgraw=blanksvgfile
+    else:
+        svgraw=codecs.open(blanksvgfile,'r','utf8').read()
+
+    colortables="""
+/* Define colours by region (cpblUtilitiesMapping.py)
+ */
+"""+'\n'.join([' .%s   {  fill:       %s;   }'%(cc,hh) for cc,hh in hexlookup.to_dict().items()])+'\n'  # How to avoid bad/nan regions here? Seems fine, but may not be robust.
+
+    assert '/*COLOURINGREGIONS*/' in svgraw
+    outsvg=svgraw.replace('/*COLOURINGREGIONS*/',colortables)
+    if 0 and outfilename is not None: # This is only for debugging; turn it off later.
+        with open(outfilename.replace('.svg','-withoutCB.svg'),'w') as fout:
+            fout.write(outsvg)
+            print('Wrote '+outfilename+' No colorbar yet')
+    if addcolorbar:
+        finalsvg=addColorbar_to_svg(outsvg,data2color=d2c_cb, scratchpath=scratchpath, colorbarlimits=colorbarlimits, colorbar_ylabel=cbylabel,
+                       colorbar_location= dict(expandx=4,  movebartox=100,movebartoy=600,scalebar=1),)  # This is not refined
+    else:
+        finalsvg=outsvg
+    if outfilename is not None:
+        with open(outfilename,'w') as fout:
+            fout.write(finalsvg)
+            print('     Wrote '+outfilename)
+    return(finalsvg)
+colorize_svg=colorize_svg_by_class
+
+#See  colorize_country_svg(twolettercodes_to_data=None, outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
+# in bin/osm/analysis.py for an implementation which makes use of the tools below and can be generalized to recreate the colorize_svg() below.
 
 def addColorbar_to_svg(svgtext_or_filename,data2color=None, scratchpath=None, colorbarlimits=None, colorbar_ylabel=None, colorbar_aspectratio=6, colorbar_filename=None,
                        # Following set of parameters describes location of colorbar. These used to be
@@ -381,10 +363,10 @@ def colors_for_filling_svg(geo2data_or_color=None, data2color=None,
 
     
 
-def colorize_svg2014(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
+def colorize_svg_by_id(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
                  demo=False,scratchpath=None,customfeatures=None,colorbarlimits=None,testingRaiseSVGs=False, hideElementsWithoutData=False):
     """
-2015April: Renamed colorize_svg2014 from colorize_svg.
+2015April: Renamed colorize_svg_by_id from colorize_svg.  This is the 2014 (and earlier) approach, of replacing style tags in every single region's path, as opposed to specifying them all in once place by CSS class.
 
     hideElementsWithoutData uses visible:none to get rid (with least computation in rendering) all elements that do not have a data value.
 
