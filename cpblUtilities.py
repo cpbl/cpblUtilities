@@ -1963,6 +1963,35 @@ def pandasReadTSV(tsvF,dtypeoverrides=None):
         dataDF=pd.read_table(fn,dtype=dt)
     return(dataDF)
 
+def ods2pandas(infile,sheetname=None,tmpfile=None,skiprows=None):
+    """
+    Pandas still cannot read ODF (grr)
+
+# Or, the version I had already written here:
+# http://stackoverflow.com/questions/17834995/read-opendocument-spreadsheets-to-pandas-dataframe
+import pandas as pd
+import os
+if fileOlderThan('tmp.xlsx','myODSfile.ods'):
+    os.system('unoconv -f xlsx -o tmp.xlsx myODSfile.ods ')
+xl_file = pd.ExcelFile('tmp.xlsx')
+dfs = {sheet_name: xl_file.parse(sheet_name) 
+          for sheet_name in xl_file.sheet_names}
+df=dfs['Sheet1']
+
+    """
+    import os
+    if tmpfile is None:
+        import tempfile
+        outfile=  tempfile.NamedTemporaryFile().name+'.xlsx'
+    else:
+        outfile=tmpfile
+    assert outfile.endswith('.xls') or outfile.endswith('.xlsx')
+    if fileOlderThan(outfile,infile):
+        os.system('ssconvert '+infile+' '+outfile)
+    df=pd.read_excel(outfile,sheetname=sheetname,skiprows=skiprows)
+    return(df)
+
+
 try: # Where is this needed? Should import it only where needed.        
     from cpblUtilitiesUnicode import *
 except ImportError:

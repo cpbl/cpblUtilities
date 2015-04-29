@@ -1,4 +1,12 @@
 #!/usr/bin/python
+"""
+Some wisdom on graphics:
+ - 2015: How to produce PDFs of a given width, with chosen font size, etc:
+   (1) Fix width to journal specifications from the beginning / early. Adjust height as you go, according to preferences for aspect ratio:
+    figure(figsize=(11.4/2.54, chosen height))
+   (2) Do not use 'bbox_inches="tight"' in savefig('fn.pdf').  Instead, use the subplot_adjust options to manually adjust edges to get the figure content to fit in the PDF output
+   (3) Be satisfied with that. If you must get something exactly tight and exactly the right size, you do this in Inkscape. But you cannot scale the content and bbox in the same step. Load PDF, select all, choose the units in the box at the top of the main menu bar, click on the lock htere, set the width.  Then, in File Properties dialog, resize file to content. Save.
+"""
 from __future__ import division # Python3-style integer division 5/2=2.5, not 3
 if 0 and 'not while trying epd': # This was in place 'til May 2012: upgrade to Ubuntu 12.04
     from IPython.Debugger import Tracer; debug_here = Tracer()
@@ -519,9 +527,19 @@ def figureToGrayscaleOld(): # This is a disaster for envelopes, no!? it sets all
 
     return()
 
+
+def resizeSVG_or_PDF_with_inkscape(infile,outfile=None,use_xvfb=False):
+    """
+ - How to rescale a vector PDF or SVG to have specific dimensions in spatial units?   Key: you cannot resize both content and file at the same time. So in inkscape, it's two steps. Select all content, change its size (rescale it), and then rescale the docuemtn to its content in  document proporties.
+
+And it seems you can't automate this from the command line in inkscape. See: https://answers.launchpad.net/inkscape/+question/143221
+
+ """
+
 def tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=False):
     """Makes POSIX-specific OS calls. Need xvfb installed. If it fails anyway, could always resort to use_xvfb=False
 
+Also, see https://github.com/skagedal/svgclip/blob/master/svgclip.py but I find rsvg buggy: it ignored the clipping boxes in my svg.
  """
     # Why is xvfb failing 2015 still?
 
@@ -833,6 +851,7 @@ def yTicksIncome(nticks=7,natlog=False,tenlog=False,kticks=None,dollarsign=True,
 def xticksExponentiate(base10=False):
     """
     The x-values are log or log10, but I want the labels to show the unlogged values
+    N.B. Only shows integer values.
     """
     def pow2base10(vv,pos): #'The two args are the value and tick position'
         if int(vv)==vv:
@@ -840,7 +859,6 @@ def xticksExponentiate(base10=False):
                 return(str(int(pow(10,vv))))
             return(r'10$^{%s}$'%int(vv)  )
         return('') # Hide all non-integer values!?
-
 
     if base10:
         gca().xaxis.set_major_formatter( mpl.ticker.FuncFormatter(pow2base10))
@@ -1936,12 +1954,13 @@ def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels
         labels=df[labels].values
     #plot(df[x].values,df[y].values,'.')
     #return()
+    import scipy
     if z is None:
         z='b'
+    elif isinstance(z,str) and z in df       and hasattr(df[z].values[0],'ndim'):
+        z=np.matrix(df[z].map(list).values)  # This FAILS!!! it gives ndim=1 ndarray for some reason.
     elif isinstance(z,str) and z in df:
-            z=df[z].values
-    elif isinstance(z,str):
-        pass
+        z=df[z].values
     elif isinstance(z,int):
         pass
     #z=np.ones(len(df))*z
@@ -1979,7 +1998,7 @@ def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels
     
 
     # #################################### SCATTER PLOT: FILLED CIRCLES WITH SIZE AND COLOUR
-    sc=ax.scatter(xx,yy, s=markersize, c=z, marker=marker, cmap=cmap, norm=None,   vmin=vmin, vmax=vmax, alpha=None, linewidths=None,      verts=None)#, **kwargs)
+    sc=ax.scatter(xx,yy, s=markersize, facecolor=z, marker=marker, cmap=cmap, norm=None,   vmin=vmin, vmax=vmax, alpha=None, linewidths=None,      verts=None)#, **kwargs)
 
 
     if isinstance(x,str):  xlabel(x)

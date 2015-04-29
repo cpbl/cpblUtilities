@@ -68,7 +68,7 @@ def _demo_colorize_svg():
     import re
     import random
     blanksvgfile='/home/cpbl/bin/GIS/AlexSchultz/countriesCPBL.svg'
-    ff=codecs.open(blanksvgfile,'r','utf8').read()
+    ff=open(blanksvgfile,'r','utf8').read()
     cc=np.unique(re.findall('id="(..)"',ff,re.DOTALL))
     regions2datavalues=pd.Series(dict([[ac,random.random()] for ac in cc]))
     colorize_svg(regions2datavalues,blanksvgfile,outfilename='__tmp_svgcol_tmp.svg',cmap=None,addcolorbar=True,ylabel=None,colorbarlimits=None)
@@ -90,11 +90,19 @@ def _demo_colorize_svg():
     #  END OF DEMO MODE
     return
 
-#colorize_svg=colorize_svg_by_class
-def colorize_svg_by_class(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
-                 demo=False,scratchpath=None,customfeatures=None,colorbarlimits=None,testingRaiseSVGs=False, hideElementsWithoutData=False):
-###def colorize_country_svg(twolettercodes_to_data=None, outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,  demo=False,customfeatures=None,colorbarlimits=None,testingRaiseSVGs=False, hideElementsWithoutData=False, blankworldfile=None, scratchpath=None):
-    """cpbl:2015: better method: If it's possible to have the regions defined as classes in CSS, then use this. It simply inserts a section of CSS color styles by region (class)
+def try_to_choose_color_style_location(svgt):
+    if  '/*COLOURINGREGIONS*/' not in svgt:
+        import re
+        assert len(re.findall('</style>',svgt))==1
+        svgt=svgt.replace('</style>',"""
+/*COLOURINGREGIONS*/
+</style>""")
+        return(svgt)
+
+# Following function is also called colorize_svg
+def colorize_svg_by_class_or_id(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
+                                demo=False,scratchpath=None,customfeatures=None,colorbarlimits=None,testingRaiseSVGs=False, hideElementsWithoutData=False,CSSselector=None, colorbar_filename=None):
+    """cpbl:2015: better method: It simply inserts a section of CSS color styles by region (class or id)
     Returns the actual svg text (but also saves it if outfilename is provided).
 
 For this to work, the SVG must already contain the string "/*COLOURINGREGIONS*/".  A good place for this might be right after the svg tag or style tag at the beginning.
@@ -102,6 +110,9 @@ This is replaced with CSS code to define fill colours for regions.  Those region
 The other/older approoach is to substitute a style inside each path or path group to specify the fill colour there. That is the colorize_svg_by_id approach.
 
 """
+    if CSSselector is None:
+        CSSselector='id'
+    assert CSSselector in ['class','id']
     if scratchpath is None:
         try:
             from cpblDefaults import paths
@@ -116,22 +127,24 @@ The other/older approoach is to substitute a style inside each path or path grou
     if '\n' in blanksvgfile:
         svgraw=blanksvgfile
     else:
-        svgraw=codecs.open(blanksvgfile,'r','utf8').read()
+        svgraw=open(blanksvgfile,'r','utf8').read()
 
+    # In CSS, id=myid is controlled by #myid {fill..}., while class="land country CA" is controlled by, e.g. .CA {fill: ...}.  So the following line either selects a class, with a period, or an id, with a #.
+    stopppppppp
     colortables="""
 /* Define colours by region (cpblUtilitiesMapping.py)
  */
-"""+'\n'.join([' .%s   {  fill:       %s;   }'%(cc,hh) for cc,hh in hexlookup.to_dict().items()])+'\n'  # How to avoid bad/nan regions here? Seems fine, but may not be robust.
+"""+'\n'.join([' %s%s   {  fill:       %s;   }'%('.' if CSSselector in ['class'] else '#', cc,hh) for cc,hh in hexlookup.to_dict().items()])+'\n'  # How to avoid bad/nan regions here? Seems fine, but may not be robust.
 
     assert '/*COLOURINGREGIONS*/' in svgraw
     outsvg=svgraw.replace('/*COLOURINGREGIONS*/',colortables)
     if 0 and outfilename is not None: # This is only for debugging; turn it off later.
         with open(outfilename.replace('.svg','-withoutCB.svg'),'w') as fout:
             fout.write(outsvg)
-            print('Wrote '+outfilename+' No colorbar yet')
+            print('               Wrote '+outfilename+' No colorbar yet')
     if addcolorbar:
         finalsvg=addColorbar_to_svg(outsvg,data2color=d2c_cb, scratchpath=scratchpath, colorbarlimits=colorbarlimits, colorbar_ylabel=cbylabel,
-                       colorbar_location= dict(expandx=4,  movebartox=100,movebartoy=600,scalebar=1),)  # This is not refined
+                                    colorbar_location= dict(expandx=4,  movebartox=100,movebartoy=600,scalebar=1),colorbar_filename=colorbar_filename)  # This is not refined
     else:
         finalsvg=outsvg
     if outfilename is not None:
@@ -139,7 +152,7 @@ The other/older approoach is to substitute a style inside each path or path grou
             fout.write(finalsvg)
             print('     Wrote '+outfilename)
     return(finalsvg)
-colorize_svg=colorize_svg_by_class
+colorize_svg=colorize_svg_by_class_or_id
 
 #See  colorize_country_svg(twolettercodes_to_data=None, outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
 # in bin/osm/analysis.py for an implementation which makes use of the tools below and can be generalized to recreate the colorize_svg() below.
@@ -148,7 +161,9 @@ def addColorbar_to_svg(svgtext_or_filename,data2color=None, scratchpath=None, co
                        # Following set of parameters describes location of colorbar. These used to be
                        colorbar_location=None,):
     """
-colorbar_filename: not used. If you want to get access to the colorbar by itself, set this (and implement it). Right now a tempfile is used.
+colorbar_filename: If you want to get access to the colorbar by itself, set this. Otherwise, a tempfile is used.
+
+The return value is the full svg text with colorbar added.
     """
     if colorbar_location is None:
         colorbar_location={}
@@ -175,18 +190,26 @@ colorbar_filename: not used. If you want to get access to the colorbar by itself
                 tmpfh,insvgfn=tempfile.mkstemp()
                 with open(insvgfn,'w') as fout:
                     fout.write(svgtext_or_filename)
-            tmpcbfh,CBfilename=tempfile.mkstemp() #scratchpath+os.path.split(outfilename)[1]+'-tmpCB.svg'
+            if colorbar_filename is None:
+                tmpcbfh,CBfilename=tempfile.mkstemp() #scratchpath+os.path.split(outfilename)[1]+'-tmpCB.svg'
+            else:
+                CBfilename=colorbar_filename
             tmpfinalfh,outfilename=tempfile.mkstemp()
 
             # Load svg into svgutils; determine units of the layout
             base_svg=sg.fromfile(insvgfn)
-            ww,hh=base_svg.get_size() # This is sometimes just numbers, but sometimes there are units too (px).
-            unitsSuffix=''
-            if 1:#any(not isdec(cc) for cc in ww): # What to do when there are units? .. .isdigit()
+            def _getSizeWithUnits(svgbase):
                 # Assume measure is digits then units:
+                ww,hh=svgbase.get_size()
                 ww,unitsSuffix=''.join([cc  for cc in ww if isdec(cc)]),''.join([cc  for cc in ww if not isdec(cc)])  
                 hh,unitsSuffix2=''.join([cc  for cc in hh if isdec(cc)]),''.join([cc  for cc in hh if not isdec(cc)])
-                assert unitsSuffix==unitsSuffix2
+                return(int(ww),int(hh),unitsSuffix,unitsSuffix2)
+            ww,hh,u1,u2=_getSizeWithUnits(base_svg) #   ww,hh=base_svg.get_size() # This is sometimes just numbers, but sometimes there are units too (px).
+            unitsSuffix=''
+            #if 1:#any(not isdec(cc) for cc in ww): # What to do when there are units? .. .isdigit()
+            #    ww,unitsSuffix=''.join([cc  for cc in ww if isdec(cc)]),''.join([cc  for cc in ww if not isdec(cc)])  
+            #    hh,unitsSuffix2=''.join([cc  for cc in hh if isdec(cc)]),''.join([cc  for cc in hh if not isdec(cc)])
+            #    assert unitsSuffix==unitsSuffix2
 
             # Create a dummy axis to hang the colorbar on:
             plt.figure(6354)
@@ -199,83 +222,105 @@ colorbar_filename: not used. If you want to get access to the colorbar by itself
             hbax.ax.set_aspect(colorbar_aspectratio)
             plt.savefig(CBfilename+'.svg', bbox_inches='tight', pad_inches=0.1) # What is this for?2015April
             plt.savefig(CBfilename+'.png', bbox_inches='tight', pad_inches=0.1) # for testing
+            # Or, I can just grab it directly!  So above saving is no longer needed, except that I want one colorbar created at some point for each standard variable...
+            from svgutils.transform import from_mpl
+            cbsvg=sg.from_mpl(plt.gcf()) 
 
             if cblocation['movebartox']=='auto':
                 assert cblocation['movebartoy']=='auto'
-
-                # Try new method with svg_stack rather than svgutils:
-                import svg_stack as ss
-
-                doc = ss.Document()
-
-                A='____tmp_tmppart1.svg'
-                B='../okai/scratch/analysisTIGERcountiesMap_delta12_fourway.svg-tmpCB.svg'
-                C='trash/red_ball.svg'
-                layout1 = ss.HBoxLayout()
-                layout1.addSVG(insvgfn,alignment=ss.AlignTop|ss.AlignHCenter)
-                layout1.addSVG(CBfilename+'.svg',alignment=ss.AlignCenter)#,stretch=0.5)
-                noThisIsDrafty
-    #layout2 = ss.VBoxLayout()
-
-    #layout2.addSVG(C,alignment=ss.AlignCenter)
-    #layout2.addSVG(C,alignment=ss.AlignCenter)
-    #layout2.addSVG(C,alignment=ss.AlignCenter)
-    #layout1.addLayout(layout2)
-
-                doc.setLayout(layout1)
-                print(' Saving (auto mode in cblocation) '+outfilename)
-                doc.save(outfilename)
-
-
-            else: # Use cblocation values
-                # get the plot objects from constituent figures.
-                cbsvg=sg.fromfile(CBfilename+'.svg')
+                # Try to put it in the bottom right??
+                cbww,cbhh,u1,u2=_getSizeWithUnits(base_svg) #   ww,hh=base_svg.get_size() # This is sometimes just numbers, but sometimes there are units too (px)self.                
+                ###cbsvg=sg.fromfile(CBfilename+'.svg')
                 svg1,svg2 = base_svg.getroot(),cbsvg.getroot()
-                """
-                if cblocation['movebartox']=='auto':
-                    assert cblocation['movebartoy']=='auto'
-                    # Below is old debug code working on using more automated fatures of svgutils. I switched to svg_stack, above, instead.
-                    impoosible_to_get_here
-                    cbw,cbh=cbsvg.get_size()
+                #cbsize=[int(''.join([cc for cc in ss  if cc.isdigit()])) for ss in cbsvg.get_size()] # Strip off the "pt" units that I have from this MPL colorbar at the moment :(
+                #cbw,cbh= int(ww)/10, int(ww)/10 * cbsize[1]/cbsize[0]
+                if 0: # should I fix the colorbar to be a certain fraction of the map size? Or keep it fixed the same for all maps?
+                    cbsvg.set_size(cbw,cbh)
+                cblocation['movebartox']=ww-cbww
+                cblocation['movebartoy']=hh-cbhh
+#            if 0: # This was old "auto" code. All junk now?
+#                # Try new method with svg_stack rather than svgutils:
+#                import svg_stack as ss
+#
+#                doc = ss.Document()
+#
+#                A='____tmp_tmppart1.svg'
+#                B='../okai/scratch/analysisTIGERcountiesMap_delta12_fourway.svg-tmpCB.svg'
+#                C='trash/red_ball.svg'
+#                layout1 = ss.HBoxLayout()
+#                layout1.addSVG(insvgfn,alignment=ss.AlignTop|ss.AlignHCenter)
+#                layout1.addSVG(CBfilename+'.svg',alignment=ss.AlignCenter)#,stretch=0.5)
+#                noThisIsDrafty
+#    #layout2 = ss.VBoxLayout()
+#
+#    #layout2.addSVG(C,alignment=ss.AlignCenter)
+#    #layout2.addSVG(C,alignment=ss.AlignCenter)
+#    #layout2.addSVG(C,alignment=ss.AlignCenter)
+#    #layout1.addLayout(layout2)
+#
+#                doc.setLayout(layout1)
+#                print(' Saving (auto mode in cblocation) '+outfilename)
+#                doc.save(outfilename)
+#
+
+            # else: # Use cblocation values
+            # get the plot objects from constituent figures.
+            cbsvg=sg.fromfile(CBfilename+'.svg')
+            svg1,svg2 = base_svg.getroot(),cbsvg.getroot()
+            """
+            if cblocation['movebartox']=='auto':
+                assert cblocation['movebartoy']=='auto'
+                # Below is old debug code working on using more automated fatures of svgutils. I switched to svg_stack, above, instead.
+                impoosible_to_get_here
+                cbw,cbh=cbsvg.get_size()
 
 
-                    from svgutils.transform import from_mpl
-                    from svgutils.templates import VerticalLayout,ColumnLayout
+                from svgutils.transform import from_mpl
+                from svgutils.templates import VerticalLayout,ColumnLayout
 
-                    ###svg = fromfile('../tests/circle.svg')
-                    layout = VerticalLayout#ColumnLayout(2)
-                    layout.add_figure(base_svg)
-                    layout.add_figure(cbsvg)
+                ###svg = fromfile('../tests/circle.svg')
+                layout = VerticalLayout#ColumnLayout(2)
+                layout.add_figure(base_svg)
+                layout.add_figure(cbsvg)
 
-                    layout.save('stack_svg.svg')
-                    oiuoiu
-                    layout = VerticalLayout()
+                layout.save('stack_svg.svg')
+                oiuoiu
+                layout = VerticalLayout()
 
-                    fig1 = plt.figure()
-                    plt.plot([1,2])
-                    fig2 = plt.figure()
-                    plt.plot([2,1])
+                fig1 = plt.figure()
+                plt.plot([1,2])
+                fig2 = plt.figure()
+                plt.plot([2,1])
 
-                    layout.add_figure(from_mpl(fig1))
-                    layout.add_figure(from_mpl(fig2))
+                layout.add_figure(from_mpl(fig1))
+                layout.add_figure(from_mpl(fig2))
 
-                    print from_mpl(fig1).get_size()
-                    layout.save('stack_plots.svg')
+                print from_mpl(fig1).get_size()
+                layout.save('stack_plots.svg')
 
-                    fofoiu
-                """
-                svg2.moveto(cblocation['movebartox'],cblocation['movebartoy'], scale=cblocation['scalebar'])
+                fofoiu
+            """
+            svg2.moveto(cblocation['movebartox'],cblocation['movebartoy'], scale=cblocation['scalebar'])
 
-                #create new SVG figure
-                fsvg = sg.SVGFigure(str(float(ww)*cblocation['expandx'])+unitsSuffix,str(float(hh)*cblocation['expandx'])+unitsSuffix)
-                #fsvg = sg.SVGFigure(ww,hh)
+            #create new SVG figure
+            fsvg = sg.SVGFigure(str(float(ww)*cblocation['expandx'])+unitsSuffix,str(float(hh)*cblocation['expandx'])+unitsSuffix)
+            #fsvg = sg.SVGFigure(ww,hh)
 
-                # append plots and labels to figure
-                fsvg.append([svg1, svg2])
-                # save generated SVG files
-                fsvg.save(outfilename)
+            # append plots and labels to figure
+            fsvg.append([svg1, svg2])
+            # save generated SVG files
+            fsvg.save(outfilename) # This is a temporary file! It's supposed to include the whole fig, but bug: 2015May: only includes colorbar!!
+            # Something is broken, May 2015.
+            #Does this work:
+            # N.B.!!! This is a kludge. Not sure why the above broke.
+            base_svg=sg.fromfile(insvgfn)
+            base_svg.append(svg2)
+            base_svg.save(outfilename)
+            
+
             plt.close(6354)
-            return(open(outfilename,'r').read())
+            return(base_svg.to_str())
+            if 0:            return(open(outfilename,'r').read())
 
     
 def colors_for_filling_svg(geo2data_or_color=None, data2color=None,
@@ -361,9 +406,134 @@ def colors_for_filling_svg(geo2data_or_color=None, data2color=None,
 
 
 
-    
+def _defaultCustomFeatures_colorize_svg(ablanksvgfile):
+    # Hard code some parameters here for the format of the map
+    # (and, if relevant, the placement of the colorbar) These
+    # serve as examples for how to construct the customfeatures
+    # dict.
+    if os.path.split(ablanksvgfile)[1] in ['USA_Counties_with_FIPS_and_names.svg',]:
+        CF=dict(cbarpar=dict(expandx=1.2, movebartox=540,movebartoy=80,scalebar=0.75),
+        groupsare='path',
+        path_style = """font-size:12px;fill-rule:nonzero;stroke:#FFFFFF;stroke-opacity:1;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:butt;marker-start:none;stroke-linejoin:bevel;fill:""",
+        )
 
+    elif os.path.split(ablanksvgfile)[1] in ['countriesCPBL.svg']:
+        print('   I recognized countriesCPBL.svg ...')
+        CF=dict(cbarpar=dict(expandx=1, movebartox=540,movebartoy=80,scalebar=0.75),
+        path_style="""1;stroke:#ffffff;stroke-width:0.99986994;stroke-miterlimit:3.97446823;stroke-dasharray:none;stroke-opacity:1;fill:""",
+        groupsare='g',
+        )
+    else:
+        raise("do_not_know_that_map")
+    return(CF)
+
+    
 def colorize_svg_by_id(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
+                       demo=False,scratchpath=None,customfeatures=None,colorbarlimits=None,testingRaiseSVGs=False, hideElementsWithoutData=False,colorbar_filename=None):
+
+    if demo:
+        _demo_colorize_svg()
+        return
+    if scratchpath is None:
+        try:
+            from cpblDefaults import paths
+            scratchpath=paths['scratch']
+        except(ValueError) as e:
+            scratchpath = './____tmp_'# if scratchpath is None else os.path.split(outfilename)[0]+'/____tmp_'
+
+    from cpblUtilitiesMapping import colors_for_filling_svg, addColorbar_to_svg
+    hexlookup,d2c_cb=colors_for_filling_svg(geo2data_or_color=geo2data_or_color, data2color=data2color, demo=demo,colorbarlimits=colorbarlimits)
+
+    def _hexcolors_into_svg(_geo2hex,svgtext,customfeatures,   hideElementsWithoutData= None ):
+        """
+        This is the core piece of the whole function; it inserts colours into an SVG. This method, using beautiful soup, worked very nicely in 2009-2014, but in 2015 beautiful soup is completely corrupting the SVG by excluding the actual borders from their corresponding groups <g /g> 
+        """
+        #assert egvalue.__class__ in [str] # Check that we have a hex-color lookup table!
+        #assert cmap is None # It doesn't make sense to pass a cmap if we've given an explicit colour lookup
+        ####import csv
+
+        assert len(_geo2hex) == len(_geo2hex.index.unique()) # No duplicate data to colour entries
+
+        from BeautifulSoup import BeautifulSoup
+        # Load into Beautiful Soup
+        soup = BeautifulSoup(svgtext, selfClosingTags=['defs','sodipodi:namedview'])
+        # Find geographic groups
+        paths = soup.findAll(CF['groupsare'])
+
+        # Color the counties based on the index and value of _geo2hex (pandas series)
+        for p in paths:
+            if p['id'] not in ["State_Lines", "separator"]:
+                try:
+                    dval=_geo2hex[p['id']]  
+                    assert isinstance(dval,str)
+                    p['style'] = CF['path_style'] +dval
+                except KeyError:
+                    if  hideElementsWithoutData:         #What if I want to hide those without 
+                        p['style'] = 'display: none'
+                    continue
+
+        return( soup.prettify())
+
+    
+    assert blanksvgfile is not None
+    SVGcodeWasPassed='\n' in blanksvgfile or len(blanksvgfile)>1000
+    if SVGcodeWasPassed:
+        svgraw=blanksvgfile
+    else:
+        svgraw = open(blanksvgfile, 'r','utf8').read()
+
+
+    if SVGcodeWasPassed:# is not None:
+        if customfeatures is None:
+            print(' You passed SVG code, rather than a filename, to colorize_svg. We will use our best guess for how to interpret it and where to place a colorbar. Use the customfeatures flag to specify more behaviour.')
+        CF=dict(cbarpar=  dict(expandx=1.2, movebartox=540,movebartoy=80,scalebar=0.75), 
+        groupsare='path',
+        path_style = """fill:""",
+        )
+    else:
+        CF=_defaultCustomFeatures(blanksvgfile)
+    if customfeatures is not None:
+        CF.update(customfeatures)
+    cbarpar=CF['cbarpar']
+    
+    # Fill the svg:
+    svgfilled=_hexcolors_into_svg(hexlookup,svgraw,CF  ,hideElementsWithoutData= hideElementsWithoutData)
+    # We shouldn't need to save it, in general, until we've added the colorbar. But: [[ 2014Jan: Saving as file is only needed for TX and CA (!) state bg maps, at the moment, but do it anyway, for all. For some reason, sg.fromfile works but not sg.fromstring on those two maps.  (I reuse the temporary file below, anyway.)
+    # Until Dec 2013, I used svgutils, and could pass the map without colorbar as a text string. But does svg_stack allow that? For now, create a temporary file]]
+    #   filledMapfilename=
+
+
+    # ADD A COLORBAR, SAVE, AND RETURN SVG TEXT.
+    #if geo2dataWerePassed and addcolorbar is None:
+    #    print('     Turning on colorbar since geo2data were passed...')
+    #    addcolorbar is True
+
+    # Add a javascript tool for web zooming:
+    import re
+    if 1: #Whoops!! This failed in 15.04!
+        svgfilled=re.sub('(<svg.*?>)',r'\1'+"""\n   <script xlink:href="/js/SVGPan.js"/> \n  """,svgfilled)
+        assert 'SVGPan.js' in svgfilled
+
+    if addcolorbar is False:
+        if outfilename is not None:
+            with open(outfilename,'w','utf8') as f: 
+                f.write(svgfilled)
+            if testingRaiseSVGs:
+                os.system('google-chrome '+outfilename)
+        return(svgfilled)
+
+    finalsvg=addColorbar_to_svg(svgfilled,data2color=d2c_cb, scratchpath=scratchpath, colorbarlimits=colorbarlimits, colorbar_ylabel=cbylabel,
+                                colorbar_location=cbarpar,colorbar_filename=colorbar_filename)##### dict(expandx=4,  movebartox=100,movebartoy=600,scalebar=1),)  # This is not refined
+
+    if outfilename is not None:
+        with open(outfilename,'w','utf8') as f: 
+            f.write(finalsvg)
+        if testingRaiseSVGs:
+            os.system('google-chrome '+outfilename)
+    return(finalsvg)
+            
+    
+def colorize_svg_2014(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
                  demo=False,scratchpath=None,customfeatures=None,colorbarlimits=None,testingRaiseSVGs=False, hideElementsWithoutData=False):
     """
 2015April: Renamed colorize_svg_by_id from colorize_svg.  This is the 2014 (and earlier) approach, of replacing style tags in every single region's path, as opposed to specifying them all in once place by CSS class.
@@ -456,7 +626,7 @@ colorize_svg(demo=True)  is supposed to demonstrate them.
     def _hexcolors_into_svg2015(_geo2hex,svgtext,customfeatures,   hideElementsWithoutData= None ):
         """
 BeautifulSoup stopped working for me in 2015. :(  (3.2.1)
-I'm going to do it by hand. :( :(  Just for international map, a tthe moment.
+I'm going to do it by hand. :( :(  Just for international map, a tthe moment. (No, I used a different approach in the end; see bin/osm/analysis, and also the _by_class approach, above.
 
         """
         #assert egvalue.__class__ in [str] # Check that we have a hex-color lookup table!
@@ -484,7 +654,7 @@ I'm going to do it by hand. :( :(  Just for international map, a tthe moment.
     if SVGcodeWasPassed:
         svg=blanksvgfile
     else:
-        svg = codecs.open(blanksvgfile, 'r','utf8').read()
+        svg = open(blanksvgfile, 'r','utf8').read()
 
 
     if SVGcodeWasPassed:# is not None:
@@ -551,14 +721,14 @@ I'm going to do it by hand. :( :(  Just for international map, a tthe moment.
         assert 'SVGPan.js' in svgfilled
 
     if addcolorbar is False and outfilename is not None:
-        with codecs.open(outfilename,'w','utf8') as f: 
+        with open(outfilename,'w','utf8') as f: 
             f.write(svgfilled)
         if testingRaiseSVGs:
             os.system('google-chrome '+outfilename)
         return
     if outfilename is not None:
         filledMapfilename=scratchpath+os.path.split(outfilename)[1]+'-tmpFilled.svg'
-        with codecs.open(filledMapfilename,'w','utf8') as f: 
+        with open(filledMapfilename,'w','utf8') as f: 
             f.write(svgfilled)
 
     # Determine enough information to draw a colorbar:
