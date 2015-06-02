@@ -1957,8 +1957,9 @@ def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels
     import scipy
     if z is None:
         z='b'
-    elif isinstance(z,str) and z in df       and hasattr(df[z].values[0],'ndim'):
-        z=np.matrix(df[z].map(list).values)  # This FAILS!!! it gives ndim=1 ndarray for some reason.
+    elif isinstance(z,str) and z in df       and hasattr(df[z].values[0],'ndim'): # List of colormap index values, ie scalars in [0,1]
+        z=df[z].values
+        #z=np.matrix(df[z].map(list).values)  # This FAILS!!! it gives ndim=1 ndarray for some reason.
     elif isinstance(z,str) and z in df:
         z=df[z].values
     elif isinstance(z,int):
@@ -1998,7 +1999,16 @@ def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels
     
 
     # #################################### SCATTER PLOT: FILLED CIRCLES WITH SIZE AND COLOUR
-    sc=ax.scatter(xx,yy, s=markersize, facecolor=z, marker=marker, cmap=cmap, norm=None,   vmin=vmin, vmax=vmax, alpha=None, linewidths=None,      verts=None)#, **kwargs)
+    """
+According to http://matplotlib.sourceforge.net/api/ 
+pyplot_api.html#matplotlib.pyplot.scatter , the keyword argument that 
+takes an array to specify the colors of the individual markers is c. 
+color is interpreted as a color to give to all markers at once.
+
+Thus, use c=z rather than facecolor=z in below.
+"""
+    if 0: 
+    sc=ax.scatter(xx,yy, s=markersize, c=z, marker=marker, cmap=cmap, norm=None,   vmin=vmin, vmax=vmax, alpha=None, linewidths=None,      verts=None)#, **kwargs)
 
 
     if isinstance(x,str):  xlabel(x)
