@@ -2007,7 +2007,7 @@ color is interpreted as a color to give to all markers at once.
 
 Thus, use c=z rather than facecolor=z in below.
 """
-    if 0: 
+
     sc=ax.scatter(xx,yy, s=markersize, c=z, marker=marker, cmap=cmap, norm=None,   vmin=vmin, vmax=vmax, alpha=None, linewidths=None,      verts=None)#, **kwargs)
 
 
