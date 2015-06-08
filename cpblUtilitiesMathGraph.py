@@ -1473,7 +1473,52 @@ def labelLine(lines):
     text(aline._x[-1],aline._y[-1],alabel,color=aline.get_color())
     return(lines)
 
-def dfPlotWithEnvelope(df,xv,yv,ylow=None,yhigh=None,nse=1.96,linestyle='-',color=None,linecolor=None,facecolor=None,alpha=0.5,label=None,labelson='lines',laxSkipNaNsSE=False,laxSkipNaNsXY=False,skipZeroSE=False,ax=None,laxFail=True,demo=False, 
+def dfPlotWithEnvelope(df, xv, yv, ylow=None, yhigh=None, color=None, label=None, **kwargs):
+    #nse=1.96, linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  labelson='lines', NaNmode=None, ax=None, laxFail=True, demo=False)
+
+    # laxSkipNaNsSE=False, laxSkipNaNsXY=False, skipZeroSE=False,
+    from cpblUtilitiesColor import getIndexedColormap
+    def dodemo():
+        df=pd.DataFrame( {'x' : pd.Series([1., 2., 3., 5.]), #, index=['a', 'b', 'c']),
+             'y' : pd.Series([1., 2., 3., 4.])}) #, index=['a', 'b', 'c', 'd'])} )
+        df['se_y']=df.y*-.01 + .2
+        df['z']=-df.y
+        df['se_z']=df.se_y
+        subplot(3,2,1)
+        dfPlotWithEnvelope( df,'x',['y','z'])
+        transLegend(loc='center right')
+        subplot(3,2,2)
+        dfPlotWithEnvelope( df,'x',['y','z'],labelson='envelopes')
+        transLegend(loc='best')
+        subplot(3,2,3)
+        dfPlotWithEnvelope( df, 'x', ['y', 'z'], labelson='patch', label=['Upper', 'Downer'], color='r')
+        transLegend()
+        subplot(3,2,4)
+        dfPlotWithEnvelope( df,'x',['y','z'],label=['Upper','Downer'],color=['m','y'])
+        transLegend()
+        subplot(3,2,5)
+        dfPlotWithEnvelope( df,'x',['y','z'],label=['Upper','Downer'])
+        transLegend()
+        return()
+    if kwargs.get('demo',False):
+        dodemo()
+        return()
+    if yv.__class__ == list:
+        assert yhigh is None and ylow is None # Smply not supported yet.
+        assert kwargs.get('linecolor',None).__class__ not in [list] # Smply not supported yet.
+        assert kwargs.get('facecolor',None).__class__ not in [list] # Smply not supported yet.
+        if color is None:
+            color=getIndexedColormap('jet',len(yv)) # OR could use colorcycler
+        if not hasattr(color,'__iter__'):
+            color=[color]*len(yv)
+        if not hasattr(label,'__iter__'):
+            label=[label]*len(yv)
+        return( [dfPlotWithEnvelope_2015(df,xv,ayv,ylow=ylow,yhigh=yhigh,color=color[ii],label=label[ii],**kwargs) for ii,ayv in enumerate( yv) ] )
+
+
+
+
+def dfPlotWithEnvelope_2015(df,xv,yv,ylow=None,yhigh=None,nse=1.96,linestyle='-',color=None,linecolor=None,facecolor=None,alpha=0.5,label=None,labelson='lines',laxSkipNaNsSE=False,laxSkipNaNsXY=False,skipZeroSE=False,ax=None,laxFail=True,demo=False, 
                        # Deprecated:
                        lineLabel=None,patchLabel=None):
     """ interface to plotWithEnvelope for pandas DataFrames
@@ -1556,27 +1601,91 @@ def dfPlotWithEnvelope(df,xv,yv,ylow=None,yhigh=None,nse=1.96,linestyle='-',colo
     if yhigh is None:
         yHigh=df[yv].values + nse * df['se_'+yv].values
     else:
-        yHigh=df[yhigh].values
-    return( plotWithEnvelope( df[xv].values,df[yv].values,yLow=yLow,yHigh=yHigh,linestyle=linestyle,color=color,linecolor=linecolor,facecolor=facecolor,alpha=alpha,label=None,
+        yHigh=df[yhigh].valuesyhigh
+    return( plotWithEnvelope_2015( df[xv].values,df[yv].values,yLow=yLow,yHigh=yHigh,linestyle=linestyle,color=color,linecolor=linecolor,facecolor=facecolor,alpha=alpha,label=None,
                               lineLabel=None if labelson in ['patches','envelopes','envelope','patch'] else yv if label is None else label,
                               patchLabel=None if labelson in ['lines','line'] else yv if label is None else label,
-laxSkipNaNsSE=laxSkipNaNsSE,laxSkipNaNsXY=laxSkipNaNsXY,skipZeroSE=skipZeroSE,ax=ax,laxFail=laxFail))
+                              laxSkipNaNsSE=laxSkipNaNsSE,laxSkipNaNsXY=laxSkipNaNsXY,skipZeroSE=skipZeroSE,ax=ax,laxFail=laxFail))
 
-def plotWithEnvelope( x,y,yLow=None,yHigh=None,linestyle='-',color=None,linecolor=None,facecolor=None,alpha=0.5,label=None,lineLabel=None,patchLabel=None,laxSkipNaNsSE=False,laxSkipNaNsXY=False,skipZeroSE=False,ax=None,laxFail=True):
+def plotWithEnvelope( x,y, yLow=None, yHigh=None, color=None, alpha=0.5, label=None,
+                      **kwargs):
+    # linestyle='-'
+    # linecolor=None
+    # facecolor=None
+    # lineLabel=None
+    # patchLabel=None
+    # laxSkipNaNsSE=False
+    # laxSkipNaNsXY=False
+    # skipZeroSE=False
+    # ax=None
+    # laxFail=True
+    from pylab import isnan,isfinite,find,where,logical_and,logical_or,logical_not#,any,sqrt,array
+
+    import pandas as pd
+    if isinstance(x,pd.DataFrame): 
+        raise Exception('Use dfPlotWithEnvelope (not plotWithEnvelope) if you are passing a DataFrame.')
+    # We do accept Pandas Series, on the other hand:
+    if isinstance(x,pd.Series) and isinstance(y,pd.Series) and isinstance(yLow,pd.Series) and isinstance(yHigh,pd.Series):
+        x,y,yLow,yHigh=x.values,y.values,yLow.values,yHigh.values
+
+    if color is not None:
+        assert linecolor is None and facecolor is None
+        linecolor=color
+        facecolor=color
+    if linecolor is None and not facecolor is None:
+        linecolor=facecolor
+    if not linecolor is None and facecolor is None:
+        facecolor=linecolor
+    # If no colors are specified, we will use the next colorcycle color (see below, where we grab it from the line, to use in the envelope)
+
+    if laxSkipNaNsXY: 
+        laxSkipNaNsSE=True
+
+    if ax is None:
+        ax=plt.gca()
+
+    # Choose which points to include.  If this is being called by dfPlotWithEnvelope, dropna() or etc should already have been used to clean up.  However, there's still the case of s.e.==0.
+    iGood=set(range(len(y)))
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+def plotWithEnvelope_2015( # Retired, June 2015. It seems latest Matplotlib version (python .16) has an incompatibility?
+        x,y, yLow=None, yHigh=None, linestyle='-', color=None, linecolor=None, facecolor=None, alpha=0.5, label=None, lineLabel=None, patchLabel=None, laxSkipNaNsSE=False, laxSkipNaNsXY=False, skipZeroSE=False, ax=None, laxFail=True):
     """ For plotting a line with standard errors at each point...
     This makes a patch object that gives the envelope around the line.
 
 yLow and yHigh are the confidence interval lower and upper points.
 
-
-uhh.. this could have been done with plt.fill() more compactly! [Done]
-
-
 you can then make a legend (if you've specified lineLabel or patchLabel on each) using "legend()".
-
-    CPBL, Jan 2010
-
-April 2010: rewrote this with pylab.fill() and pylab.poly_between():  Vastly nicer! than old patch() kludge.
 
 April 2010: Added facility for dealing with NaNs. We just excise them rather than splitting the plot.. (this could be an option)
 
@@ -1585,10 +1694,6 @@ May 2010: laxSkipNaNs says that rather than requiring all values to be defined f
 August 2010: Huh? No explanation for what laxSkipNaNsSE was supposed to do. if lax..XY is turned on, then lax..SE is forced on.  I think what I want is simply to drop all points with SE==NaN if lax is set, right?
 Jan 2011: Maybe, but I should also simply skip the envelope whenever all the se's are nan!
 
-Jan 2011: There exists now a fill_between() in matplotlib... I now use that below?
-
-Jan 2013: Try to accomodate a pandas Series for x,y,etc: plotWithEnvelope(DataFrame,xvar,yvar, ???
-
 Feb 2013: Can use format x,y,yHalfWidth instead.
 
     """
@@ -1596,7 +1701,7 @@ Feb 2013: Can use format x,y,yHalfWidth instead.
 
     import pandas as pd
     if isinstance(x,pd.DataFrame): 
-        fooodles # See function above for df's!
+        fooodles # See function above for df's!  dfPlotWithEnvelope()
 
     if yHigh is None: # Assume x,y,yHalfWidth was sent.
         yHigh=y+yLow
@@ -1606,14 +1711,14 @@ Feb 2013: Can use format x,y,yHalfWidth instead.
         assert linecolor is None and facecolor is None
         linecolor=color
         facecolor=color
-    if linecolor==None and not facecolor==None:
+    if linecolor is None and not facecolor is None:
         linecolor=facecolor
-    if not linecolor==None and facecolor==None:
+    if not linecolor is None and facecolor is None:
         facecolor=linecolor
     if 1: # NO!!! Aug 2010 I need to make this use the next colour in matplotlib's colour sequence... where is that??
-        if facecolor==None:
+        if facecolor is None:
             facecolor='g' 
-        if linecolor==None:
+        if linecolor is None:
             linecolor='g'
     
     if laxSkipNaNsXY: 
@@ -1656,7 +1761,7 @@ What should we allow?? there must be matching between y,yLow,yHigh. But y need n
 
 
 Aug 2010: I'd like to rewrite this whole thing (?)
-Should just have an iGood, and add each criterion one by one; can do asserts and notes when something changes.
+Should just have an iGood, and add each criterion one by one; can do asserts (or raises) and notes when something changes.
 
 """
     xNaN=set(find(isnan(x)))
@@ -1709,7 +1814,7 @@ Should just have an iGood, and add each criterion one by one; can do asserts and
 
 
 
-    if 0: # Old stuff, sitll needs to be reincorporated with above!!!!!
+    if 0: # Old stuff, sitll needs to be reincorporated with above!
 
         if any(isnan(x)) or any(isnan(y)) or any(isnan(yLow)) or any(isnan(yHigh)):
             na,nb,nc,nd=where(isfinite(x)),where(isfinite(y)),where(isfinite(yLow)),where(isfinite(yHigh))
@@ -1766,11 +1871,11 @@ Should just have an iGood, and add each criterion one by one; can do asserts and
         if bNoSE:
             envelopePatch=None
         else:
-            envelopePatch=ax.fill(xs,ys,facecolor=facecolor,alpha=alpha,linewidth=0,label=patchLabel)# edgecolor=None, does not work!! So use linewidth instead?
+            envelopePatch=ax.fill(xs,ys,facecolor=facecolor, alpha=alpha,linewidth=0,label=patchLabel)# edgecolor=None, does not work!! So use linewidth instead?
     if bNoSE:
         envelopePatch=None
     else:
-        envelopePatch=fill_between(x, yLow, yHigh,ax=ax,facecolor=facecolor,alpha=alpha,linewidth=0,label=patchLabel)# edgecolor=None, does not work!! So use linewidth instead?
+        envelopePatch=fill_between(x, yLow, yHigh,ax=ax,facecolor=facecolor,alpha=alpha,label=patchLabel)# edgecolor=None, does not work!! So use linewidth instead?
 
 
 
