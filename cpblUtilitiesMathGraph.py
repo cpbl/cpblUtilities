@@ -1473,8 +1473,36 @@ def labelLine(lines):
     text(aline._x[-1],aline._y[-1],alabel,color=aline.get_color())
     return(lines)
 
-def dfPlotWithEnvelope(df, xv, yv, ylow=None, yhigh=None, color=None, label=None, **kwargs):
-    #nse=1.96, linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  labelson='lines', NaNmode=None, ax=None, laxFail=True, demo=False)
+
+
+
+def dfPlotWithEnvelope(df, xv, yv, ylow=None, yhigh=None, color=None, label=None,
+                       NaNmode=None,
+                       nse=1.96, labelson='lines',   demo=False,
+                       linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  ax=None ):
+    """
+    To demo this functionality, try: 
+    dfPlotWithEnvelope(None,None,None,demo=True)
+
+df: pandas DataFrame
+
+xv, yv: names of columns to plot. yv can be a list of strings to plot multiple traces.
+
+ylow=None, yhigh=None: optionally specify upper, lower limits manually as column names. Otherwise, upper and lower bounds of the envelope are calculated using 'se_'+xv as a standard error.
+
+color=None:
+
+label=None: Name for the trace (can be a list). If not provided, the column name is used.
+
+labelson='lines': Specifies whether lines or envelopes are shown in a legend. Value must be in ['patches','envelopes','envelope','patch', 'lines','line'].
+
+NaNmode=None:  Not yet implemented in this new rewrite.
+
+nse=1.96:  How wide (multiples of column 'se_'+xv) the envelope should be (interpreted as confidence interval).
+
+linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  ax=None
+
+"""
 
     # laxSkipNaNsSE=False, laxSkipNaNsXY=False, skipZeroSE=False,
     from cpblUtilitiesColor import getIndexedColormap
@@ -1499,26 +1527,73 @@ def dfPlotWithEnvelope(df, xv, yv, ylow=None, yhigh=None, color=None, label=None
         subplot(3,2,5)
         dfPlotWithEnvelope( df,'x',['y','z'],label=['Upper','Downer'])
         transLegend()
+        subplot(3,2,6)
+        dfPlotWithEnvelope( df,'x','y',label='Upper')
+        dfPlotWithEnvelope( df,'x','z',label='Downer')
+        transLegend()
         return()
-    if kwargs.get('demo',False):
+    if demo:
         dodemo()
         return()
     if yv.__class__ == list:
         assert yhigh is None and ylow is None # Smply not supported yet.
-        assert kwargs.get('linecolor',None).__class__ not in [list] # Smply not supported yet.
-        assert kwargs.get('facecolor',None).__class__ not in [list] # Smply not supported yet.
+        assert linecolor.__class__ not in [list] # Smply not supported yet.
+        assert facecolor.__class__ not in [list] # Smply not supported yet.
         if color is None:
             color=getIndexedColormap('jet',len(yv)) # OR could use colorcycler
         if not hasattr(color,'__iter__'):
             color=[color]*len(yv)
         if not hasattr(label,'__iter__'):
             label=[label]*len(yv)
-        return( [dfPlotWithEnvelope_2015(df,xv,ayv,ylow=ylow,yhigh=yhigh,color=color[ii],label=label[ii],**kwargs) for ii,ayv in enumerate( yv) ] )
+        return( [dfPlotWithEnvelope(df,xv,ayv,ylow=ylow,yhigh=yhigh,color=color[ii],label=label[ii],
+                                    NaNmode=NaNmode,
+                       nse=nse, labelson=labelson,   #demo
+                       linestyle=linestyle, linecolor=linecolor, facecolor=facecolor, alpha=alpha,  ax=ax ) for ii,ayv in enumerate( yv) ] )
+
+    # CHOOSE ENVELOPE RANGE (specified as standard errors or as explicit bottom, top)
+
+    yLow=df[yv].values - nse * df['se_'+yv].values if ylow is None   else  df[ylow].values
+    
+    yHigh=df[yv].values + nse * df['se_'+yv].values  if yhigh is None   else df[yhigh].values
+
+    # CHOOSE COLOURS
+    if color is not None:
+        assert linecolor is None and facecolor is None
+        linecolor=color
+        facecolor=color
+    if linecolor is None and not facecolor is None:
+        linecolor=facecolor
+    if not linecolor is None and facecolor is None:
+        facecolor=linecolor
+    # If no colors are specified, we will use the next colorcycle color (see below, where we grab it from the line, to use in the envelope)
+
+    
+    if ax is None:   ax=plt.gca()
+
+
+    # Choose valid data subsets:
+    with pd.option_context('mode.use_inf_as_null', True):
+        df = df.dropna()
+        
+    #assert df[xv].isfinite().any() and  any(isfinite(yv))
+    pltargs={} if linecolor is None else {'color':linecolor}
+    hLine=ax.plot(df[xv], df[yv], linestyle=linestyle, linewidth=2, 
+        label=None if labelson in ['patches','envelopes','envelope','patch'] else yv if label is None else label,
+        **pltargs
+              )
+
+    # CHOOSE ENVELOPE COLOUR
+    if linecolor is None and facecolor is None:
+        facecolor=hLine[0].get_color()
+        
+    envelopePatch=ax.fill_between(df[xv], yLow, yHigh, facecolor=facecolor, alpha=alpha, label=None if labelson in ['lines','line'] else yv if label is None else label, edgecolor='None')
+    return(hLine,envelopePatch)
 
 
 
 
-def dfPlotWithEnvelope_2015(df,xv,yv,ylow=None,yhigh=None,nse=1.96,linestyle='-',color=None,linecolor=None,facecolor=None,alpha=0.5,label=None,labelson='lines',laxSkipNaNsSE=False,laxSkipNaNsXY=False,skipZeroSE=False,ax=None,laxFail=True,demo=False, 
+    
+def dfPlotWithEnvelope_2015(df, xv, yv, ylow=None, yhigh=None, nse=1.96, linestyle='-', color=None, linecolor=None, facecolor=None, alpha=0.5, label=None, labelson='lines', laxSkipNaNsSE=False,laxSkipNaNsXY=False,skipZeroSE=False,ax=None,laxFail=True,demo=False, 
                        # Deprecated:
                        lineLabel=None,patchLabel=None):
     """ interface to plotWithEnvelope for pandas DataFrames
@@ -1606,6 +1681,9 @@ def dfPlotWithEnvelope_2015(df,xv,yv,ylow=None,yhigh=None,nse=1.96,linestyle='-'
                               lineLabel=None if labelson in ['patches','envelopes','envelope','patch'] else yv if label is None else label,
                               patchLabel=None if labelson in ['lines','line'] else yv if label is None else label,
                               laxSkipNaNsSE=laxSkipNaNsSE,laxSkipNaNsXY=laxSkipNaNsXY,skipZeroSE=skipZeroSE,ax=ax,laxFail=laxFail))
+
+
+
 
 def plotWithEnvelope( x,y, yLow=None, yHigh=None, color=None, alpha=0.5, label=None,
                       **kwargs):
