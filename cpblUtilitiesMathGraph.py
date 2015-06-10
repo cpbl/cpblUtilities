@@ -1475,6 +1475,33 @@ def labelLine(lines):
 
 
 
+def dfPlotWithEnvelope_demo():
+    from cpblUtilitiesColor import getIndexedColormap
+    df=pd.DataFrame( {'x' : pd.Series([1., 2., 3., 5.]), #, index=['a', 'b', 'c']),
+         'y' : pd.Series([1., 2., 3., 4.])}) #, index=['a', 'b', 'c', 'd'])} )
+    df['se_y']=df.y*-.01 + .2
+    df['z']=-df.y
+    df['se_z']=df.se_y
+    subplot(3,2,1)
+    dfPlotWithEnvelope( df,'x',['y','z'])
+    transLegend(loc='center right')
+    subplot(3,2,2)
+    dfPlotWithEnvelope( df,'x',['y','z'],labelson='envelopes')
+    transLegend(loc='best')
+    subplot(3,2,3)
+    dfPlotWithEnvelope( df, 'x', ['y', 'z'], labelson='patch', label=['Upper', 'Downer'], color='r')
+    transLegend()
+    subplot(3,2,4)
+    dfPlotWithEnvelope( df,'x',['y','z'],label=['Upper','Downer'],color=['m','y'])
+    transLegend()
+    subplot(3,2,5)
+    dfPlotWithEnvelope( df,'x',['y','z'],label=['Upper','Downer'])
+    transLegend()
+    subplot(3,2,6)
+    dfPlotWithEnvelope( df,'x','y',label='Upper')
+    dfPlotWithEnvelope( df,'x','z',label='Downer')
+    transLegend()
+    return()
 
 def dfPlotWithEnvelope(df, xv, yv, ylow=None, yhigh=None, color=None, label=None,
                        NaNmode=None,
@@ -1496,7 +1523,7 @@ label=None: Name for the trace (can be a list). If not provided, the column name
 
 labelson='lines': Specifies whether lines or envelopes are shown in a legend. Value must be in ['patches','envelopes','envelope','patch', 'lines','line'].
 
-NaNmode=None:  Not yet implemented in this new rewrite.
+NaNmode=None:  
 
 nse=1.96:  How wide (multiples of column 'se_'+xv) the envelope should be (interpreted as confidence interval).
 
@@ -1505,35 +1532,8 @@ linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  ax=None
 """
 
     # laxSkipNaNsSE=False, laxSkipNaNsXY=False, skipZeroSE=False,
-    from cpblUtilitiesColor import getIndexedColormap
-    def dodemo():
-        df=pd.DataFrame( {'x' : pd.Series([1., 2., 3., 5.]), #, index=['a', 'b', 'c']),
-             'y' : pd.Series([1., 2., 3., 4.])}) #, index=['a', 'b', 'c', 'd'])} )
-        df['se_y']=df.y*-.01 + .2
-        df['z']=-df.y
-        df['se_z']=df.se_y
-        subplot(3,2,1)
-        dfPlotWithEnvelope( df,'x',['y','z'])
-        transLegend(loc='center right')
-        subplot(3,2,2)
-        dfPlotWithEnvelope( df,'x',['y','z'],labelson='envelopes')
-        transLegend(loc='best')
-        subplot(3,2,3)
-        dfPlotWithEnvelope( df, 'x', ['y', 'z'], labelson='patch', label=['Upper', 'Downer'], color='r')
-        transLegend()
-        subplot(3,2,4)
-        dfPlotWithEnvelope( df,'x',['y','z'],label=['Upper','Downer'],color=['m','y'])
-        transLegend()
-        subplot(3,2,5)
-        dfPlotWithEnvelope( df,'x',['y','z'],label=['Upper','Downer'])
-        transLegend()
-        subplot(3,2,6)
-        dfPlotWithEnvelope( df,'x','y',label='Upper')
-        dfPlotWithEnvelope( df,'x','z',label='Downer')
-        transLegend()
-        return()
     if demo:
-        dodemo()
+        dfPlotWithEnvelope_demo()
         return()
     if yv.__class__ == list:
         assert yhigh is None and ylow is None # Smply not supported yet.
@@ -1570,11 +1570,12 @@ linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  ax=None
     
     if ax is None:   ax=plt.gca()
 
-
     # Choose valid data subsets:
     with pd.option_context('mode.use_inf_as_null', True):
-        df = df.dropna()
-        
+        if df.isnull().any().any():
+            wthoper_still_to_develop_NaNmode
+            df = df.dropna()
+
     #assert df[xv].isfinite().any() and  any(isfinite(yv))
     pltargs={} if linecolor is None else {'color':linecolor}
     hLine=ax.plot(df[xv], df[yv], linestyle=linestyle, linewidth=2, 
@@ -1590,7 +1591,7 @@ linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  ax=None
     return(hLine,envelopePatch)
 
 
-
+plotWithEnvelope= dfPlotWithEnvelope
 
     
 def dfPlotWithEnvelope_2015(df, xv, yv, ylow=None, yhigh=None, nse=1.96, linestyle='-', color=None, linecolor=None, facecolor=None, alpha=0.5, label=None, labelson='lines', laxSkipNaNsSE=False,laxSkipNaNsXY=False,skipZeroSE=False,ax=None,laxFail=True,demo=False, 
@@ -1685,7 +1686,7 @@ def dfPlotWithEnvelope_2015(df, xv, yv, ylow=None, yhigh=None, nse=1.96, linesty
 
 
 
-def plotWithEnvelope( x,y, yLow=None, yHigh=None, color=None, alpha=0.5, label=None,
+def plotWithEnvelope_RETIRED2015( x,y, yLow=None, yHigh=None, color=None, alpha=0.5, label=None,
                       **kwargs):
     # linestyle='-'
     # linecolor=None
@@ -3113,7 +3114,7 @@ def transbg(lh): # Make a legend transparent (This could learn to treat other ob
     assert lh is not None
     return(lh)
 
-def transLegend(comments=None,title=None,loc='best',bbox_to_anchor=None,ncol=1):
+def transLegend(comments=None,title=None,loc='best',bbox_to_anchor=None,ncol=1,titlefontsize=None, **kwargs):
     """
     Some features of now-retired transLegend2013, previously transLegend(), not yet implemented.
 
@@ -3124,7 +3125,10 @@ This can be deprecated, though, in favour of this approach:
         addCommentToLegend(r'Bands show 90% confidence intervals', transbg(lh))
     """
 #    lh=plt.legend(loc=loc)
-    lh=plt.legend(fancybox=True,shadow=False,title=title,loc=loc,bbox_to_anchor=bbox_to_anchor,ncol=ncol)
+
+    lh=plt.legend(fancybox=True,shadow=False,title=title,loc=loc,bbox_to_anchor=bbox_to_anchor,ncol=ncol, **kwargs)
+    if title is not None and titlefontsize is not None:
+        lh.get_title().set_fontsize(titlefontsize)
     lh2=transbg(lh)
     if comments:
         addCommentToLegend(comments,lh2)
