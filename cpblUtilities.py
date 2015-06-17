@@ -1799,6 +1799,9 @@ parallel: If only one function is given or if parallel is False, this will run t
 
 showFinished= (int) . : Specifies the maximum number of successfully finished jobs to show in reports (before the last, which should always show them all).
 
+Bug:
+ - "too many files open" if more than ~1000 jobs are given.  Function should be rewritten so that the Queues are only created when the instance is being launched. Right now, all queues are created at once at the beginning.
+
     """
 
     if parallel is None or parallel is True: # Don't use parallel on my laptop or anything really, other than apollo
@@ -1817,6 +1820,9 @@ showFinished= (int) . : Specifies the maximum number of successfully finished jo
     listOf_FuncAndArgLists=[faal+[[],{}] if len(faal)==1 else faal for faal in listOf_FuncAndArgLists]
     kwargs=kwargs if kwargs else [{} for faal in listOf_FuncAndArgLists]
 
+    if len(listOf_FuncAndArgLists)>1000:
+        raise Error(""" Sorry, until the bug above is solved, you must limit this to ~1000 processes in the list""")
+    
     if len(listOf_FuncAndArgLists)==1:
         parallel=False
 

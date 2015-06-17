@@ -54,6 +54,43 @@ Solutions for bounding box / whitespace in output figures:
 
 
 #####################################################################################
+def dfOverplotLinFit(df,xv,yv,label=None,**kwargs): # This is for a bivariate relationship just now.
+    """ 2015June: overplot a linear fit (no se shown now) and return b, se for bivariate DataFrame
+     You can pass a label string which refers to some of the fit parameters: ['beta','2se'] as floats. For example:
+           label=' OLS '+r' ($\beta$=%(beta).2g$\pm$%(2se).2g)'
+    """
+    
+    import statsmodels.formula.api as smf
+    import statsmodels.regression.linear_model as olsm
+    import statsmodels.api as sm
+
+    from pandas.stats.api import ols
+    ###df = pd.DataFrame({"A": [10,20,30,40,50], "B": [20, 30, 10, 40, 50], "C": [32, 234, 23, 23, 42523]})
+    res = ols(y=df[yv], x=df[[xv]])
+    beta,se= res.beta[xv], res.std_err[xv]
+    from pylab import plot
+    if label is not None:
+        label=label%{'beta':beta,'2se':1.96*se}
+    plot(df[xv],res.y_predict,label=label,**kwargs)
+    if 0:
+        from statsmodels.sandbox.regression.predstd import wls_prediction_std
+        prstd, iv_l, iv_u = wls_prediction_std(res)
+        ax.plot(x, iv_u, color+'--')
+        ax.plot(x, iv_l, color+'--')
+
+    return(beta,se)
+    """
+def dfOverplotLinFit(df,xv,yv):
+    # this uses the statsmodels formula API (same results
+# import formula api as alias smf
+import statsmodels.formula.api as smf
+# formula: response ~ predictors
+est = smf.ols(formula='Units ~ lastqu', data=df2).fit()
+est.summary()
+fig = plt.figure(figsize=(12,8))
+fig=sm.graphics.plot_regress_exog(est,'lastqu',fig=fig)
+"""
+    
 def overplotLinFit(x,y,format=None,color=None,xscalelog=False):
     """
     March 2010: upgrading it so that the fit line doesn't extrapolate beyond the x,y range of data.
