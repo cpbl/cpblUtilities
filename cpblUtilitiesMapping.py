@@ -321,11 +321,13 @@ The return value is the full svg text with colorbar added.
     base_svg=sg.fromfile(insvgfn)
     base_svg.append(svg2)
     base_svg.save(outfilename)
-
+    print('       Wrote '+outfilename)
 
     plt.close(6354)
-    return(base_svg.to_str())
-    if 0:            return(open(outfilename,'r').read())
+    try: # Some old version don't have to_str()
+        return(base_svg.to_str())
+    except AttributeError:
+        return(open(outfilename,'r').read())
 
     
 def colors_for_filling_svg(geo2data_or_color=None, data2color=None,
