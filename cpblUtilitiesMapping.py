@@ -130,10 +130,9 @@ The other/older approoach is to substitute a style inside each path or path grou
         svgraw=open(blanksvgfile,'r','utf8').read()
 
     # In CSS, id=myid is controlled by #myid {fill..}., while class="land country CA" is controlled by, e.g. .CA {fill: ...}.  So the following line either selects a class, with a period, or an id, with a #.
-    stopppppppp
     colortables="""
 /* Define colours by region (cpblUtilitiesMapping.py)
- */
+ */\n .ZZZ   {}
 """+'\n'.join([' %s%s   {  fill:       %s;   }'%('.' if CSSselector in ['class'] else '#', cc,hh) for cc,hh in hexlookup.to_dict().items()])+'\n'  # How to avoid bad/nan regions here? Seems fine, but may not be robust.
 
     assert '/*COLOURINGREGIONS*/' in svgraw
@@ -203,7 +202,7 @@ The return value is the full svg text with colorbar added.
                 ww,hh=svgbase.get_size()
                 ww,unitsSuffix=''.join([cc  for cc in ww if isdec(cc)]),''.join([cc  for cc in ww if not isdec(cc)])  
                 hh,unitsSuffix2=''.join([cc  for cc in hh if isdec(cc)]),''.join([cc  for cc in hh if not isdec(cc)])
-                return(int(ww),int(hh),unitsSuffix,unitsSuffix2)
+                return(int(float(ww)),int(float(hh)),unitsSuffix,unitsSuffix2)
             ww,hh,u1,u2=_getSizeWithUnits(base_svg) #   ww,hh=base_svg.get_size() # This is sometimes just numbers, but sometimes there are units too (px).
             unitsSuffix=''
             #if 1:#any(not isdec(cc) for cc in ww): # What to do when there are units? .. .isdigit()
