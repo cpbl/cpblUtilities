@@ -1323,7 +1323,7 @@ plt.show()
             padOffset={'right':-dpad,'left':dpad}[pp[2]]
             htext[ii]=text(pp[1]+padOffset,ind[ii]+yloffset,' '+labels[ii],verticalalignment='center',horizontalalignment=pp[2],size=tsize1,color=labelColour[ii])
 
-    print 'NOT DON HEREE::'
+    print 'NOT DON HEREE:: (categorybarplot still needs vertical mode to be written)'
     if 1 and labelLoc in [None,'biggest space'] and  simplevector: # : put right/left/inside the bar, whichever has most horizontal space there!
         if not horiz:
             cwarning('oh-oh... this not programmed ye!!!!!!')#assert horiz # vert mode not coded yet.. just change xlim to ylim..
@@ -1439,7 +1439,8 @@ plt.show()
 ##########################################################################
 #
 fNaN=float('nan')
-def tonumeric(lists,to='auto',nokeys=False,cNaN=fNaN,skipkeys=None,doNothing=False):
+def tonumeric(lists,to='auto',nokeys=False,cNaN=fNaN,skipkeys=None,doNothing=False,
+              thousandschar=','):
     #
     ##########################################################################
     ##########################################################################
@@ -1453,6 +1454,9 @@ If nokeys is used, it will not affect keys in dicts, though it will still affect
 2010 Feb: now able to deal with arrays (rather than lists) of strings?
 
 2010 March: adding new option "skipkeys" which means not to convert any elements of a dict named with something in this list. Also, "doNothing" means return lists unmodified, useful for internal programming, below , in recursion.
+
+2015: strings containing commas but no decimals (!) are converted to integers.
+   Set thousandschar=None to turn this off.
     """
     if not skipkeys:
         skipkeys=[]
@@ -1479,6 +1483,9 @@ If nokeys is used, it will not affect keys in dicts, though it will still affect
             if to==float:
                 return(float(lists))
             elif to==int:
+                if thousandschar==',' and ',' in lists: # look for ints with commas separating thousands:
+                    assert '.' not in lists
+                    return(int(lists.replace(',','')))
                 if '.' in lists:
                     assert abs(float(lists))>=1 # or 5e-8 would fail here?
                     return(int(float(lists)))
@@ -1794,7 +1801,7 @@ def plotWithEnvelope_RETIRED2015( x,y, yLow=None, yHigh=None, color=None, alpha=
 
 
     
-def plotWithEnvelope_2015( # Retired, June 2015. It seems latest Matplotlib version (python .16) has an incompatibility?
+def plotWithEnvelope_2015( # Retired, June 2015. It seems latest Matplotlib version (python .16) has an incompatibility? (so... change all usage to dfPlotWithEnvelope?!
         x,y, yLow=None, yHigh=None, linestyle='-', color=None, linecolor=None, facecolor=None, alpha=0.5, label=None, lineLabel=None, patchLabel=None, laxSkipNaNsSE=False, laxSkipNaNsXY=False, skipZeroSE=False, ax=None, laxFail=True):
     """ For plotting a line with standard errors at each point...
     This makes a patch object that gives the envelope around the line.

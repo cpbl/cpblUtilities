@@ -990,6 +990,8 @@ def readTSV(filepath, header=False, columnDict=False):
 
 if os.path.exists('/home/cpbl/gallup/inputData/macro/countrycode_main.tsv'):
     masterCountryList=tsvToDict('/home/cpbl/gallup/inputData/macro/countrycode_main.tsv',dataRow=4,keyRow=3)
+    import pandas as pd
+    dfCountryList=pd.DataFrame(masterCountryList)
 
 ##########################################################################
 ##########################################################################
