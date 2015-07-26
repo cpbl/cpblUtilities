@@ -8,6 +8,7 @@ Some wisdom on graphics:
    (3) Be satisfied with that. If you must get something exactly tight and exactly the right size, you do this in Inkscape. But you cannot scale the content and bbox in the same step. Load PDF, select all, choose the units in the box at the top of the main menu bar, click on the lock htere, set the width.  Then, in File Properties dialog, resize file to content. Save.
 """
 from __future__ import division # Python3-style integer division 5/2=2.5, not 3
+
 if 0 and 'not while trying epd': # This was in place 'til May 2012: upgrade to Ubuntu 12.04
     from IPython.Debugger import Tracer; debug_here = Tracer()
 try:
@@ -934,7 +935,9 @@ from numpy import mean # This one deals with no values!, so overwrite python's d
 ##############################################################################
 ##############################################################################
 #
-def seMean(vals, ses): # A Weighted mean: weighted by standard errors
+
+#  Following renamed from seMean(). 
+def mean_of_means(vals, ses): # A Weighted mean: weighted by standard errors
     # Takes a simple list of estimates and a simple list of their standard errors.
     # Returns an estimate of the scalar weighted mean and its standard error.
     #
@@ -1594,11 +1597,6 @@ linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  ax=None
                        nse=nse, labelson=labelson,   #demo
                        linestyle=linestyle, linecolor=linecolor, facecolor=facecolor, alpha=alpha,  ax=ax ) for ii,ayv in enumerate( yv) ] )
 
-    # CHOOSE ENVELOPE RANGE (specified as standard errors or as explicit bottom, top)
-
-    yLow=df[yv].values - nse * df['se_'+yv].values if ylow is None   else  df[ylow].values
-    
-    yHigh=df[yv].values + nse * df['se_'+yv].values  if yhigh is None   else df[yhigh].values
 
     # CHOOSE COLOURS
     if color is not None:
@@ -1617,8 +1615,15 @@ linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  ax=None
     # Choose valid data subsets:
     with pd.option_context('mode.use_inf_as_null', True):
         if df.isnull().any().any():
-            wthoper_still_to_develop_NaNmode
+            #wthoper_still_to_develop_NaNmode
             df = df.dropna()
+
+    # CHOOSE ENVELOPE RANGE (specified as standard errors or as explicit bottom, top)
+
+    yLow=df[yv].values - nse * df['se_'+yv].values if ylow is None   else  df[ylow].values
+    
+    yHigh=df[yv].values + nse * df['se_'+yv].values  if yhigh is None   else df[yhigh].values
+
 
     #assert df[xv].isfinite().any() and  any(isfinite(yv))
     pltargs={} if linecolor is None else {'color':linecolor}
@@ -5946,7 +5951,7 @@ Example usage:
 
 
 if __name__ == '__main__':
-    from pystata import *
+
     demoCPBLcolormapFunctions()
     hu
     weightedQuantile(0,0,test=True)

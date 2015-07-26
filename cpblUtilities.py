@@ -1263,7 +1263,7 @@ def str2pathname(ss):
     return(ss)
 
 
-def fileOlderThan(afile,bfiles,ageWarning=True):
+def fileOlderThan(afile,bfiles,ageWarning=False):
     """ ie says whether the first fiel, afile, needs updating based on its parent, bfile.  ie iff afile does not exist or is older than bfile, this function returns true.
 
 bfile can also be a list of files. in this case, the function returns true if any  of the bfiles is younger than the target file, afile; ie afile needs to be updated based on its antecedents, bfiles.
@@ -1315,6 +1315,7 @@ Rewritten, sept 2010, but features not yet complete. now afile,bfiles can be a f
 
         gotReq=True
     except:
+        print('   Failed to import cpblMake...')
         pass
     for bf in bfiles:
         if gotReq:
@@ -1539,11 +1540,13 @@ try:
 except:
     print "can't import cpblUtilitiesColor"
 
-try: #This dependency should be excised....
-    import cpblMake
-    cpblRequire=cpblMake.cpblRequire
-except:
-    pass
+if 0: #defaults['mode'] in ['gallup','rdc']:
+    try: #This dependency should be excised....
+        import cpblMake
+        cpblRequire=cpblMake.cpblRequire
+    except:
+        print('   (Again?) Failed to import cpblMake (which should be liminated)')
+        pass
 
 
 # I meant to implement the following (somewhere!!) to use for the master codebook. not yet done. priorities! but below is finished...

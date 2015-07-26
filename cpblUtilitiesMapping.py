@@ -1,6 +1,6 @@
 #./usr/bin/python
 # -*- coding: latin-1 -*-
-
+print('In cpblMapping')
 
 """
 
@@ -26,7 +26,7 @@ Some references:
 
 
 import os
-from cpblUtilities import tonumeric, tsvToDict
+import cpblUtilities as cpbl #from cpblUtilities import tonumeric, tsvToDict
 from copy import deepcopy
 from codecs import open
 import numpy as np
@@ -571,10 +571,6 @@ def ___try_osgeo():
     import cpblDefaults
     reload(cpblDefaults)
     defaults=cpblDefaults.defaults()
-    import cpblStata
-    reload(cpblStata)
-    #from cpblStata import *
-    #from pylab import *
     import pylab
 
 
@@ -633,7 +629,7 @@ if __name__ == '__main__':
     foooo
     from cpblDefaults import WP
     swlv=tsvToDict(WP+'HRmeanSWL.csv',vectors=True)
-    swl=dict(zip(tonumeric(swlv['PR_HRUID']),tonumeric(swlv['ss'])))
+    swl=dict(zip(cpbl.tonumeric(swlv['PR_HRUID']),cpbl.tonumeric(swlv['ss'])))
 
     #--------------------------------------------------------------------
     import matplotlib.pyplot as plt
@@ -744,7 +740,7 @@ if __name__ == '__main__':
 
         from mpl_toolkits.basemap import Basemap
 
-        mcool=tonumeric([LL.strip().split('\t') for LL in open('mcool.tsv','rt').readlines()])
+        mcool=cpbl.tonumeric([LL.strip().split('\t') for LL in open('mcool.tsv','rt').readlines()])
         colour=assignColormapEvenly(mcool[::16],[swl.get(agg['PRHRuid'],nan) for agg in gg])
         plt.figure(3)
         plt.clf()
