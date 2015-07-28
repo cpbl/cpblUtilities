@@ -1673,7 +1673,7 @@ Dec 2010: Damn. I don't think I know how to check for local display after all! m
     else:
         print 'Suppressing launch of PDF viewer due to non local X terminal.... right?'
         if launch:
-            print '...  but making an attempt to compile in bg anyway! (Caution: stderr/out from LaTeX will follow, mixed in)..'
+            print '...  but making an attempt to compile in bg anyway. (Caution: stderr/out from LaTeX will follow, mixed in)..'
             print os.system('bash %s &'%texsh)
     return()
 

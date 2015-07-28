@@ -573,7 +573,7 @@ if __name__ == '__main__':
 Hi. Here's some très bien stuff.
 \end{document}
 """
-    fout.write(tex).encode('utf-8')) # Fails on Apollo (RHEL) and I don't know why. Fine under Ubuntu
+    fout.write(tex).encode('utf-8') # Fails on Apollo (RHEL) and I don't know why. Fine under Ubuntu
     fout.close()
     import os
     os.system('pdflatex tmptmptmptest')
