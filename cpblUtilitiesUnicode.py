@@ -24,7 +24,7 @@ Code points >0x7ff are turned into three- or four-byte sequences, where each byt
 
 Since Python 3.0, the language features a str type that contain Unicode characters 
 
-[ meaning u'' doesn't exist anymore???? Oh! I'm using Python 2.7 still!!!!!]
+[ meaning u'' doesn't exist anymore?? Oh! I'm using Python 2.7 still.]
 
 To insert a Unicode character that is not part ASCII, e.g., any letters with accents, one can use escape sequences in their string literals as such:
 
@@ -94,8 +94,8 @@ def ensure_unicode(
 ########################################################################################################
 # Yeah, but the following you need to know what encoding your text is in!
 #  This strips accents, clearly, rather than rendering them in latex.
-#  from stackoverflow or whatehver. Dec 2011
-# Aha! Fine, in my case for the test code in the MAIN section of this file, that means utf-8, becaues this source file is in utf-8. IT works!!! Dec 2011 cpbl
+#  from stackexchange. Dec 2011
+# Aha! Fine, in my case for the test code in the MAIN section of this file, that means utf-8, becaues this source file is in utf-8. IT works! Dec 2011 cpbl
 ########################################################################################################
 import unicodedata
 
@@ -375,8 +375,9 @@ def str2latex_punctuation(ss):
 	     [ u"‚", "," ],
 	     [ u"„", ",," ],
 	     ])
-     for asub in subs:
-	ss=ss.replace(asub.encode('utf-8'),subs[asub])   #
+     for asub in subs.keys():
+        if asub in ss:
+             ss=ss.replace(asub.encode('utf-8'),subs[asub])   #
      return(ss)
 
 def str2latex_specialAndMath(ss,safeMode=True):
@@ -416,6 +417,11 @@ def str2latex_specialAndMath(ss,safeMode=True):
      ss2=ss
      for asub in subs:
         ss2=ss2.replace(asub[1],'')
+     try: # July 2015 workaround: Unicode failure on Apollo (RHEL).  Still need to figure out the problem and rewrite this sectoin.
+          any(sst in ss2 for sst,ssr in subs)
+     except UnicodeDecodeError:
+          print('[u?]'),
+          return(ss)
      if not any(sst in ss2 for sst,ssr in subs):
           return(ss) # If it looks like everything was already fixed, then return. If we have a partially fixed string, this wil fail still.
 
@@ -498,7 +504,8 @@ def str2latex_accents(ss): # Should not need this!! Just use \usepackage[utf8]{i
 	[ u"°", "$\\deg$" ],
 	]])
     for asub in subs:
-        ss=ss.replace(asub.encode('utf-8'),subs[asub])   #
+        if asub in ss:
+             ss=ss.replace(asub.encode('utf-8'),subs[asub])   #
         #ss=accentsToLaTeX(    ss.replace(asub[0],asub[1])   )
     return(ss)
 
@@ -566,7 +573,7 @@ if __name__ == '__main__':
 Hi. Here's some très bien stuff.
 \end{document}
 """
-    fout.write(tex.encode('utf-8')) # Fails, godammn it and I don't know why.
+    fout.write(tex).encode('utf-8')) # Fails on Apollo (RHEL) and I don't know why. Fine under Ubuntu
     fout.close()
     import os
     os.system('pdflatex tmptmptmptest')
