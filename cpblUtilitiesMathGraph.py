@@ -6071,5 +6071,104 @@ output_file.write(etree.tostring(base_svg, pretty_print=True))
 
     """
 
+
+  
+def matrix_legend(col_names,row_names, cstyles, lstyles, envelope_alpha=None,widths=None,fontsize=12,reverse=False, labAlign='center'):
+    """
+    Creates a r x c legend with lines of different colors and styles
+    Returns an offset box object
+    Note that first element in col_names will appear above row_names (top LH corner)
+    cstyles and lstyles are a list of lists of color and line styles for each row and column
+     - often will be the same within each list, e.g. [['r','r','r'],['m','m','m']] for 2 rows and 3 cols
+    
+    lstyles can also be a symbol or text 
+    
+    envelope_alpha =None or a list of lists of Nones means draw lines without envelope (shading) around them. Specifying alpha values for any elements will cause a fill_between shaded envelope to be drawn as well, with the same color as the line and with an alpha (transparency) specified by this parameter.
+
+    Reverse=True has the styles going down the rows, rather than the colors
+        If reverse=True, col_styles are interpreted as colors, and row_styles as line styles
+    labAlign = 'left' will align the row labels left. Default is center.
+
+    Author: AMB, 2014 as "complex_legend()"
+    """
+    import matplotlib.offsetbox as moffsetbox  
+    from pylab import Text,Line2D,fill_between
+    import matplotlib.patches as mpatches    
+    
+    height = fontsize
+    # make sure lists are the right length and have the same nesting structure
+    assert len(cstyles) == len(lstyles)
+    assert [len(p) == len(cstyles[0]) for p in cstyles]
+    assert [len(p) == len(lstyles[0]) for p in lstyles]
+    if envelope_alpha is None:
+        envelope_alpha =np.array([[None for bb in aa] for aa in cstyles]).T
+    
+    if reverse:  # reverse nesting of list
+        cstyles = [[cstyles[j][i] for j in range(0,len(cstyles))] for i in range(0,len(cstyles[0]))]
+        lstyles = [[lstyles[j][i] for j in range(0,len(lstyles))] for i in range(0,len(lstyles[0]))]
+    
+    if widths is None:
+        # Use default column widths, otherwise whatever was passed
+        widths = [fontsize * len(max(row_names,key=len))*.7]+[fontsize * len(max(col_names,key=len))*.6]*(len(col_names)-1)   
+
+    # header - col_names
+    if '\n' in ''.join(col_names):
+        hb_header = get_hbox(widths,fontsize,double=True)
+    else:
+        hb_header = get_hbox(widths,fontsize)
+    for ob, s in zip(hb_header.get_children(),col_names) :
+        txt = Text(0, 0, s, ha="center", va="baseline",size=fontsize)
+        ob.add_artist(txt)
+
+    # rows
+    rows=[]
+    for i, rowlabel in enumerate(row_names):
+        hb_row0 = get_hbox(widths,fontsize)
+        hb_row = hb_row0.get_children()
+  
+        if labAlign.lower()=='left':
+            t = Text(-widths[0]/2., 0, rowlabel, ha="left", va="baseline",size=fontsize)
+        else:
+            t = Text(0, 0, rowlabel, ha="center", va="baseline",size=fontsize)
+        hb_row[0].add_artist(t)
+
+        for j in range(0,len(cstyles[i])):
+            width = widths[j+1]
+            if lstyles[i][j] in mpl.lines.lineStyles: # detected a linestyle
+                if envelope_alpha[i][j] not in [None,np.nan]: # Draw also an envelope for this line
+                    ewidth=.2
+                    env=mpatches.Rectangle([-width*0.25,(0.3-ewidth/2)*height],width*0.5,(ewidth)*height,ec='none',fc=cstyles[i][j],alpha=envelope_alpha[i][j])
+                    hb_row[j+1].add_artist(env)
+                l = Line2D([-width*0.25, width*0.25], [0.3*height, 0.3*height],color=cstyles[i][j],linestyle=lstyles[i][j], lw=2)
+            elif lstyles[i][j] in mpl.markers.MarkerStyle.markers:   # detected a marker style
+                l = Line2D([0,0], [0.3*height, 0.3*height], color=cstyles[i][j], linestyle='', marker = lstyles[i][j], mec=cstyles[i][j]) # , markevery = (1,2))  # last argument causes fail in matplotlib 1.4+   
+            else:   # text
+                l = Text(0, 0, lstyles[i][j], ha="center", va="baseline",size=fontsize-1) 
+            hb_row[j+1].add_artist(l)
+        rows.append(hb_row0)
+    vbox = moffsetbox.VPacker(pad=0, sep=0.2*fontsize, align="baseline",children=[hb_header]+rows)
+    return vbox
+
+def get_hbox(widths,fontsize,double=False):
+    """ 
+    Needed for complex_legend()
+    Returns an empty 1 x len(widths) offsetbox object)
+
+    Author: AMB, 2014
+    """
+    import matplotlib.offsetbox as moffsetbox  
+    boxes = []
+    for width in widths:
+        xdescent, ydescent = width/2., fontsize*0.1
+        c = moffsetbox.DrawingArea(width, fontsize*(1+double), xdescent, ydescent)
+        boxes.append(c)
+    hbox = moffsetbox.HPacker(pad=0, sep=1, align="baseline",children=boxes)
+    return hbox
+
+
+
+
+
+
 if 0:
     localPolynomialRegression(None,None,None,True)

@@ -1310,13 +1310,16 @@ Rewritten, sept 2010, but features not yet complete. now afile,bfiles can be a f
 
     # Check for existence of bfiles:
     gotReq=False
+    def cpblRequireDummy(afile):
+        return
     try:
         from cpblMake import cpblRequire # I could skip this if it doesn't exist, or....
 
         gotReq=True
     except:
-        print('   Failed to import cpblMake...')
-        pass
+        cpblRequire=cpblRequireDummy
+        #print('   Failed to import cpblMake...')
+        #pass
     for bf in bfiles:
         if gotReq:
             cpblRequire(bf)
