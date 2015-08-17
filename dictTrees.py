@@ -12,7 +12,7 @@ it can actually makes sure the tree is regular -- ie every branch has every valu
 Alternatively, I could write methods that made comparisons and searches safe (ie not running up against a key not existing in some branch....
 
 
-STILL NEEDED: Merge trees!, getBranches, ...
+STILL NEEDED: Merge trees, getBranches, ...
 
 
 Definitions:
@@ -52,7 +52,7 @@ def dictToTree(listOfDicts,keys):
     Use a recursive algorithm to add each of the keys in keys as a layer in a tree.
     This is NOT a regular tree. This (not regular) tree has the property of no empty leaves.
     
-    A tree is a sequence of key names and a nested set of dictionaries with, at each terminal node,a list of dictionaries.  The nested dictionaries have keys which correspond to values of the sequence of key names. [huh? rewrite this!]
+    A tree is a sequence of key names and a nested set of dictionaries with, at each terminal node,a list of dictionaries.  The nested dictionaries have keys which correspond to values of the sequence of key names. [huh? rewrite this]
 
     This function creates a dictionary of lists. The dictionary keys are the various possible values of the first key in parameter "keys" taken by the elements of listOfDicts. The values in the dictionary are the elements of listOfDicts sorted by the property which is the first key in parameter "keys".
 
@@ -72,7 +72,7 @@ Old version:
     return(treeList)
 
 
-Upgraded to deal with values of a key that are lists rather than scalars! Default behaviour will be to *mlutiply* the leaves -- ie split each record amongst the multiple branches it fits under!
+Upgraded to deal with values of a key that are lists rather than scalars. Default behaviour will be to *mlutiply* the leaves -- ie split each record amongst the multiple branches it fits under.
 
 """
 
@@ -113,7 +113,7 @@ def flatten(atree): # Make a single-level list of all the elements in all the le
 
 def getLeaves(atree):
     """ Get a list of the leaves. A leaf is a terminal (end-node) lists (of dicts). This essentially "undoes" the dictToTree
-    Agh! No, in May 2010 it didn't undo the dictToTree because it returned a list of lists of dicts.
+    No, in May 2010 it didn't undo the dictToTree because it returned a list of lists of dicts.
     The function flatten, above, does the real collapse.
     May 2012: indeed, this is surely wrong/useless. 
     """
@@ -201,7 +201,7 @@ def commonBranches(tree1,tree2,depth=999999): # Previously called "compare()"
     # Compare two trees: find common branches
     ####################################################################################
     It gives lists of all the common branch names (and: not anymore: all the
-    unmatched branch names) at any level of depth for two dictTrees!
+    unmatched branch names) at any level of depth for two dictTrees
 
     Algorithm: if depth==0, or if If passed trees are leaves (ie not
     dicts) return null.  Otherwise, get a list of commons for each
@@ -234,7 +234,7 @@ def diffBranches(tree1,tree2,depth=999999):
     ####################################################################################
 
     It gives lists of all the not-in-common branch names at any level
-    of depth for two dictTrees!
+    of depth for two dictTrees.
 
     Algorithm: if depth==0, or if If passed trees are leaves (ie not
     dicts) return null.  Otherwise, get a list of commons for each
@@ -253,16 +253,16 @@ def diffBranches(tree1,tree2,depth=999999):
 
 
 def old_compare(tree1,tree2,level=0): # Garbage.
-    """ This works brilliantly!! It gives lists of all the common branch names and all the unmatched branch names at any level of depth for two dictTrees!
+    """ This works brilliantly. It gives lists of all the common branch names and all the unmatched branch names at any level of depth for two dictTrees.
     Explain the level of depth...
 
     I don't understand this function, so I have written a new one which returns branches, but cannot do the difference at the same time as comparison...
 
-    No!! It returns dictTrees of the common and non-common subsets!
+    No.. It returns dictTrees of the common and non-common subsets.
     No... it's a list or a dict...
     uhh. need to reassess what it does and what it should be called.
     For level==0, it gives a list of common keys.
-    For level>0, it gives a dictTree of depth 1 !... and isn't doing anything sensible.
+    For level>0, it gives a dictTree of depth 1 .... and isn't doing anything sensible.
 
     """
     
@@ -292,7 +292,7 @@ def old_compare(tree1,tree2,level=0): # Garbage.
 def dictSearch(dictList,keys,values):
     """ This does not use a tree. It just brute-force searches through a list of dicts. This is what I first used in cars.py and gmSalesData before making use of trees.
 
-     :: Damn! I am not yet fluent with writing a class. What I want to do is simple: find all elements of a list of, say, dictionaries, which have a given set of values for a given set of keys. So write something to do this more generally, using only built-ins: [I had been working on dictTree, which I gave up on and have put in dictTree.py]
+     :: I am not yet fluent with writing a class. What I want to do is simple: find all elements of a list of, say, dictionaries, which have a given set of values for a given set of keys. So write something to do this more generally, using only built-ins: [I had been using dictTree, but it's slightly more specialised]
 
     Two calling forms:
     
@@ -463,15 +463,15 @@ class dictTree (dict):#treeDict: ##(dict): # Base class type is a dict
         """
         return(all([1==len(LL) for LL in self.getLeaves()]))
     def singletLeavesAsDicts(self):
-        """ April 2010: ! First addition in years. This horribly named function returns a non-treeDict recursive dict which has a dict at each leaf rather than a list of dicts. You had better have a tree for which all leaves are len(1) for this!
- Note! This does not change the object; it simply returns a dict.
+        """ April 2010: . First addition in years. This horribly named function returns a non-treeDict recursive dict which has a dict at each leaf rather than a list of dicts. You had better have a tree for which all leaves are len(1) for this.
+ Note. This does not change the object; it simply returns a dict.
         """
         assert all([len(LL)==1 for LL in self.getLeaves()])
         from copy import deepcopy
         outD=deepcopy(self)
         for AA in outD.getBranches():
             outD.setLeaf(AA,outD.getLeaf(AA)[0])
-        # The above object no longer fulfills the requirements of a treeDict.!
+        # The above object no longer fulfills the requirements of a treeDict..
         return(outD)
 
     """ Old code, probably for regular trees only:
@@ -491,7 +491,7 @@ class dictTree (dict):#treeDict: ##(dict): # Base class type is a dict
         return(branch)        
         
     def __init__(self,dictList,keys):
-        # Create a tree from a list of dictionaries!
+        # Create a tree from a list of dictionaries.
         # Check for numbers of possible values in each key:
         values=[list(set([g[k] for g in gm])) for k in keys]
         nv= [len(list(set([g[k] for g in gm]))) for k in keys]

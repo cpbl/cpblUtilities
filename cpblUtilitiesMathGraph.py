@@ -6089,6 +6089,10 @@ def matrix_legend(col_names,row_names, cstyles, lstyles, envelope_alpha=None,wid
         If reverse=True, col_styles are interpreted as colors, and row_styles as line styles
     labAlign = 'left' will align the row labels left. Default is center.
 
+    widths: is a list of widths measured in ... font points?
+
+    Returns a vbox object and a list of r x c handles to the lines/markers drawn. These can then be customized later by the caller.
+
     Author: AMB, 2014 as "complex_legend()"
     """
     import matplotlib.offsetbox as moffsetbox  
@@ -6122,6 +6126,7 @@ def matrix_legend(col_names,row_names, cstyles, lstyles, envelope_alpha=None,wid
 
     # rows
     rows=[]
+    drawnHandles=[]
     for i, rowlabel in enumerate(row_names):
         hb_row0 = get_hbox(widths,fontsize)
         hb_row = hb_row0.get_children()
@@ -6145,9 +6150,10 @@ def matrix_legend(col_names,row_names, cstyles, lstyles, envelope_alpha=None,wid
             else:   # text
                 l = Text(0, 0, lstyles[i][j], ha="center", va="baseline",size=fontsize-1) 
             hb_row[j+1].add_artist(l)
+            drawnHandles+=[l]
         rows.append(hb_row0)
     vbox = moffsetbox.VPacker(pad=0, sep=0.2*fontsize, align="baseline",children=[hb_header]+rows)
-    return vbox
+    return(vbox,drawnHandles)
 
 def get_hbox(widths,fontsize,double=False):
     """ 
