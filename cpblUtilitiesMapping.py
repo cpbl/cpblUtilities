@@ -203,6 +203,7 @@ The return value is the full svg text with colorbar added.
     # Load svg into svgutils; determine units of the layout
     base_svg=sg.fromfile(insvgfn)
     def _getSizeWithUnits(svgbase):
+        from cpblUtilitiesMathGraph import tonumeric
         # Assume measure is digits then units:
         ww,hh=svgbase.get_size()
         ww,unitsSuffix=''.join([cc  for cc in ww if isdec(cc)]),''.join([cc  for cc in ww if not isdec(cc)])  
