@@ -2160,6 +2160,8 @@ class Position:
 
 def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels=None,nse=1,ax=None,fig=None,clearfig=False,marker='o',labelfontsize=None):#,xlog=False,ylog=False,): #ids=None,xlab=None,ylab=None,fname=None,,xlog=False,byRegion=None,labelFunction=None,labelFunctionArgs=None,fitEachRegion=False,regionOrder=None,legendMode=None,markerMode=None,subsetIndices=None,forceUpdate=True,labels=None,nearlyTight=True,color=None): #markersize=10         
     """
+    This has been rewritten so that it demands Pandas Dataframe data.
+
     2013: Simplify. If you have groups, it's easiest to plot with groupby
     z would be values to turn into colours (with cmap), or the name of the field in df to use for that.
 
@@ -2168,6 +2170,8 @@ def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels
     See regressionsQuebec animation for a good example of use.
 
     Use    addColorbarNonimage(df.year.min(), df.year.max(),useaxis=None,ylabel=None) to separately add a colorbar to the result.
+    
+    2015Nov: If you follow this up with set_yscale=log, does the yrange not get chosen correctly?
 
     """
     assert isinstance(df,pd.DataFrame)

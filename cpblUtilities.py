@@ -1776,10 +1776,10 @@ Comment: isn't this entirely superceded by runFunctionsInParallel, which now has
     # We've launched them all!
     for job in jobs: job.join() # Wait for them all to finish... Hm, Is this needed to get at the Queues?
 
-
+    
 ###########################################################################################
 ###
-def  runFunctionsInParallel(listOf_FuncAndArgLists,kwargs=None,names=None,parallel=None,offsetsSeconds=None,expectNonzeroExit=False,maxAtOnce=None,showFinished=50):
+def  runFunctionsInParallel(listOf_FuncAndArgLists,kwargs=None,names=None,parallel=None,offsetsSeconds=None,expectNonzeroExit=False,maxAtOnce=None,showFinished=50,  maxFilesAtOnce=None):
     ###
     #######################################################################################
     """
@@ -1799,22 +1799,24 @@ expectNonzeroExit: Normally, we should not proceed if any function exists with a
 
 parallel: If only one function is given or if parallel is False, this will run the functions in serial.
 
-2013 Feb: when there's a change in the statuses, update again immediately rather than sleeping.
+maxAtOnce: if nonzero, it will queue jobs, adding more only when some are finished
 
-2013 Feb: to add: maxAtOnce: if nonzero, it will queue jobs, adding more only when some are finished! 
-
-2013July: You can now pass os.system or etc to this as the function, with no need for a wrapper: I made use of hasattr(builtinfunction,'func_name') to check for a name.
+maxFilesAtOnce: Set this below your user limit for how many files you can have open at once. Jobs and Queues are cleaned up as we go, but may lag the behind the finishing of jobs. So setting this as high as possible will increase the speed of the batch.
 
 showFinished= (int) . : Specifies the maximum number of successfully finished jobs to show in reports (before the last, which should always show them all).
 
+2013 Feb: when there's a change in the statuses, update again immediately rather than sleeping.
+
+2013July: You can now pass os.system or etc to this as the function, with no need for a wrapper: I made use of hasattr(builtinfunction,'func_name') to check for a name.
+
 Bug:
- - "too many files open" if more than ~1000 jobs are given.  Function should be rewritten so that the Queues are only created when the instance is being launched. Right now, all queues are created at once at the beginning.
+ - "too many files open" if more than ~1000 jobs are given (or whatever is set as your user-level limit for open files).  Function should be rewritten so that the Queues are only created when the instance is being launched. Right now, all queues are created at once at the beginning. [Done: 2015Nov. In testing.]
 
     """
 
-    if parallel is None or parallel is True: # Don't use parallel on my laptop or anything really, other than apollo
-        from cpblDefaults import defaults
-        parallel=defaults['manycoreCPU']
+    if parallel is None or parallel is True: # Use parallel only when we have many processing cores (well, here, more than 8)
+        from multiprocessing import  cpu_count
+        parallel=cpu_count() >2
 
     if not listOf_FuncAndArgLists:
         return([]) # list of functions to run was empty.
@@ -1829,7 +1831,8 @@ Bug:
     kwargs=kwargs if kwargs else [{} for faal in listOf_FuncAndArgLists]
 
     if len(listOf_FuncAndArgLists)>1000:
-        raise Error(""" Sorry, until the bug above is solved, you must limit this to ~1000 processes in the list""")
+        pass
+        #raise (""" Sorry, until the bug above is solved, you must limit this to ~1000 processes in the list""")
     
     if len(listOf_FuncAndArgLists)==1:
         parallel=False
@@ -1842,6 +1845,7 @@ Bug:
 
 
     from multiprocessing import Process, Queue, cpu_count
+    import multiprocessing  as mp
 
     if names is None:
         names=[None for fff in listOf_FuncAndArgLists]
@@ -1860,44 +1864,104 @@ Bug:
         print 'MULTIPROCESSING: Launching %s in parallel '%funcName
         returnVal=que.put(fff(*theArgs,**kwargs))
         print 'MULTIPROCESSING: Finished %s in parallel! '%funcName
-        return(returnVal) #uhhh. this hsould be 0..?
+        return(returnVal) #this hsould be 0.
 
     def reportStatus(sjobs,showmax,showsuccessful=np.inf):#jobs):
         djobs= sjobs if showmax>=len(sjobs) else sjobs[:showmax]
 
-        tableFormatString='%s\t%'+str(max([len(job.name) for job in djobs]))+'s:\t%9s\t%s\t%s\t%s'
+        tableFormatString='%s\t%'+str(max([len(jname(job)) for job in djobs]))+'s:\t%9s\t%s\t%s\t%s'
         print('\n'+'-'*75+'\n'+ tableFormatString%('alive?','Job','exit code','Full','Empty','Func',)+ '\n'+'-'*75)
         # Check that we aren't going to show more *successfully finished* jobs than we're allowed: Find index of nth-last successful one. That is, if the limit binds, we should show the latest N=showsuccessful ones only.
-        isucc=[ii for ii,job in enumerate(djobs) if job.exitcode==0]
+        isucc=[ii for ii,job in enumerate(djobs) if exitcode(job)==0]
         earliestSuccess= -1 if len(isucc)<showsuccessful else isucc[::-1][showsuccessful-1]
-        print('\n'.join([tableFormatString%(job.is_alive()*'Yes:',job.name,job.exitcode,queues[iii].full(),queues[iii].empty(),'(built-in function)' if not hasattr(listOf_FuncAndArgLists[ii][0],'func_name') else listOf_FuncAndArgLists[ii][0].func_name) for ii,job in enumerate(djobs) if job.exitcode!=0 or ii>=earliestSuccess  ]))
+#        print('\n'.join([tableFormatString%(is_alive(job)*'Yes:',jname(job),exitcode(job),queues[iii].full(),queues[iii].empty(),'(built-in function)' if not hasattr(listOf_FuncAndArgLists[ii][0],'func_name') else listOf_FuncAndArgLists[ii][0].func_name) for ii,job in enumerate(djobs) if job.exitcode!=0 or ii>=earliestSuccess  ]))
+        print('\n'.join([tableFormatString%(is_alive(job)*'Yes:',jname(job),exitcode(job),qfull(queues.get(ii,False)),qempty(queues.get(ii,False)),'(built-in function)' if not hasattr(listOf_FuncAndArgLists[ii][0],'func_name') else listOf_FuncAndArgLists[ii][0].func_name) for ii,job in enumerate(djobs) if exitcode(job)!=0 or ii>=earliestSuccess  ]))
 
         if len(isucc)>showsuccessful:
             print('%d other jobs finished successfully.'%(len(isucc)-showsuccessful))
         if len(sjobs)>len(djobs):
             print('%d more jobs waiting for their turn to start...'%(len(sjobs)-len(djobs)))
+        print('%d open queues...'%len(queues))
         print('-'*75+'\n')
-        return([job.exitcode for ii,job in enumerate(sjobs)])
+        return([exitcode(job) for ii,job in enumerate(sjobs)])
 
     def emptyQueues():#jobs,queues,gotQueues):
         for ii,job in enumerate(jobs):
+            if ii not in queues or not isinstance(queues[ii],mp.queues.Queue):
+                continue
+            cleanup= exitcode(job)==0
+            
             if not queues[ii].empty():
                 if ii in gotQueues:
                     gotQueues[ii]+=queues[ii].get()
                 else:
                     gotQueues[ii]=queues[ii].get()
+            if cleanup: # The following is intended to get arround OSError: [Errno 24] Too many open files.  But it does not. What more can I do to garbage clean the completed queues and jobs?
+                job.join()
+                job.terminate()
+                queues[ii].close()
+                queues[ii]=False
+                """
+        print('Joined job %d'%ii)
+        job.terminate()
+        print('Terminated job %d'%ii)
+        queues[ii].close()
+                """
+                del job
+                del queues[ii] # This seems key. Before, when I kept queues in a list, deleting the item wasn't good enough.
+                #print('                       Cleaning up/closing queue for job %d'%ii)
+                
 
-    queues=[Queue() for fff in listOf_FuncAndArgLists] #create a queue object for each function
+    # Now create a few wrappers around Process object members functions. This is because we don't want to start a job until needed, since there is a limit to how many queues we can have at once.
+    def jname(mpproc):
+        if isinstance(mpproc,dict):
+            return(mpproc['name'])
+        return(mpproc.name)
+    def exitcode(mpproc):
+        if isinstance(mpproc,dict):
+            return(-111 )
+        return(mpproc.exitcode)
+    def is_alive(mpproc):
+        if isinstance(mpproc,dict):
+            return(False)
+        return(mpproc.is_alive())
+    def jstart(mpproc):
+        if isinstance(mpproc,dict):
+            queues[mpproc['jobnumber']]=Queue()
+            mpproc['args'][1]=queues[mpproc['jobnumber']]
+            thejob=Process(target=mpproc['target'], args=mpproc['args'], name=mpproc['name'], kwargs=mpproc['kwargs'])
+            thejob.start()
+            print('Started '+mpproc['name'])
+        else:
+            thisShouldNotBeCalled
+            mpproc.start()
+        return(thejob)
+    def qfull(qq):
+        if not isinstance(qq,mp.queues.Queue):
+            return('N/A')
+        return(        qq.full() )
+    def qempty(qq):
+        if not isinstance(qq,mp.queues.Queue):
+            return('N/A')
+        return(        qq.empty() )
+
+      
+                    
+    queues={}#dict([[ii,None] for ii,fff in enumerate(listOf_FuncAndArgLists)]) #create a queue object for each function
     delays=list(arange(len(listOf_FuncAndArgLists))*offsetsSeconds)
-    jobs = [Process(target=functionWrapper,args=[funcArgs[0],queues[iii]],kwargs={'theArgs':funcArgs[1],'kwargs':funcArgs[2],'delay':delays[iii]},name=names[iii]) for iii,funcArgs in enumerate(listOf_FuncAndArgLists)]
-
+    #jobs = [Process(target=functionWrapper,args=[funcArgs[0],queues[iii]],kwargs={'theArgs':funcArgs[1],'kwargs':funcArgs[2],'delay':delays[iii]},name=names[iii]) for iii,funcArgs in enumerate(listOf_FuncAndArgLists)]
+    NoQUEUEyet=None
+    jobs = [dict(jobnumber=iii, target=functionWrapper,args=[funcArgs[0],NoQUEUEyet],kwargs={'theArgs':funcArgs[1],'kwargs':funcArgs[2],'delay':delays[iii]},name=names[iii]) for iii,funcArgs in enumerate(listOf_FuncAndArgLists)] # Rather than create the processes now, wait to create each one when it is ready to launch
+        
+    if maxFilesAtOnce is None:
+        maxFilesAtOnce =max(10*maxAtOnce,100) 
     if maxAtOnce is None:
         maxAtOnce=max(1,cpu_count()-1)  #np.inf
     else:
         maxAtOnce=max(min(cpu_count()-2,maxAtOnce),1)  #np.inf
+
     istart=maxAtOnce if maxAtOnce<len(jobs) else len(jobs)
-        
-    for job in jobs[:istart]: job.start() # Launch them all
+    for ijob,jjj in enumerate(jobs[:istart]): jobs[ijob]=jstart(jobs[ijob]) # Launch them all
 
     import time
     from math import sqrt
@@ -1905,22 +1969,28 @@ Bug:
     ##n=1 # obselete
     gotQueues=dict()
 
+    reportStatus(jobs,istart,showFinished) # This is not necessary; we can leave it to the first loop, below, to report. But for debug, this shows the initial batch.
 
     """ Now, wait for all the jobs to finish.  Allow for everything to finish quickly, at the beginning. 
     """
-    while any([jj.is_alive() for jj in jobs]) or istart<len(jobs):
+    while any([is_alive(jj) for jj in jobs]) or istart<len(jobs):
         sleepTime=5*(timeElapsed>2) + np.log(1.5+timeElapsed)/2 
         #print('DEBUG: ',n,newStatus,lastStatus,sleepTime)
         if timeElapsed>0:
             time.sleep(1+sleepTime) # Wait a while before next update. Slow down updates for really long runs.
         timeElapsed+=sleepTime
         # Add any extra jobs needed to reach the maximum allowed:
-        while istart<len(jobs) and sum([jj.is_alive() for jj in jobs]) < maxAtOnce:
+        while istart<len(jobs) and sum([is_alive(jj) for jj in jobs]) < maxAtOnce  and len(queues)< maxFilesAtOnce:
+            print len(queues), maxAtOnce
+            #print [is_alive(jj) for jj in jobs]
+
             ##print istart, len(jobs), sum([jj.is_alive() for jj in jobs]),  maxAtOnce
-            jobs[istart].start()
+            jobs[istart]=jstart(jobs[istart])
             istart+=1
             timeElapse=.01
+
         reportStatus(jobs,istart,showFinished) #istart)#jobs)
+
         emptyQueues()#jobs,queues,gotQueues)
 
     for job in jobs: job.join() # Wait for them all to finish... Hm, Is this needed to get at the Queues?
@@ -1942,6 +2012,41 @@ Bug:
     else:
         print('MULTIPROCESSING: Apparent success of all functions ('+' '.join(names)+')')
     return(success,[gotQueues[ii] for ii in range(len(jobs))])
+
+
+
+
+
+def breaktest(): # The following demonstrates how to clean up jobs and queues (the queues was key) to avoid the OSError of too many files open. But why does this not work, above? Because there's still a pointer in the list of queues? No, 
+    def dummy(inv,que):
+        que.put(inv)
+        return(0)
+    from multiprocessing import Process, Queue, cpu_count
+    nTest=800
+    queues=[None for ii in range(nTest)]
+    jobs=[None for ii in range(nTest)]#[Process(target=dummy, args=[ii,queues[ii]]) for ii in range(nTest)]
+    #for ii,job in enumerate(jobs):
+    for ii in range(nTest):#,job in enumerate(jobs):
+        queues[ii]=Queue()
+        job=Process(target=dummy, args=[ii,queues[ii]])
+        job.start()
+        print('Started job %d'%ii)
+        job.join()
+        print('Joined job %d'%ii)
+        job.terminate()
+        print('Terminated job %d'%ii)
+        queues[ii].close()
+        
+
+
+def testParallel():
+    def doodle():
+        i=0
+        while i<1e4:
+            i=i+1
+        return(i)
+    nTest=700
+    runFunctionsInParallel([[doodle,[]] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=None, maxAtOnce=10)
 
 
 def collapseByField(e,collapsefield,keepFields=None,agg=None):
@@ -1977,7 +2082,7 @@ def pandasReadTSV(tsvF,dtypeoverrides=None):
         dataDF=pd.read_table(fn,dtype=dt)
     return(dataDF)
 
-def ods2pandas(infile,sheetname=None,tmpfile=None,skiprows=None):
+def ods2pandas(infile,sheetname=None,tmpfile=None,skiprows=None, forceUpdate=False):#,header=None):
     """
     Pandas still cannot read ODF (grr)
 
@@ -2000,9 +2105,9 @@ df=dfs['Sheet1']
     else:
         outfile=tmpfile
     assert outfile.endswith('.xls') or outfile.endswith('.xlsx')
-    if fileOlderThan(outfile,infile):
+    if fileOlderThan(outfile,infile) or forceUpdate:
         os.system('ssconvert '+infile+' '+outfile)
-    df=pd.read_excel(outfile,sheetname=sheetname,skiprows=skiprows)
+    df=pd.read_excel(outfile,sheetname=sheetname,skiprows=skiprows)#,header=header)
     return(df)
 
 
