@@ -1900,15 +1900,15 @@ Bug:
                 job.join()
                 job.terminate()
                 queues[ii].close()
-                queues[ii]=False
+                queues[ii]=None
                 """
         print('Joined job %d'%ii)
         job.terminate()
         print('Terminated job %d'%ii)
         queues[ii].close()
                 """
-                del job
-                del queues[ii] # This seems key. Before, when I kept queues in a list, deleting the item wasn't good enough.
+                #del job
+                #del queues[ii] # This seems key. Before, when I kept queues in a list, deleting the item wasn't good enough.
                 #print('                       Cleaning up/closing queue for job %d'%ii)
                 
 
