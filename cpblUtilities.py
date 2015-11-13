@@ -2022,7 +2022,7 @@ def breaktest(): # The following demonstrates how to clean up jobs and queues (t
         que.put(inv)
         return(0)
     from multiprocessing import Process, Queue, cpu_count
-    nTest=800
+    nTest=1800
     queues=[None for ii in range(nTest)]
     jobs=[None for ii in range(nTest)]#[Process(target=dummy, args=[ii,queues[ii]]) for ii in range(nTest)]
     #for ii,job in enumerate(jobs):
@@ -2036,6 +2036,7 @@ def breaktest(): # The following demonstrates how to clean up jobs and queues (t
         job.terminate()
         print('Terminated job %d'%ii)
         queues[ii].close()
+        queues[ii]=None #  This line does it!
         
 
 
