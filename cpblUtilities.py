@@ -2133,9 +2133,9 @@ Bug:
     if len(listOf_FuncAndArgLists)>maxJobs:
         from math import ceil
         print('Sorry --- splitting up your jobs into chunks of %d, due to unresolved limitation...'%maxJobs)
-        # we need to split this list up, because runFunctionsInParallel can only deal with 1000 at once. That's exceeded for gadm level 1              
+        # we need to split this list up, because runFunctionsInParallel can only deal with 1000 at once. That's exceeded for gadm level 1
         return([
-                 runFunctionsInParallel(listOf_FuncAndArgLists[i*maxJobs:(i+1)*maxJobs],names=names[i*maxJobs:(i+1)*maxJobs], offsetsSeconds=offsetsSe$
+                 runFunctionsInParallel(listOf_FuncAndArgLists[i*maxJobs:(i+1)*maxJobs],names=names[i*maxJobs:(i+1)*maxJobs], offsetsSeconds=offsetsSeconds,parallel=parallel, expectNonzeroExit=expectNonzeroExit, maxAtOnce=maxAtOnce, showFinished=showFinished)
                  for i in range(0, ceil(len(listOf_FuncAndArgLists)*1.0/maxJobs))
                  ])
 
