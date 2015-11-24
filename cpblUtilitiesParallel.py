@@ -129,7 +129,7 @@ Bug:
 
     if parallel is None or parallel is True: # Use parallel only when we have many processing cores (well, here, more than 8)
         from multiprocessing import  cpu_count
-        parallel=cpu_count() >2
+        parallel=cpu_count() >4
 
     if not listOf_FuncAndArgLists:
         return([]) # list of functions to run was empty.
@@ -235,7 +235,7 @@ Bug:
 
     def updateStatus():
         for ii in range(len(jobs)):
-            if status[ii] not in ['failed','success',0,1,]: # 0,1 should never happen.
+            if status[ii] not in ['failed','success','0',0,1,]: 
                 status[ii]=jobs[ii].status()
                 exitcodes[ii]=jobs[ii].exitcode
                 queuestatus[ii]=jobs[ii].queuestatus()
@@ -308,6 +308,7 @@ def testParallel():
     
 ###########################################################################################
 ###
+# This is now deprecated. Keep it around for a couple of years in case something crops up
 def  runFunctionsInParallel2015(listOf_FuncAndArgLists,kwargs=None,names=None,parallel=None,offsetsSeconds=None,expectNonzeroExit=False,maxAtOnce=None,showFinished=50,  maxFilesAtOnce=None):
     ###
     #######################################################################################

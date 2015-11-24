@@ -16,7 +16,7 @@ Here are some ways I might specify the color sequence in a colorbar (ie, what is
 
 In general, I want to be able to construct color mappings between some *data values* and some colours, and I want to be able to render a colorbar for that mapping (but where I'm not using the image functions, which coordinate colorbars for you).
 
-Moreover, don't want to be constrained to linear scalings between data values and color indices. Therefore, I want to map the *indices* of data onto the *indices* of colors in a color scheme, so as to maximally make use of the available color variation.  Moreover, I want to have access to these mappings so that I can use the same mapping consistently over several plots.
+Moreover, I don't want to be constrained to linear scalings between data values and color indices. Therefore, I want to map the *indices* of data onto the *indices* of colors in a color scheme, so as to maximally make use of the available color variation.  Moreover, I want to have access to these mappings so that I can use the same mapping consistently over several plots.
 
 Therefore, two tools are fundamental to this effort: 
 
@@ -73,6 +73,7 @@ Comments need updating. See general introduction at top of file.
     assignSegmentedColormapEvenly([[0.0,0.0,1.0],[0.0,0.0,0],[1.0,0.0,0.0]], mydata,  0.0)
 
 This can also be achieved using the two-segment application of this function, with its default colours.
+
     assignSplitColormapEvenly(mydata, splitdataat=0.0, RGBpoints=None)
 
     An even simpler application (replacing my old function for this) is for data with a single colour scheme. This maps data optimally onto a blue-red gradient:
@@ -82,6 +83,12 @@ This can also be achieved using the two-segment application of this function, wi
     "missing" color feature not yet implemented
 
     Nlevels is the value that defaults to N_COL_PER_SEGMENT=256 # This is how detailed our colormaps will always be, except in multiple-segment ones, they'll have this many colours per segment.
+
+    The function returns an interpolation function (mapping data to RGB color triplets) by default, or it can be asked to return a dict (asDict=True).
+
+    So I might use the following to get actual color RGB values for each data point:
+    cc=  assignSegmentedColormapEvenly([[0.0,0.0,1.0],[1.0,0.0,0.0]], countries.RMSEs)
+    countries['color']=countries.RMSEs.map(cc)
 
 
     Comment: If you plot your data using these colours, and want to show a colorbar next to the plot, you need not create any matplotlib colormaps; simply pass the mapping given by this function to my addColorbarNonImage().

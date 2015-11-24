@@ -948,7 +948,7 @@ def mean_of_means(vals, ses): # A Weighted mean: weighted by standard errors
     ##########################################################################
     #from pylab import mean #import pylab
     from pylab import sqrt,isnan
-    if vals and any(vals):
+    if list(vals) and any(vals):
         vals,ses=[v for v in vals if not isnan(v)],[v for v in ses if not isnan(v)]
         meanSE=sqrt(1.0/sum([1.0/ff/ff for ff in ses]))
         meanVals=sum([vals[ic]/ses[ic]/ses[ic] for ic in range(len(vals))])*meanSE*meanSE
@@ -2160,9 +2160,10 @@ class Position:
 
 def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels=None,nse=1,ax=None,fig=None,clearfig=False,marker='o',labelfontsize=None):#,xlog=False,ylog=False,): #ids=None,xlab=None,ylab=None,fname=None,,xlog=False,byRegion=None,labelFunction=None,labelFunctionArgs=None,fitEachRegion=False,regionOrder=None,legendMode=None,markerMode=None,subsetIndices=None,forceUpdate=True,labels=None,nearlyTight=True,color=None): #markersize=10         
     """
-    This has been rewritten so that it demands Pandas Dataframe data.
+    This has been rewritten so that it demands Pandas Dataframe data. However, it really needs to integrate properly with cpblUtilitiesColor routines; right now I don't think the colour scale can be trusted.
 
     2013: Simplify. If you have groups, it's easiest to plot with groupby
+
     z would be values to turn into colours (with cmap), or the name of the field in df to use for that.
 
     For simplicity, let's say everything has to be a column name of the df for now.
@@ -2173,6 +2174,7 @@ def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels
     
     2015Nov: If you follow this up with set_yscale=log, does the yrange not get chosen correctly?
 
+    2015Nov: If you send a list or array of RGB np.array's  as the color value (or column), plt.scatter throws an error. turning it (loa) into a single 2D array solves the problem and can be done by np.array(list(loa))
     """
     assert isinstance(df,pd.DataFrame)
 
@@ -2196,9 +2198,9 @@ def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels
         z='b'
     elif isinstance(z,str) and z in df       and hasattr(df[z].values[0],'ndim'): # List of colormap index values, ie scalars in [0,1]
         z=df[z].values
-        #z=np.matrix(df[z].map(list).values)  # This FAILS!!! it gives ndim=1 ndarray for some reason.
+        z=np.array(list(z)) # Turn it into a 2D array to make plt.scatter happy.
     elif isinstance(z,str) and z in df:
-        z=df[z].values
+        z=df[z].values # What is this case? 
     elif isinstance(z,int):
         pass
     #z=np.ones(len(df))*z
@@ -2246,8 +2248,8 @@ Thus, use c=z rather than facecolor=z in below.
 """
 
     sc=ax.scatter(xx,yy, s=markersize, c=z, marker=marker, cmap=cmap, norm=None,   vmin=vmin, vmax=vmax, alpha=None, linewidths=None,      verts=None)#, **kwargs)
-
-
+    # 2015 Nov: colors are not working. I am getting something quasirandom when passing a 2-D array of colours as c... Debug this?
+    
     if isinstance(x,str):  xlabel(x)
     if isinstance(y,str):  ylabel(y)
 
@@ -2273,7 +2275,8 @@ Thus, use c=z rather than facecolor=z in below.
             else:
                 offset=Dx/100
                 ha='left'
-            lb.append(ax.text(xx+offset,yy+Dy/100,L+'   ',rotation='horizontal',horizontalalignment=ha,fontsize=labelfontsize,verticalalignment='center',color='k'))
+            if pd.notnull(xx) and pd.notnull(yy):
+                lb.append(ax.text(xx+offset,yy+Dy/100,L+'   ',rotation='horizontal',horizontalalignment=ha,fontsize=labelfontsize,verticalalignment='center',color='k'))
 
                     
     return({'markers':sc,'eb':eb,'labels':lb})
@@ -5254,6 +5257,8 @@ def weightedMeanSE_pandas(df,varNames,weightVar='weight'):
     means=df.groupby('age').apply(lambda adf: weightedMeanSE_pandas(adf,tomean,weightVar='cw')).reset_index()
     """
     outs={}
+    if isinstance(varNames,basestring):
+        varNames=[varNames]
     varPrefix=''
     for mv in varNames:
         X,W=finiteValues(df[mv].values,df[weightVar].values)
