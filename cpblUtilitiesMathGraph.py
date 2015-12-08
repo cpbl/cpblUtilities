@@ -574,7 +574,7 @@ And it seems you can't automate this from the command line in inkscape. See: htt
 
  """
 
-def tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=False):
+def tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=False,overwrite=False):
     """Makes POSIX-specific OS calls. Need xvfb installed. If it fails anyway, could always resort to use_xvfb=False
 
 Also, see https://github.com/skagedal/svgclip/blob/master/svgclip.py but I find rsvg buggy: it ignored the clipping boxes in my svg.
@@ -585,23 +585,41 @@ Also, see https://github.com/skagedal/svgclip/blob/master/svgclip.py but I find 
     #    try:
     #        import os
     #        os.system('xvfb-run pwd')
-    #    except: 
-    if infile.endswith('.pdf'):
-        infile=infile[:-4]
-    if outfile is None:
-        outfile=infile+'-tightbb.pdf'
-    if not outfile.endswith('.pdf'):
-        outfile+='.pdf'
+    #    except:
     usexvfb='xvfb-run  '*use_xvfb  #  # +extension RANDR  : does not work to fix 
     import os
     from cpblUtilities import doSystem
+
+    
+    if infile.endswith('.svg'):
+        assert outfile is None # Just overwrite SVG files.
+        doSystem(""" 
+%(XVFB)s inkscape -f %(FN)s --verb=FitCanvasToDrawing                                    --verb=FileSave                                    --verb=FileQuit
+        """%{'XVFB':usexvfb, 'FN':infile},  verbose=True,bg='ifserver')
+        return
+
+    if outfile is None and overwrite and infile.endswith('.pdf'):
+        # Random file name tempfile termporary file name (from stackexchange), without creating it yet:
+        #import uuid
+        outfile = infile#'/tmp/'+str(uuid.uuid4())
+        #overwritefile=infile
+    if infile.endswith('.pdf'):
+        infile=infile[:-4]
+    if outfile is None and not overwrite:
+        outfile=infile+'-tightbb.pdf'
+    if not outfile.endswith('.pdf'):
+        outfile+='.pdf'
     # 2014: I should redesign this. First, do not change fonts on import. Second, can I skip the svg stage, with modern version?
     doSystem("""
-%(XVFB)s inkscape -f %(FN)s.pdf -l %(FN)s_tmp.svg
+%(XVFB)s inkscape -f %(FN)s.pdf -l %(FN)s_tmp.svg 
 %(XVFB)s inkscape -f %(FN)s_tmp.svg --verb=FitCanvasToDrawing                                    --verb=FileSave                                    --verb=FileQuit
 %(XVFB)s inkscape -f %(FN)s_tmp.svg -A %(OF)s
 #rm %(FN)s_tmp.svg
 """%{'XVFB':usexvfb, 'FN':infile,'OF':outfile},   verbose=True,bg='ifserver')
+    if 0 and outfile is None and overwrite:
+        sout='cp %s %s'%(outfile,overwritefile)
+        print(' Overwriting original file!: '+sout)
+        os.system(sout)
 
 ##############################################################################
 ##############################################################################
