@@ -210,16 +210,16 @@ Bug:
                 #print('                       Cleaning up/closing queue for job %d'%ii)
                 
 
-    delays=list(np.arange(len(listOf_FuncAndArgLists))*offsetsSeconds)
-    nice(10) # Add 10 to the niceness of this process (POSIX only)
-    jobs = [pWrapper(funcArgs[0],funcArgs[1],funcArgs[2],delays[iii],names[iii]) for iii,funcArgs in enumerate(listOf_FuncAndArgLists)]
-    # Let's never create a loop variable which takes on the value of an element of the above list. Always instead dereference the list using an index.  So no local variables take on the value of a job. (In addition, the job class is supposed to clean itself up when a job is done running).
     if maxFilesAtOnce is None:
         pass # maxFilesAtOnce =max(10*maxAtOnce,100) 
     if maxAtOnce is None:
         maxAtOnce=max(1,cpu_count()-1)  #np.inf
     else:
         maxAtOnce=max(min(cpu_count()-2,maxAtOnce),1)  #np.inf
+    delays=list((  (np.arange(len(listOf_FuncAndArgLists))-1) * ( np.arange(len(listOf_FuncAndArgLists))<maxAtOnce  ) + 1 )* offsetsSeconds)
+    nice(10) # Add 10 to the niceness of this process (POSIX only)
+    jobs = [pWrapper(funcArgs[0],funcArgs[1],funcArgs[2],delays[iii],names[iii]) for iii,funcArgs in enumerate(listOf_FuncAndArgLists)]
+    # Let's never create a loop variable which takes on the value of an element of the above list. Always instead dereference the list using an index.  So no local variables take on the value of a job. (In addition, the job class is supposed to clean itself up when a job is done running).
 
     istart=maxAtOnce if maxAtOnce<len(jobs) else len(jobs)
     status=[None for                 ii,fff in enumerate(listOf_FuncAndArgLists)]

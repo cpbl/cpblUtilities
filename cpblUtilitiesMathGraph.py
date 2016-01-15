@@ -621,6 +621,16 @@ Also, see https://github.com/skagedal/svgclip/blob/master/svgclip.py but I find 
         print(' Overwriting original file!: '+sout)
         os.system(sout)
 
+
+def saveAllFiguresToPDF(filename, figs=None, dpi=200):# : a trick to save all open figures. To a single PDF file.
+    from matplotlib.backends.backend_pdf import PdfPages
+    pp = PdfPages(filename)
+    if figs is None:
+        figs = [plt.figure(n) for n in plt.get_fignums()]
+    for fig in figs:
+        fig.savefig(pp, format='pdf')
+    pp.close()
+        
 ##############################################################################
 ##############################################################################
 #
