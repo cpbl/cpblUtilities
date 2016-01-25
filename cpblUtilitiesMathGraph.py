@@ -1615,6 +1615,7 @@ linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  ax=None
         assert linecolor.__class__ not in [list] # Smply not supported yet.
         assert facecolor.__class__ not in [list] # Smply not supported yet.
         if color is None:
+            from cpblUtilitiesColor import getIndexedColormap
             color=getIndexedColormap('jet',len(yv)) # OR could use colorcycler
         if not hasattr(color,'__iter__'):
             color=[color]*len(yv)
@@ -1656,7 +1657,7 @@ linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  ax=None
     #assert df[xv].isfinite().any() and  any(isfinite(yv))
     pltargs={} if linecolor is None else {'color':linecolor}
     hLine=ax.plot(df[xv], df[yv], linestyle=linestyle, linewidth=2, 
-        label=None if labelson in ['patches','envelopes','envelope','patch'] else yv if label is None else label,
+        label="_nolegend_" if labelson in ['patches','envelopes','envelope','patch'] else yv if label is None else label,
         **pltargs
               )
 
@@ -1664,7 +1665,7 @@ linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  ax=None
     if linecolor is None and facecolor is None:
         facecolor=hLine[0].get_color()
         
-    envelopePatch=ax.fill_between(df[xv], yLow, yHigh, facecolor=facecolor, alpha=alpha, label=None if labelson in ['lines','line'] else yv if label is None else label, edgecolor='None')
+    envelopePatch=ax.fill_between(df[xv], yLow, yHigh, facecolor=facecolor, alpha=alpha, label="_nolegend_" if labelson in ['lines','line'] else yv if label is None else label, edgecolor='None')
     return(hLine,envelopePatch)
 
 

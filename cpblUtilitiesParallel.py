@@ -330,7 +330,7 @@ def testParallel():
             i=i+1
         return(jj)
     nTest=2700
-    runFunctionsInParallel([[doodle,[ii]] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=None, maxAtOnce=40, parallel=True, expectNonzeroExit=True)
+    runFunctionsInParallel([[doodle,[ii]] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, expectNonzeroExit=True)
 def testParallel():
     def doodle():
         i=0
@@ -338,7 +338,7 @@ def testParallel():
             i=i+1
         return(i)
     nTest=700
-    runFunctionsInParallel([[doodle,[]] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=None, maxAtOnce=10, showFinished=5)
+    runFunctionsInParallel([[doodle,[]] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=10, showFinished=5)
 
 
 
