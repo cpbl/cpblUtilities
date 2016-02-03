@@ -871,6 +871,9 @@ se is the standard error. you can just specify that for smarter choices about si
     ss='%.1g'%ff
     if aa<lowCutoff:
         ss='0'
+        if lowCutoffOOM:
+            negexp=int(np.ceil(np.log10(aa)))
+            ss='-'*(ff<0)+ r'$<$10$^{%d}$'%negexp
     if aa>=0.0001:
         ss=('%.4f'%ff)
     if aa>=0.001:
