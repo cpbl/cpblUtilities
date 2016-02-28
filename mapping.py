@@ -119,7 +119,7 @@ The other/older approoach is to substitute a style inside each path or path grou
         except(ValueError) as e:
             scratchpath = './____tmp_'# if scratchpath is None else os.path.split(outfilename)[0]+'/____tmp_'
 
-    #from cpblUtilitiesMapping import colors_for_filling_svg, addColorbar_to_svg
+    #from cpblUtilities.mapping import colors_for_filling_svg, addColorbar_to_svg
     hexlookup,d2c_cb=colors_for_filling_svg(geo2data_or_color=geo2data_or_color, data2color=data2color, demo=demo,colorbarlimits=colorbarlimits)
 
     import codecs
@@ -136,7 +136,7 @@ The other/older approoach is to substitute a style inside each path or path grou
 
     # In CSS, id=myid is controlled by #myid {fill..}., while class="land country CA" is controlled by, e.g. .CA {fill: ...}.  So the following line either selects a class, with a period, or an id, with a #.
     colortables="""
-/* Define colours by region (cpblUtilitiesMapping.py)
+/* Define colours by region (cpblUtilities.mapping.py)
  */\n .ZZZ   {}
 """+'\n'.join([' %s%s   {  fill:       %s;   }'%('.' if CSSselector in ['class'] else '#', cc,hh) for cc,hh in hexlookup.to_dict().items()])+'\n'  # How to avoid bad/nan regions here? Seems fine, but may not be robust.
 
@@ -203,7 +203,7 @@ The return value is the full svg text with colorbar added.
     # Load svg into svgutils; determine units of the layout
     base_svg=sg.fromfile(insvgfn)
     def _getSizeWithUnits(svgbase):
-        from cpblUtilitiesMathGraph import tonumeric
+        from cpblUtilities.mathgraph import tonumeric
         # Assume measure is digits then units:
         ww,hh=svgbase.get_size()
         ww,unitsSuffix=''.join([cc  for cc in ww if isdec(cc)]),''.join([cc  for cc in ww if not isdec(cc)])  
@@ -462,7 +462,7 @@ def colorize_svg_by_id(geo2data_or_color=None, blanksvgfile=None,outfilename=Non
         except(ValueError) as e:
             scratchpath = './____tmp_'# if scratchpath is None else os.path.split(outfilename)[0]+'/____tmp_'
 
-    from cpblUtilitiesMapping import colors_for_filling_svg, addColorbar_to_svg
+    from cpblUtilities.mapping import colors_for_filling_svg, addColorbar_to_svg
     hexlookup,d2c_cb=colors_for_filling_svg(geo2data_or_color=geo2data_or_color, data2color=data2color, demo=demo,colorbarlimits=colorbarlimits)
 
     def _hexcolors_into_svg(_geo2hex,svgtext,customfeatures,   hideElementsWithoutData= None ):
@@ -566,7 +566,7 @@ def ___try_osgeo():
     import cpblUtilities
     reload(cpblUtilities)
     from cpblUtilities import unique, doSystem,tsvToDict
-    from cpblUtilitiesMathGraph import  tonumeric, overplotLinFit,xTicksLogIncome
+    from cpblUtilities.mathgraph import  tonumeric, overplotLinFit,xTicksLogIncome
     from copy import deepcopy
     import cpblDefaults
     reload(cpblDefaults)

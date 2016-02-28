@@ -1551,7 +1551,7 @@ def labelLine(lines):
 
 
 def dfPlotWithEnvelope_demo():
-    from cpblUtilitiesColor import getIndexedColormap
+    from cpblUtilities.color import getIndexedColormap
     df=pd.DataFrame( {'x' : pd.Series([1., 2., 3., 5.]), #, index=['a', 'b', 'c']),
          'y' : pd.Series([1., 2., 3., 4.])}) #, index=['a', 'b', 'c', 'd'])} )
     df['se_y']=df.y*-.01 + .2
@@ -1615,7 +1615,7 @@ linestyle='-', linecolor=None, facecolor=None, alpha=0.5,  ax=None
         assert linecolor.__class__ not in [list] # Smply not supported yet.
         assert facecolor.__class__ not in [list] # Smply not supported yet.
         if color is None:
-            from cpblUtilitiesColor import getIndexedColormap
+            from cpblUtilities.color import getIndexedColormap
             color=getIndexedColormap('jet',len(yv)) # OR could use colorcycler
         if not hasattr(color,'__iter__'):
             color=[color]*len(yv)
@@ -1691,7 +1691,7 @@ def dfPlotWithEnvelope_2015(df, xv, yv, ylow=None, yhigh=None, nse=1.96, linesty
     # 2014 Sept: This is broken! Ignores most other arguments of original call. And doesn't interpret other things sent as lists, like label or colors...  [Partially solved: sep2014]
     # 2015: Adding ylow,yhigh: rather than specify s.e.'s, we may want to give the name of columns explicitly giving the limits.
 
-    from cpblUtilitiesColor import getIndexedColormap
+    from cpblUtilities.color import getIndexedColormap
 
     # Sep 2014: Changed labels. I guess you now canont label both lines and patches! Oops. 
     if patchLabel is not None:
@@ -2189,7 +2189,7 @@ class Position:
 
 def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels=None,nse=1,ax=None,fig=None,clearfig=False,marker='o',labelfontsize=None):#,xlog=False,ylog=False,): #ids=None,xlab=None,ylab=None,fname=None,,xlog=False,byRegion=None,labelFunction=None,labelFunctionArgs=None,fitEachRegion=False,regionOrder=None,legendMode=None,markerMode=None,subsetIndices=None,forceUpdate=True,labels=None,nearlyTight=True,color=None): #markersize=10         
     """
-    This has been rewritten so that it demands Pandas Dataframe data. However, it really needs to integrate properly with cpblUtilitiesColor routines; right now I don't think the colour scale can be trusted.
+    This has been rewritten so that it demands Pandas Dataframe data. However, it really needs to integrate properly with cpblUtilities.color routines; right now I don't think the colour scale can be trusted.
 
     2013: Simplify. If you have groups, it's easiest to plot with groupby
 
@@ -2395,7 +2395,7 @@ xse=None,yse=None,labels=None,nearlyTight=True,color=None): #markersize=10
     """ 
 Feb 2010: Adding "byRegion" option: pass the region name for each country
 
-March 2010: Moved to cpblUtilitiesMathGraph from regressionsGallup (may need generalising!?)
+March 2010: Moved to cpblUtilities.mathgraph from regressionsGallup (may need generalising!?)
     # So this is for Gallup...
 
 Hmmm. trying to generalise, so:
@@ -3817,7 +3817,7 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,fig=None,clearf
         print('Skipping a histogram with no colour data...')
         return([],[],None)
     assert cvar is not None #Just use hist() otherwise!
-    from cpblUtilitiesColor import assignSegmentedColormapEvenly
+    from cpblUtilities.color import assignSegmentedColormapEvenly
     colorsf= assignSegmentedColormapEvenly(cmap,dfn[cvar] if cvarRange is None else cvarRange ,asDict=False,missing=[1,1,1],Nlevels=Ncolors)
     # Using asDict=True is a nice way to discretize the data to 256 levels (spaced by quantile)
     colors= assignSegmentedColormapEvenly(cmap,dfn[cvar] if cvarRange is None else cvarRange ,asDict=True,missing=[1,1,1],Nlevels=Ncolors)
@@ -3872,7 +3872,7 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,fig=None,clearf
     ylabel('Number')# of streets (edges)')
     xlabel(pvar)
     ax=plt.gca()
-    from cpblUtilitiesColor import addColorbarNonImage
+    from cpblUtilities.color import addColorbarNonImage
     cbax=addColorbarNonImage(data2color=colors,ylabel=cvar.replace('_',' '))#'YEAR')   # min(allyears),max(allyears)
     plt.axes(ax)
     return(ax,cbax,colorsf)
@@ -4764,7 +4764,7 @@ legend("topleft",legend = c("95% Quantile regression", "95% Quantile LOESS"), fi
 
     
 def OBSELETE_assignColormapEvenly(cmap,zs,asDict=False,missing=[1,1,1]):
-    from cpblUtilitiesColor import assignSegmentedColormapEvenly
+    from cpblUtilities.color import assignSegmentedColormapEvenly
     assert missing== [1,1,1]  #Ignored!!!!!!!
     if cmap is None:
         cmap='jet'
@@ -5349,7 +5349,7 @@ So far, does not report any S.E.
 
 
 
-Sample usage: sprawl/cpblUtilitiesMathGraph.py:    newdf=grouped.apply(weightedMeanSE_pandas,meansOf,weightVar)
+Sample usage: sprawl/cpblUtilities.mathgraph.py:    newdf=grouped.apply(weightedMeanSE_pandas,meansOf,weightVar)
 
 """
 

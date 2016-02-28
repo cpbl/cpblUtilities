@@ -588,7 +588,7 @@ def reverse_cdict(cdict):
 
 def demoCPBLcolormapFunctions():
     """
-I believe the following may be out of date. Moved (nov2014) here fro cpblUtilitiesMathGraph but doesn't yet work.
+I believe the following may be out of date. Moved (nov2014) here fro cpblUtilities.mathgraph but doesn't yet work.
 
     Agh. I've clearly got too many functions! So try to make sense of them.
     This is only a start; I need comments and differentiation.
@@ -627,7 +627,7 @@ _colorAssignmentToColormap # Nope! This is now only for use within addColorbarNo
 plot_biLinearColorscale
 
     """
-    from cpblUtilitiesColor import addColorbarNonimage, getIndexedColormap
+    from cpblUtilities.color import addColorbarNonimage, getIndexedColormap
     import random
 
     x=np.arange(10,1200,.9)
@@ -794,7 +794,7 @@ def cpblColorDemos():
 #################### CAUTION: linearColormapLookup and assignColormapEvenly are not yet sanctioned to be in this file. Ascertain whether it can be obseleted.
 
 def assignColormapEvenly(cmap,zs,asDict=False,missing=[1,1,1]):
-    from cpblUtilitiesColor import assignSegmentedColormapEvenly
+    from cpblUtilities.color import assignSegmentedColormapEvenly
     assert missing== [1,1,1]  #Ignored!!!!!!!
     if cmap is None:
         cmap='jet'

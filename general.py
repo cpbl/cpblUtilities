@@ -1541,13 +1541,13 @@ def existsLargePandas(fn):
 
 
 try:   # amb added Jan 2014 - otherwise pylab import fails without X11
-    from cpblUtilitiesMathGraph import *
+    from cpblUtilities.mathgraph import *
 except:
-    print "can't import cpblUtilitiesMathGraph"
+    print "can't import cpblUtilities.mathgraph"
 try:  
-    from cpblUtilitiesColor import *
+    from cpblUtilities.color import *
 except:
-    print "can't import cpblUtilitiesColor"
+    print "can't import cpblUtilities.color"
 
 if 0: #defaults['mode'] in ['gallup','rdc']:
     try: #This dependency should be excised....
@@ -1848,9 +1848,9 @@ df=dfs['Sheet1']
 
 
 try: # Where is this needed? Should import it only where needed.        
-    from cpblUtilitiesParallel import *
+    from cpblUtilities.parallel import *
 except ImportError:
-    print("Unable to find CPBL's runFunctionsInParallel (cpblUtilitiesParallel) module")
+    print("Unable to find CPBL's runFunctionsInParallel (cpblUtilities.parallel) module")
 
 try: # Where is this needed? Should import it only where needed.        
     from cpblUtilitiesUnicode import *
