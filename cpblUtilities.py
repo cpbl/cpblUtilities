@@ -1461,9 +1461,9 @@ def dgetgetOLD(adict,key1=None,key2=None,key3=None,key4=None,key5=None,key6=None
 
 
 try: # Where is this needed? Should import it only where needed.        
-    from cpblTablesTex import *
+    from cpbl_tables import *
 except ImportError:
-    print("Unable to find CPBL's tables TeX package")
+    print(__name__+":Unable to find CPBL's tables TeX package")
 
 
         
@@ -1541,13 +1541,13 @@ def existsLargePandas(fn):
 
 
 try:   # amb added Jan 2014 - otherwise pylab import fails without X11
-    from cpblUtilities.mathgraph import *
+    from mathgraph import *
 except:
-    print "can't import cpblUtilities.mathgraph"
+    print __name__+": can't import cpblUtilities.mathgraph"
 try:  
-    from cpblUtilities.color import *
+    from color import *
 except:
-    print "can't import cpblUtilities.color"
+    print __name__+": can't import cpblUtilities.color"
 
 if 0: #defaults['mode'] in ['gallup','rdc']:
     try: #This dependency should be excised....
@@ -1848,13 +1848,13 @@ df=dfs['Sheet1']
 
 
 try: # Where is this needed? Should import it only where needed.        
-    from cpblUtilities.parallel import *
+    from parallel import *
 except ImportError:
-    print("Unable to find CPBL's runFunctionsInParallel (cpblUtilities.parallel) module")
+    print(__name__ +":Unable to find CPBL's runFunctionsInParallel (cpblUtilities.parallel) module")
 
 try: # Where is this needed? Should import it only where needed.        
     from cpblUtilitiesUnicode import *
 except ImportError:
-    print("Unable to find CPBL's ragged unicode converstions module")
+    print(__name__+":Unable to find CPBL's ragged unicode converstions module")
 
 
