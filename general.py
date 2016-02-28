@@ -837,7 +837,8 @@ If, instead of conditionalWrapper, "convertStrings" is supplied, then strings wi
 Error handling for conversions is not yet done.
 
 If lowCutoff is supplied, smaller numbers than it will be shown as "zero".
-lowCutoffOOM=True will use "<10^-x" rather than "zero" in above. the Cutoff had better be a power of 10. (not implemented? bit tricky)
+If lowCutoffOOM in [True,'log'], we will use "<10^-x" rather than "zero" in above. It will, awkwardly, report $-<$10$^{-6}$ for -1e-7.
+If lowCutoffOOM is some other string, then it will be used for small numbers. E.g, provide lowCutoffOOM='$<$10$^{-6}$' to show that for numbers smaller than the lowCutoff. Note that in this case the output is not sensitive to sign.
 
 If highCutoff is supplied, larger numbers will be shown as "big". May 2011: reducing this from 1e6 to 1e8, since it was binding on sample sizes.
 
@@ -871,9 +872,11 @@ se is the standard error. you can just specify that for smarter choices about si
     ss='%.1g'%ff
     if aa<lowCutoff:
         ss='0'
-        if lowCutoffOOM:
+        if lowCutoffOOM in [True,'log']:
             negexp=int(np.ceil(np.log10(aa)))
             ss='-'*(ff<0)+ r'$<$10$^{%d}$'%negexp
+        elif isinstance(lowCutoffOOM,basestring):
+            ss=lowCutoffOOM
     if aa>=0.0001:
         ss=('%.4f'%ff)
     if aa>=0.001:

@@ -6210,8 +6210,63 @@ def get_hbox(widths,fontsize,double=False):
     return hbox
 
 
+def get_text_bounding_box(fig,ttt):
+    # There's another option here:
+    #
+    # This one is from: http://stackoverflow.com/questions/22667224/matplotlib-get-text-bounding-box-independent-of-backend
 
+    def find_renderer(fig):
+        #From http://stackoverflow.com/questions/22667224/matplotlib-get-text-bounding-box-independent-of-backend
+        if hasattr(fig.canvas, "get_renderer"):
+            #Some backends, such as TkAgg, have the get_renderer method, which 
+            #makes this easy.
+            renderer = fig.canvas.get_renderer()
+        else:
+            #Other backends do not have the get_renderer method, so we have a work 
+            #around to find the renderer.  Print the figure to a temporary file 
+            #object, and then grab the renderer that was used.
+            #(I stole this trick from the matplotlib backend_bases.py 
+            #print_figure() method.)
+            import io
+            fig.canvas.print_pdf(io.BytesIO())
+            renderer = fig._cachedRenderer
+        return(renderer)
 
+    renderer1 = find_renderer(fig)
+    bboxes=[  att.get_window_extent(renderer1)   for att in ttt ]
+    return(bboxes)
+def get_vertical_repulsion(bboxes):
+    #from matplotlib.patches import Rectangle
+    hvIndex=1 # 1 is vertical; 0 is horizontal
+    #rects=[[ Rectangle([bbox1.x0, bbox1.y0], bbox1.width, bbox1.height, color = [0,0,0], fill = False)] for bb1 in bboxes]
+    shifts=[0]*len(bboxes)
+    for ii1,bb1 in enumerate(bboxes):
+        for ii2,bb2 in enumerate(bboxes):
+            if ii1>=ii2: continue
+            if bb1.overlaps(bb2):
+                onehigher=-1+2*(bb1.min[hvIndex] > bb2.min[hvIndex])
+                shifts[ii1]=onehigher
+                shifts[ii2]=-onehigher
+    return(shifts)
+
+def resolve_overlaps_vertical(artists,fig=None,shiftResolution=.1):
+    if fig is None:
+        fig=plt.gcf()
+    shifts=[1]
+    ShiftResolution=.2
+    hvIndex=1 # ie vertical; 0=horizontal
+    plt.show()
+    while any(shifts):
+        plt.draw()
+        #raw_input()
+        bboxes=get_text_bounding_box(fig,artists)
+        shifts=get_vertical_repulsion(bboxes)
+        print shifts
+        #stext=[]
+        for iis,sh in enumerate(shifts):
+            #print stext[iis].get_window_extent()
+            artists[iis].set_y(artists[iis].get_position()[hvIndex]+sh*ShiftResolution)
+            #print stext[iis].get_window_extent()
 
 
 if 0:
