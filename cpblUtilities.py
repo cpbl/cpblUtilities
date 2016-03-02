@@ -1,5 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+"""
+Configuration:
+ A config.ini file should be used to set up folders to be used by cpblUtilities. The configuration procedure is as follows:
+  (1) cpblUtilities.configure() can be called to explicity set config values.
+  (2) Otherwise, cpblUtilities will look for a config.ini file in the operating system's local path at run time. Typically, this would be a file in the package of some caller module and would be in .gitignore so that it can be locally customized
+  (3) Otherwise, cpblUtilities will look for a config.ini file in its own (the cpblUtilities repository) folder.  
+
+"""
+from config import *
 
 import os
 import re
@@ -1463,7 +1472,9 @@ def dgetgetOLD(adict,key1=None,key2=None,key3=None,key4=None,key5=None,key6=None
 try: # Where is this needed? Should import it only where needed.        
     from cpbl_tables import *
 except ImportError:
-    print(__name__+":Unable to find CPBL's tables TeX package")
+    print(__file__+":Unable to find CPBL's tables TeX package")
+
+
 
 
         
@@ -1543,11 +1554,11 @@ def existsLargePandas(fn):
 try:   # amb added Jan 2014 - otherwise pylab import fails without X11
     from mathgraph import *
 except:
-    print __name__+": can't import cpblUtilities.mathgraph"
+    print __file__+": can't import cpblUtilities.mathgraph"
 try:  
     from color import *
 except:
-    print __name__+": can't import cpblUtilities.color"
+    print __file__+": can't import cpblUtilities.color"
 
 if 0: #defaults['mode'] in ['gallup','rdc']:
     try: #This dependency should be excised....
@@ -1850,11 +1861,11 @@ df=dfs['Sheet1']
 try: # Where is this needed? Should import it only where needed.        
     from parallel import *
 except ImportError:
-    print(__name__ +":Unable to find CPBL's runFunctionsInParallel (cpblUtilities.parallel) module")
+    print(__file__ +":Unable to find CPBL's runFunctionsInParallel (cpblUtilities.parallel) module")
 
 try: # Where is this needed? Should import it only where needed.        
     from cpblUtilitiesUnicode import *
 except ImportError:
-    print(__name__+":Unable to find CPBL's ragged unicode converstions module")
+    print(__file__+":Unable to find CPBL's ragged unicode converstions module")
 
 
