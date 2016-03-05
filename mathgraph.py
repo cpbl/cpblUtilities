@@ -718,7 +718,7 @@ Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pd
 
     if not root:
         try:
-            from cpblDefaults import defaults, paths
+            from config import defaults, paths
             root=paths['graphics']#'/home/cpbl/rdc/workingData/graphics/'#defaults['workingPath']+'graphics/'#'graphicsPath'
         except:
             root='./'#/home/cpbl/rdc/graphicsOuttest/graphics/'#defaults['workingPath']+'graphics/'#'graphicsPath'
@@ -2492,7 +2492,7 @@ Sep 2010:  This used to capitalise axis labels in the byregion mode.  I'm taking
     if not fname is None:
         fDir,fname= os.path.split(fname)
     if not fDir:
-        from cpblDefaults import paths
+        from config import paths
         fDir=paths['graphics']#'/home/cpbl/gallup/graphicsOut/'
     else:
         fDir+='/'
