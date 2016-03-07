@@ -70,7 +70,6 @@ def readConfigFile(inpath):
                 'tex',
                 'scratch',
                 'bin',
-                'download',
                 'graphics',
                 'outputData',
              ] ]             ),

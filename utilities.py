@@ -8,7 +8,7 @@ Configuration:
   (3) Otherwise, cpblUtilities will look for a config.ini file in its own (the cpblUtilities repository) folder.  
 
 """
-from config import *
+from .cpblUtilities_config import *
 
 import os
 import re
