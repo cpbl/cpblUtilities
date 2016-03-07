@@ -114,7 +114,7 @@ The other/older approoach is to substitute a style inside each path or path grou
     assert CSSselector in ['class','id']
     if scratchpath is None:
         try:
-            from .config import paths
+            from .cpblUtilities_config import paths
             scratchpath=paths['scratch']
         except(ValueError) as e:
             scratchpath = './____tmp_'# if scratchpath is None else os.path.split(outfilename)[0]+'/____tmp_'
@@ -457,7 +457,7 @@ def colorize_svg_by_id(geo2data_or_color=None, blanksvgfile=None,outfilename=Non
         return
     if scratchpath is None:
         try:
-            from .config import paths
+            from .cpblUtilities_config import paths
             scratchpath=paths['scratch']
         except(ValueError) as e:
             scratchpath = './____tmp_'# if scratchpath is None else os.path.split(outfilename)[0]+'/____tmp_'
@@ -568,7 +568,7 @@ def ___try_osgeo():
     from cpblUtilities import unique, doSystem,tsvToDict
     from cpblUtilities.mathgraph import  tonumeric, overplotLinFit,xTicksLogIncome
     from copy import deepcopy
-    from .config import defaults
+    from .cpblUtilities_config import defaults
     import pylab
 
 
@@ -625,7 +625,7 @@ if __name__ == '__main__':
 
 
     foooo
-    from config import paths
+    from .cpblUtilities_config import paths
     WP=paths['working']
     swlv=tsvToDict(WP+'HRmeanSWL.csv',vectors=True)
     swl=dict(zip(cpbl.tonumeric(swlv['PR_HRUID']),cpbl.tonumeric(swlv['ss'])))
@@ -851,7 +851,7 @@ if __name__ == '__main__':
         import matplotlib.pyplot as plt
         #from mpl_toolkits.basemap import Basemap as Basemap
         import osgeo.ogr
-        from config import defaults
+        from .cpblUtilities_config import defaults
 
 
         #cc=osgeo.ogr.Open('/home/cpbl/tmp/countries_c.dat')
