@@ -59,8 +59,8 @@ def readConfigFile(inpath):
     import ConfigParser
     print(__file__+': Parsing '+inpath)
     # New instance with 'bar' and 'baz' defaulting to 'Life' and 'hard' each
-    config = ConfigParser.SafeConfigParser({'pwd': os.getcwd(),'cwd': os.getcwd()})
-    config.read(inpath)
+    config = ConfigParser.SafeConfigParser({'pwd': os.getcwd(),'cwd': os.getcwd()}, 'mode':'none')
+    listfound=config.read(inpath)
     defaultsDict=dict(
         paths=dict([
             [ppp, config.get('paths', ppp)] for ppp in [
