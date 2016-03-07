@@ -93,3 +93,7 @@ else:
         createDefaultConfigFile(repoFile)
     configDict=readConfigFile(repoFile)
 configure(configDict)
+
+
+# Also fill in some other things, through testing?
+defaults['stataVersion']='linux14' # Deprecated; need to remove
