@@ -3220,6 +3220,20 @@ This can be deprecated, though, in favour of this approach:
     return(lh2)
 
 
+def reorderLegend(ax=None,order=None,key=None,unique=True):
+    if ax is None: ax=plt.gca()
+    
+    handles, labels = ax.get_legend_handles_labels()
+    # sort both labels and handles by labels
+    labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
+    if order is not None: # Sort according to a given list (not necessarily complete)
+        keys=dict(zip(order,range(len(order))))
+        labels, handles = zip(*sorted(zip(labels, handles), key=lambda t,keys=keys: keys.get(t[0],np.inf)))
+    ax.legend(handles, labels)
+
+    return(handles, labels)
+
+
 def transLegend2013(figlegend=False,comments=None,removeOldLegends=True,showOnly=None,title=None,loc='best',titlesize=None,bbox_to_anchor=None,ncol=1): # Make a legend and, if it's not empty, set some transparency properties.
     """
     Started out simply making a translucent legend (somewhat safely).
