@@ -1,11 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-Configuration:
- A config.ini file should be used to set up folders to be used by cpblUtilities. The configuration procedure is as follows:
-  (1) cpblUtilities.configure() can be called to explicity set config values.
-  (2) Otherwise, cpblUtilities will look for a config.ini file in the operating system's local path at run time. Typically, this would be a file in the package of some caller module and would be in .gitignore so that it can be locally customized
-  (3) Otherwise, cpblUtilities will look for a config.ini file in its own (the cpblUtilities repository) folder.  
+This is a poorly-organized collection of utilities of general, errr, utility.
+
+Configuration: See cpblUtilities-config.py.  In short, copy config-template.cfg to config.cfg and edit it.
+
+ A config.cfg file should be used to set up folders to be used by cpblUtilities. The configuration procedure is as follows:
+
+  (1) If config.cfg exists locally, it will be used.
+
+  (2) Otherwise, cpblUtilities will look for a config.cfg file in its own (the cpblUtilities repository) folder.  
 
 """
 from .cpblUtilities_config import *
@@ -13,6 +17,14 @@ from .cpblUtilities_config import *
 import os
 import re
 from copy import deepcopy
+import sys
+import time
+
+#try: # Where is this needed? Should import it only where needed.        
+#    from cpbl_tables import *
+#except ImportError:
+#    print(__file__+":Unable to find CPBL's tables TeX package")
+
 
 def debugprint(a='',b='',c='',d='',f='',g='',h='',i='',j='',k='',l='',m='',n=''):
     #print 'DEBUG -- '+str([a,b,c,d,f,g,h,i,j,k,l,m,n])
@@ -41,23 +53,6 @@ def toYearFraction(date):
 
     return date.year + fraction
 
-def y2k(ss):
-    year=int(ss)
-    if year < 1900:
-        year=[[year+cc for cc in [1900,2000] if 1950<year+cc<2050][0]][0]
-    else:
-        print 'year ',year,' does not need y2k'
-    return(year)
-
-def _deprecated2013_cleanFields(LL):
-    """ This simplifies whitespace and trims fields in a list of lists.. has this been done already? no.  Well, actually, it made no difference, so probably yes.
-    """
-    for i in range(len(LL)):
-        LL[i]=list(LL[i]) # Convert a list of tuples into a list of lists
-        for j in range(len(LL[i])):
-            if type(LL[i][j])==type('a string'):
-                LL[i][j]= re.sub('\s+',' ',LL[i][j]).strip()
-    return(LL)
 
 
 
@@ -116,24 +111,6 @@ def wget(url,binaryMode=0):
     else:
         return(htmlSource)
 
-def _deprecated2013_removeLikeFields(a,b):
-    """ Strip two dictionaries down to their non-identical elements .
-    """
-    # Careful! Python "=" assignment does not make copies, usually. The following only makes a "shallow" copy of the dictionaries. A simple assignment would not copy at all, just point.
-    aa=a.copy()
-    bb=b.copy()
-    same={}
-    for k in aa.keys():
-        #if aa.has_key(k) and bb.has_key(k):
-            #print 'Key: |%s|     values: |%s|   |%s|'%(k, aa[k],bb[k])
-        if aa.has_key(k) and bb.has_key(k) and aa[k]==bb[k]:
-            same[k]=a[k]
-#            print 'Deleting',same[k]
-            del aa[k]
-            del bb[k]
-#    print 'Removed %d=%d=%d fields from each of (%d,%d)'%(len(a)-len(aa),len(b)-len(bb),len(same),len(a),len(b))
-#    print 'In common: ',same
-    return(aa,bb,same)
 
 ###########################################################################################
 ###
@@ -143,7 +120,6 @@ def doSystem(acommand,verbose=False,bg=None):
     """
     2011/2: Added some facility for background launching.
     """
-    import os
     if bg=='ifserver':
         if 'apollo' in os.uname()[1]:
             bg=True
@@ -278,7 +254,6 @@ Jan 2013: I will often be ussing pandas from now on, though this still is a usef
 
     def verboseprint(ss,a='',b='',c='',d='',e='',f=''):
         return()
-    import sys
     #isNaN=['','no data/no data','no data','..','*','(dropped)']
     verboseprint ('tsvToDict: Reading ',filename,'...',)
     sys.stdout.flush()
@@ -458,57 +433,6 @@ Jan 2013: I will often be ussing pandas from now on, though this still is a usef
     return(tsv)#,cells[0:dataRow]) # 21 Sept 2006: I took this second return argument out.
 
 
-def processInjector(toRun,nSimultaneous,psGrepString):
-    """
-    toRun is a list of commands to run. This keeps n of them going at once
-    """
-    import commands
-    import os
-    import re
-    import time
-
-    #toRun=open(fileOfCommands,'r').readlines()
-    nRunning=0
-    while toRun:
-        rval,ps=commands.getstatusoutput('ps -Afj |grep "%s" |grep -v "grep"|grep -v "injector"'%psGrepString)
-        print ps
-        nRunning=len(ps.split('\n'))
-        if nRunning<nSimultaneous:
-            ap=toRun.pop(0)+'&'
-            os.system(ap)
-            print 'Launched %s'%ap
-            time.sleep(1)
-        else:
-            print '%d running; %d left'%(nRunning,len(toRun))
-            time.sleep(10)
-
-
-##############################################################################
-##############################################################################
-#
-def popWordString(sfrom,sstrings):
-    ##########################################################################
-    ##########################################################################
-
-    """Use function below, but ensure parens are literal.
-    """
-##  if 0:
-##         outlist=[]
-##         for ss in sstrings:
-##             # Replace/Match word, possibly at end of string
-##             reg=r'[\b\s]'+ss+r'[\b\s]'
-##             sfrom,ns=re.compile(reg,re.IGNORECASE|re.UNICODE).subn(' ',sfrom)
-##             if ns:
-##                 outlist.append(ss)
-##         return (sfrom.strip(),outlist)
-    # Escape all regexp control characters: (this could be done with a re.sub !)
-    regexps=[]
-    for ss in sstrings:
-        for ic in '*?+&$|().[]':
-            ss=ss.replace(ic,'\\'+ic)
-        regexps.append(ss)
-    #regexps=[s.replace('(',r'\(').replace(')',r'\)') for s in sstrings]
-    return(popWordRE(sfrom,regexps))
 
 ##############################################################################
 ##############################################################################
@@ -568,25 +492,6 @@ def popStringIC(sfrom,ssearch):
             outlist.append(ss)
     return (sfrom.strip(),outlist)
 
-
-##############################################################################
-##############################################################################
-#
-def unique_obselete(alist,key=None):    # Fastest order preserving
-    """ NOTE!!! I have renamed this function as below, since numpy has a unique() which sorts.
-    This copy with old name, "unique()", is for backwards compat.
-
-    """
-    ##########################################################################
-    ##########################################################################
-    assert ''=='REPLACE THIS CALL WITH UNIQUEINORDER'
-    if key==None:
-        set = {}
-        return [set.setdefault(e,e) for e in alist if e not in set]
-    else: # Find dicts with unique values of key:
-        NotDoneYet
-        # set = {}
-        #return [set.setdefault(e,e) for e in alist if e[key] not in [s[key] for s in set]]
 ##############################################################################
 ##############################################################################
 #
@@ -985,7 +890,7 @@ def readTSV(filepath, header=False, columnDict=False):
     ##########################################################################
     ##########################################################################
     """
-    WTF!? See ImportSpreadsheet, above! and tsvDict ... How many times have I reinvnted the weheel??
+    hmmm!? See ImportSpreadsheet, above! and tsvDict ... How many times have I reinvnted the weheel??
     Depending on args, returns headers and data, or dict ,....
     """
     ff=[aline.strip('\n').split('\t') for aline in open(filepath,'rt').readlines()]
@@ -1085,186 +990,7 @@ CAUTION: The method below will FAIL on a list of lists of dicts. It will treat d
         return(uniqueInOrder([xx for xx in flatten(listoflists)]))
     else:
         return([xx for xx in flatten(listoflists)])
-def flatten_deprectaed_BECAUSE_PYLAB_HAS_ONE(l, ltypes=(list, tuple),toList=False):
-    """
-    June 2010: option tolist gives a list rather than a generator!
-    """
-    if toList==True:
-        return([LL for LL in flatten(l, ltypes=ltypes,toList=False)])
 
-    ltype = type(l)
-    l = list(l)
-    i = 0
-    while i < len(l):
-        while isinstance(l[i], ltypes):
-            if not l[i]:
-                l.pop(i)
-                i -= 1
-                break
-            else:
-                l[i:i + 1] = l[i]
-        i += 1
-    return ltype(l)
-
-def oldFlattenList(listoflists,n=-1,unique=False,noCopy=False):
-    debugprint( 'May 2010: I suspect that the "flatten" above, which returns a generator but does infinite flattening, is simply superior, at least for infinite depth..!!! THIS SHOULD PROBABLY BE PARTLY DEPRECATED. ')
-
-    """Flatten a list by up to n (or infinity, when n==-1) dimensions
-    June 2009: CPBL
-    This doesn't work fulll yet, since the reduce() expects the list to be all lists. So this function does not reduce a list of which only some are lists.
-
-    Not sure whether unique=True should be default, so always use the keyword explicitly for now.
-    Dec 2009: of course unique should not be default!
-
-
-    May 2010: noCopy is needed for, e.g. lists of graphics objects! You cannot sensibly deepcopy them. But they are often also tuples, which cannot use the method below...  AH!! Just use "flatten" with tolist=True for graphics objects nested list of lists.
-
-    May 2010: trying to incorporate tuples. DOES NOT WORK YET!
-    """
-    import operator
-
-    """ See above: must be all or none lists right now:
-    """
-    assert all([isinstance(ee,list) for ee in listoflists]) or all([not isinstance(ee,list) for ee in listoflists])
-
-    def islist(oo):
-        return(isinstance(oo,list) or isinstance(oo,tuple) ) # or isinstance plt.array??
-
-    assert all([islist(ee) for ee in listoflists]) or all([not islist(ee) for ee in listoflists])
-
-    if noCopy:
-        outlist=listoflists
-    else:
-        outlist=deepcopy(listoflists)
-
-    #altered=False
-    if all([islist(ee) for ee in outlist]) and not n==0:
-        #print outlist
-        outlist=reduce(operator.add, outlist, [])
-        #altered=True
-        #print outlist
-
-
-    if any([islist(ee) for ee in outlist]) and not n==0:
-        outlist=flattenList(outlist,n=n-1,noCopy=noCopy) # Don't pass on unique... 'cause I just deal with that once at top level:
-        #altered=True
-
-    #print outlist
-    if unique==True:
-        outlist=uniqueInOrder(outlist)
-    #print outlist
-    return(outlist)
-
-
-def str2latexOLD_see_unicode_file(ss):
-    subs={
-'$':r'\$',
-'_':r'\_',
-'%':r'\%',
-'#':'\#',
-'^':'\^',
-'&':'\&',
-'<=':r'$\leq$',
-'>=':r'$\geq$',
-'<':r'$<$',
-'>':r'$>$',
-#u'\xb4':"'", # apostrophe
-#           u'\xe3':r'\"e', # e-umlaut ?
-#           u'\xf3':r"\'o", # o acute
-#           u'\xe3':r"\`O", # O grave. 227
-#           u'\x92':"AE" # AE
-           }
-    subs.update(dict([
-[ u"à", "\\`a" ], # Grave accent
-[ u"è", "\\`e" ],
-[ u"ì", "\\`\\i" ],
-[ u"ò", "\\`o" ],
-[ u"ù", "\\`u" ],
-[ u"ỳ", "\\`y" ],
-[ u"À", "\\`A" ],
-[ u"È", "\\`E" ],
-[ u"Ì", "\\`\\I" ],
-[ u"Ò", "\\`O" ],
-[ u"Ù", "\\`U" ],
-[ u"Ỳ", "\\`Y" ],
-[ u"á", "\\'a" ], # Acute accent
-[ u"é", "\\'e" ],
-[ u"í", "\\'\\i" ],
-[ u"ó", "\\'o" ],
-[ u"ú", "\\'u" ],
-[ u"ý", "\\'y" ],
-[ u"Á", "\\'A" ],
-[ u"É", "\\'E" ],
-[ u"Í", "\\'\\I" ],
-[ u"Ó", "\\'O" ],
-[ u"Ú", "\\'U" ],
-[ u"Ý", "\\'Y" ],
-[ u"â", "\\^a" ], # Circumflex
-[ u"ê", "\\^e" ],
-[ u"î", "\\^\\i" ],
-[ u"ô", "\\^o" ],
-[ u"û", "\\^u" ],
-[ u"ŷ", "\\^y" ],
-[ u"Â", "\\^A" ],
-[ u"Ê", "\\^E" ],
-[ u"Î", "\\^\\I" ],
-[ u"Ô", "\\^O" ],
-[ u"Û", "\\^U" ],
-[ u"Ŷ", "\\^Y" ],
-[ u"ä", "\\\"a" ],    # Umlaut or dieresis
-[ u"ë", "\\\"e" ],
-[ u"ï", "\\\"\\i" ],
-[ u"ö", "\\\"o" ],
-[ u"ü", "\\\"u" ],
-[ u"ÿ", "\\\"y" ],
-[ u"Ä", "\\\"A" ],
-[ u"Ë", "\\\"E" ],
-[ u"Ï", "\\\"\\I" ],
-[ u"Ö", "\\\"O" ],
-[ u"Ü", "\\\"U" ],
-[ u"Ÿ", "\\\"Y" ],
-[ u"ç", "\\c{c}" ],   # Cedilla
-[ u"Ç", "\\c{C}" ],
-[ u"œ", "{\\oe}" ],   # Ligatures
-[ u"Œ", "{\\OE}" ],
-[ u"æ", "{\\ae}" ],
-[ u"Æ", "{\\AE}" ],
-[ u"å", "{\\aa}" ],
-[ u"Å", "{\\AA}" ],
-[ u"–", "--" ],   # Dashes
-[ u"—", "---" ],
-[ u"ø", "{\\o}" ],    # Misc latin-1 letters
-[ u"Ø", "{\\O}" ],
-[ u"ß", "{\\ss}" ],
-[ u"¡", "{!`}" ],
-[ u"¿", "{?`}" ],
-[ u"\\", "\\\\" ],    # Characters that should be quoted
-[ u"~", "\\~" ],
-[ u"&", "\\&" ],
-[ u"$", "\\$" ],
-[ u"{", "\\{" ],
-[ u"}", "\\}" ],
-[ u"%", "\\%" ],
-[ u"#", "\\#" ],
-[ u"_", "\\_" ],
-[ u"≥", "$\\ge$" ],   # Math operators
-[ u"≤", "$\\le$" ],
-[ u"≠", "$\\neq$" ],
-[ u"©", "\copyright" ], # Misc
-[ u"ı", "{\\i}" ],
-[ u"µ", "$\\mu$" ],
-[ u"°", "$\\deg$" ],
-[ u"‘", "`" ],    #Quotes
-[ u"’", "'" ],
-[ u"“", "``" ],
-[ u"”", "''" ],
-[ u"‚", "," ],
-[ u"„", ",," ],
-]))
-    for asub in subs:
-        ss=unicode(ss).replace(asub,subs[asub])   #.encode('utf-8')
-        #ss=accentsToLaTeX(    ss.replace(asub[0],asub[1])   )
-    return(ss)
 
 def str2pathname(ss):
     subs=[
@@ -1287,8 +1013,6 @@ afile can also be a list of files... then the function returns true if any of th
 
 Rewritten, sept 2010, but features not yet complete. now afile,bfiles can be a filename, a list of filenames, or an mtime. And it's not vastly less inefficient than the first, recursive algorithm.
 """
-    import os, time
-
     def oldestmtime(listoffiles): # Return oldest mtime of a list of filenames
         if any([not os.path.exists(afile) for afile in listoffiles]):
             return(-999999)
@@ -1417,62 +1141,9 @@ def dgetget(adict,keys,defaultvalue,key3=None,key4=None,key5=None,key6=None,keyn
         return(adict[keys[0]])
     return(dgetget(adict[keys[0]],keys[1:],defaultvalue))
 
-################################################################################################
-################################################################################################
-def dgetgetOLD(adict,key1=None,key2=None,key3=None,key4=None,key5=None,key6=None,keyn=None):
-    ############################################################################################
-    ############################################################################################
-    """
-    DEPRECATED 2011. BUT STILL EXTANT IN MAY FUNCTIONS.
-
-    Get a value from a dict of dicts, compact notation. This is just like dict.get but takes two keys deep.
-    bykey(adict, topkey, subkey, defaultVal)
-    Last parameter passed is the default return value. Unfortunately this is mandatory.
-
-    May 2010: new optional format:
-      dgetget(adict,listOfKeys,defaultVal)
-
-    """
-    assert not isinstance(key1,list) # Otherwise should be calling the newer version, dgetget
-
-    if key3==None and isinstance(key1,list):
-        # Assume calling format:       dgetget(adict,listOfKeys,defaultVal)
-        if len(key1)==2:
-            key1,key2,key3=key1[0],key1[1],key2
-        elif len(key1)==3:
-            key1,key2,key3,key4=key1[0],key1[1],key1[2],key2
-        elif len(key1)==4:
-            key1,key2,key3,key4,key5=key1[0],key1[1],key1[2],key1[3],key2
-        elif len(key1)==5:
-            return(adict.get(key1[0],{}).get(key1[1],{}).get(key1[2],{}).get(key1[3],{}).get(key1[4],key2)) # key2 is actually the default value
-        elif len(key1)==6:
-            return(adict.get(key1[0],{}).get(key1[1],{}).get(key1[2],{}).get(key1[3],{}).get(key1[4],{}).get(key1[5],key2)) # key2 is actually the default value
-        else:
-            1/0
-
-
-    assert not key3==None # Why not just use dict.get if you're only asking for 1 deep?
-
-    assert keyn==None # Not programmed yet for more than 2 keys deep
-
-    if not key5==None: # Four deep, key5 is default
-        return(adict.get(key1,{}).get(key2,{}).get(key3,{}).get(key4,key5)) # key4 is actually the default value
-    if key5==None and not key4==None: # Three deep, key4 is default
-        return(adict.get(key1,{}).get(key2,{}).get(key3,key4)) # key4 is actually the default value
-    if key4==None: # Two deep, key3 is default
-        return(adict.get(key1,{}).get(key2,key3)) # key3 is actually the default value
-    # Three deep, key4 is default
-    1/0
-    if key3==None:
-        return(adict.get(key1,key2))
 
 
 
-
-try: # Where is this needed? Should import it only where needed.        
-    from cpbl_tables import *
-except ImportError:
-    print(__file__+":Unable to find CPBL's tables TeX package")
 
 
 
@@ -1552,15 +1223,15 @@ def existsLargePandas(fn):
 
 
 try:   # amb added Jan 2014 - otherwise pylab import fails without X11
-    from mathgraph import *
+    from .mathgraph import *
 except:
     print __file__+": can't import cpblUtilities.mathgraph"
-try:  
-    from color import *
-except:
-    print __file__+": can't import cpblUtilities.color"
 
-if 0: #defaults['mode'] in ['gallup','rdc']:
+if 0:
+    try:  
+        from .color import *
+    except:
+        print __file__+": can't import cpblUtilities.color"
     try: #This dependency should be excised....
         import cpblMake
         cpblRequire=cpblMake.cpblRequire
@@ -1569,7 +1240,7 @@ if 0: #defaults['mode'] in ['gallup','rdc']:
         pass
 
 
-# I meant to implement the following (somewhere!!) to use for the master codebook. not yet done. priorities! but below is finished...
+
 ###########################################################################################
 ###
 def doSystemLatex(fname,latexPath=None,launch=None,launchViewer=None,tex=None,viewLatestSuccess=True,bgCompile=True,fgCompile=False):
@@ -1599,7 +1270,6 @@ So there should be no way to run that doesn't result in compiling, one way or an
 Dec 2010: Damn. I don't think I know how to check for local display after all! make yet another argument.
 
     """
-    import os
     ppa,ppb=os.path.split(fname)
     assert latexPath is None or ppa ==''
     if latexPath is None:
@@ -1633,7 +1303,6 @@ Dec 2010: Damn. I don't think I know how to check for local display after all! m
     # For some reason, under Cygwin, the following executable
     # (pdflatex) is running under Windows native. So do not use
     # self.fpathname or specify a cygwin path
-    import os
     uname=os.uname()
     islaptop=os.uname()[1] in ['cpbl-thinkpad']
 
@@ -1670,7 +1339,6 @@ Dec 2010: Damn. I don't think I know how to check for local display after all! m
     #if launch:
     #    pass
     shellfile.close()
-    import os
     import subprocess
     shellDisplayV=subprocess.Popen(['echo $DISPLAY'], stdout=subprocess.PIPE,shell=True).communicate()[0]
     import socket
@@ -1740,60 +1408,6 @@ def latexFormatEstimateWithPvalue(x,pval=None,allowZeroSE=None,tstat=False,gray=
     return([significanceString+chooseSFormat(est,convertStrings=convertStrings,threeSigDigs=threeSigDigs)+'}'*(not not significanceString),
            significanceString+chooseSFormat(est,convertStrings=convertStrings,threeSigDigs=threeSigDigs,conditionalWrapper=[r'\coefp{','}'])])
 
-###########################################################################################
-###
-def  manageParallelJobChunks(computationFunction,chunkIDs,nProc=30,shuffle=False):
-    ###
-    #######################################################################################
-    """
-    This takes the number or processors you want to keep running steadily, a function that does some calculation, and a list of values for an argument that the function takes. These values represent chunks of a job (e.g. counties in the US for some GIS calculation).
-    Right now, there's no quality checking on the completion. Instead, when a job finishes (successfully or not), it will be assumed to have worked, and another will be launched.
-    Right now, we don't deal with return values. So this is very simple. It just load balances...
-    There's a pause of 1 second in between relaunches, so that if they're all failing instantly, we don't go too nuts.
-
-Comment: isn't this entirely superceded by runFunctionsInParallel, which now has all the functionality?
-    
-    """
-    jobs=[]
-    njobs=0
-    t=0
-    from math import sqrt
-    if shuffle:
-        import random
-        random.shuffle(chunkIDs)
-    import time
-    from multiprocessing import Process, Queue
-    while chunkIDs:
-        # Launch a new job
-        if len([jj for jj in jobs if jj.is_alive()])<nProc: # Time to launch a new job!
-            cname=chunkIDs.pop(0)
-            jobs.append(Process(target=computationFunction,args=[cname],name=str(cname)))
-            jobs[-1].start()
-
-        # Display running jobs
-
-        tableFormatString='%s\t%'+str(max([len(job.name) for job in jobs]))+'s:\t%9s\t%s\t%s\t%s'
-        print('\n'+'-'*75+'\n'+ tableFormatString%('alive?','Job','exit code','Full','Empty','Func',)+ '\n'+'-'*75)
-        print('\n'.join([tableFormatString%(job.is_alive()*'Yes:',job.name,job.exitcode,'','','(built-in function)' if not hasattr(computationFunction,'func_name') else computationFunction.func_name) for ii,job in enumerate(jobs) if job.is_alive()]))
-
-
-
-
-
-        #queues[iii].full(),queues[iii].empty()
-        print('-'*75+'\n')
-
-        time.sleep(.2)
-
-        # Pause before next display
-        if len([jj for jj in jobs if jj.is_alive()])>=nProc: # Wait more than the minimum 1 second; and report status
-            t+=1
-            time.sleep(5+sqrt(t)) # Wait a while before next update. Slow down updates for really long runs.
-
-    # We've launched them all!
-    for job in jobs: job.join() # Wait for them all to finish... Hm, Is this needed to get at the Queues?
-
-
 
 
 def collapseByField(e,collapsefield,keepFields=None,agg=None):
@@ -1845,7 +1459,6 @@ dfs = {sheet_name: xl_file.parse(sheet_name)
 df=dfs['Sheet1']
 
     """
-    import os
     if tmpfile is None:
         import tempfile
         outfile=  tempfile.NamedTemporaryFile().name+'.xlsx'
@@ -1857,15 +1470,17 @@ df=dfs['Sheet1']
     df=pd.read_excel(outfile,sheetname=sheetname,skiprows=skiprows)#,header=header)
     return(df)
 
+if 0:
+    try: # Where is this needed? Should import it only where needed.        
+        from parallel import *
+    except ImportError:
+        print(__file__ +":Unable to find CPBL's runFunctionsInParallel (cpblUtilities.parallel) module")
 
-try: # Where is this needed? Should import it only where needed.        
-    from parallel import *
-except ImportError:
-    print(__file__ +":Unable to find CPBL's runFunctionsInParallel (cpblUtilities.parallel) module")
+    try: # Where is this needed? Should import it only where needed.        
+        from cpblUtilitiesUnicode import *
+    except ImportError:
+        print(__file__+":Unable to find CPBL's ragged unicode converstions module")
 
-try: # Where is this needed? Should import it only where needed.        
-    from cpblUtilitiesUnicode import *
-except ImportError:
-    print(__file__+":Unable to find CPBL's ragged unicode converstions module")
+
 
 
