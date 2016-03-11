@@ -496,6 +496,7 @@ def popStringIC(sfrom,ssearch):
 ##############################################################################
 #
 def uniqueInOrder(alist,key=None,drop=None):    # Fastest order preserving
+    # 2016 update: use     from  more_itertools import unique_everseen ?
     ##########################################################################
     ##########################################################################
     alist=list(alist) # Hmm. thi sis so that I can deal with mpl.array types? Aug2010

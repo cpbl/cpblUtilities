@@ -3219,8 +3219,15 @@ This can be deprecated, though, in favour of this approach:
         addCommentToLegend(comments,lh2)
     return(lh2)
 
+def unique_everseen(seq, key=None):
+    seen = set()
+    seen_add = seen.add
+    return [x for x,k in zip(seq,key) if not (k in seen or seen_add(k))]
 
-def reorderLegend(ax=None,order=None,key=None,unique=True):
+def reorderLegend(ax=None,order=None,key=None,unique=False):
+    """
+    Returns tuple of handles, labels for axis ax, after reordering them to conform to the label order `order`, and if unique is True, after removing entries with duplicate labels.
+    """
     if ax is None: ax=plt.gca()
     
     handles, labels = ax.get_legend_handles_labels()
@@ -3229,6 +3236,9 @@ def reorderLegend(ax=None,order=None,key=None,unique=True):
     if order is not None: # Sort according to a given list (not necessarily complete)
         keys=dict(zip(order,range(len(order))))
         labels, handles = zip(*sorted(zip(labels, handles), key=lambda t,keys=keys: keys.get(t[0],np.inf)))
+    if unique: # Keep only the first of each handle
+        #from  more_itertools import unique_everseen
+        labels, handles= zip(*unique_everseen(zip(labels,handles), key = labels))
     ax.legend(handles, labels)
 
     return(handles, labels)
