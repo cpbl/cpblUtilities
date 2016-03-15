@@ -1597,6 +1597,7 @@ color=None:
 label=None: Name for the trace (can be a list). If not provided, the column name is used.
 
 labelson='lines': Specifies whether lines or envelopes are shown in a legend. Value must be in ['patches','envelopes','envelope','patch', 'lines','line'].
+   N.B. In an earlier incarnation, you could have both line and envelope in the legend with different labels. If you want that now, plot them separately.
 
 NaNmode=None:  
 
