@@ -1478,6 +1478,39 @@ df=dfs['Sheet1']
     df=pd.read_excel(outfile,sheetname=sheetname,skiprows=skiprows)#,header=header)
     return(df)
 
+
+def downloadOpenGoogleDoc(url, filename=None, format=None, pandas=False, update=True):
+    """
+    If you: Set a Google doc or Google drive document to be readable to anyone with the link:
+
+    Then this function will return a version of it from online, if networked, or the latest download, if not.
+
+    The filename (currently mandatory; should be fixed to be a hash of the url by default) should not include a path.
+
+    This returns the full-path filename of the downloaded file, unless pandas is True for spreadsheets, in which case it returns a pandas version.
+
+    If update False, and the file has already been downloaded, download will be skipped.
+    """
+    from  xlrd import XLRDError
+    if not url.endswith('/'): url=url+'/'
+    if format is None:
+        format='xlsx'
+    full_file_name        =paths['scratch']+filename
+    if update or not os.path.exists(full_file_name):
+        result=os.system(' wget '+url+'export?format='+format+' -O '+full_file_name+'-dl')
+        if result:
+            print('  NO INTERNET CONNECTION, or other problem grabbing Google Docs file. Using old offline version ('+filename+')...')
+        else:
+            result=os.system(' mv '+ full_file_name+'-dl ' + full_file_name)
+            assert not result
+    else:
+        print('   Using local (offline) version of '+filename)
+    if pandas and format in ['xlsx']:
+        return(   pd.ExcelFile(full_file_name)  )
+
+    return(full_file_name)
+
+
 if 0:
     try: # Where is this needed? Should import it only where needed.        
         from parallel import *

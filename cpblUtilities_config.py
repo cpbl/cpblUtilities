@@ -92,7 +92,7 @@ else:
     if not os.path.exists(repoFile):
         createDefaultConfigFile(repoFile)
     configDict=readConfigFile(repoFile)
-configure(configDict)
+defaults=configure(configDict)
 
 
 # Also fill in some other things, through testing?
