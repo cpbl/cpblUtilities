@@ -10,10 +10,10 @@ We want to
 
 """
 class pWrapper(): # Maybe if I enclose this in a class, the Garbage Collection will work better?
-    def __init__(self,thefunc,theArgs=None,kwargs=None,delay=None,name=None):
+    def __init__(self,thefunc,theArgs=None,thekwargs=None,delay=None,name=None):
         self.callfunc=thefunc
         self.callargs=theArgs
-        self.callkwargs=kwargs
+        self.callkwargs=thekwargs
         self.calldelay=delay  # Or should this be dealt with elsewhere?
         self.name=name  # Or should this be dealt with elsewhere?
         self.gotQueue=None
@@ -24,14 +24,14 @@ class pWrapper(): # Maybe if I enclose this in a class, the Garbage Collection w
         self.is_alive='dns' # For internal use only. Present "running"
         self.queue=0
     @staticmethod
-    def functionWrapper(fff,que,theArgs=None,kwargs=None,delay=None): #add a argument to function for assigning a queue
+    def functionWrapper(fff,que,theArgs=None,thekwargs=None,delay=None): #add a argument to function for assigning a queue
         if delay:
             from time import sleep
             sleep(delay)
         funcName='(built-in function)' if not hasattr(fff,'func_name') else fff.func_name
         #print 'MULTIPROCESSING: Launching %s in parallel '%funcName
         theArgs=theArgs if theArgs is not None else []
-        kwargs=kwargs if kwargs is not None  else {}
+        kwargs=thekwargs if thekwargs is not None  else {}
              
         returnVal=que.put(fff(*theArgs,**kwargs))
         print 'MULTIPROCESSING: Finished %s in parallel! '%funcName
@@ -40,7 +40,8 @@ class pWrapper(): # Maybe if I enclose this in a class, the Garbage Collection w
         import multiprocessing as mp
         assert self.started==False
         self.queue=mp.Queue()
-        self.thejob=mp.Process(target=self.functionWrapper, args=[self.callfunc, self.queue,self.callargs],kwargs=self.callkwargs)
+
+        self.thejob=mp.Process(target=self.functionWrapper, args=[self.callfunc, self.queue,self.callargs,self.callkwargs],)
         if self.calldelay:
             from time import sleep
             sleep(self.calldelay)
@@ -141,7 +142,7 @@ Bug:
     listOf_FuncAndArgLists=[faal if isinstance(faal,list) else [faal,[],{}] for faal in listOf_FuncAndArgLists]
     listOf_FuncAndArgLists=[faal+[{}] if len(faal)==2 else faal for faal in listOf_FuncAndArgLists]
     listOf_FuncAndArgLists=[faal+[[],{}] if len(faal)==1 else faal for faal in listOf_FuncAndArgLists]
-    kwargs=kwargs if kwargs else [{} for faal in listOf_FuncAndArgLists]
+    kwargs=kwargs if kwargs else [faal[2] for faal in listOf_FuncAndArgLists]
 
     if len(listOf_FuncAndArgLists)>1000:
         pass
@@ -324,14 +325,14 @@ def breaktest(): # The following demonstrates how to clean up jobs and queues (t
 
 
 def testParallel():
-    def doodle(jj):
+    def doodle(jj, a=None, b=None):
         i=0
         while 0:#i<1e2:
             i=i+1
         return(jj)
     nTest=2700
-    runFunctionsInParallel([[doodle,[ii]] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, expectNonzeroExit=True)
-def testParallel():
+    runFunctionsInParallel([[doodle,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, expectNonzeroExit=True)
+def testParallel2():
     def doodle():
         i=0
         while i<1e4:
