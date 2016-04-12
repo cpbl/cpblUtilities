@@ -325,6 +325,25 @@ def breaktest(): # The following demonstrates how to clean up jobs and queues (t
 
 
 def testParallel():
+    # Test use of kwargs
+    def doodle(jj, a=None, b=None):
+        i=0
+        while 0:#i<1e2:
+            i=i+1
+        return(jj)
+    nTest=10
+    runFunctionsInParallel([[doodle,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, expectNonzeroExit=True)
+
+    # Demo simpler use, function takes no arguments
+    def doodle2():
+        i=0
+        while i<1e4:
+            i=i+1
+        return(i)
+    nTest=100
+    runFunctionsInParallel([doodle2 for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=10, showFinished=5)
+
+    # Test use of large number of jobs, enough to make some systems get upset without our countermeasures
     def doodle(jj, a=None, b=None):
         i=0
         while 0:#i<1e2:
@@ -332,16 +351,6 @@ def testParallel():
         return(jj)
     nTest=2700
     runFunctionsInParallel([[doodle,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, expectNonzeroExit=True)
-def testParallel2():
-    def doodle():
-        i=0
-        while i<1e4:
-            i=i+1
-        return(i)
-    nTest=700
-    runFunctionsInParallel([[doodle,[]] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=10, showFinished=5)
-
-
 
 
 
