@@ -80,7 +80,7 @@ def _demo_colorize_svg():
     colorize_svg(regions2datavalues,blanksvgfile,outfilename='tmptmp2.svg',cmap=None,addcolorbar=True,ylabel=None,colorbarlimits=None)
 
 
-    from cpblUtilities import biLinearColorscale
+    from cpblUtilities.mathgraph import biLinearColorscale
     thecmap,thelookup,dummy=biLinearColorscale([],regions2datavalues.values,0.0,noplot=True, mapname='twotwo')
     colorize_svg(regions2datavalues,blanksvgfile,outfilename='tmptmp3.svg',cmap='twotwo',addcolorbar=thelookup,ylabel=None,colorbarlimits=None)
     #os.system('google-chrome tmptmp2.svg&')
@@ -219,7 +219,7 @@ The return value is the full svg text with colorbar added.
     # Create a dummy axis to hang the colorbar on:
     plt.figure(6354)
     hax=plt.gca()
-    from cpblUtilities import addColorbarNonImage
+    from cpblUtilities.color import addColorbarNonImage
     if 'fontsize' in colorbar_location: # This is measured in points.
         plt.rcParams.update({        'font.size': colorbar_location['fontsize'],})
     hbax=addColorbarNonImage(data2color,ylabel=colorbar_ylabel) # data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None):
@@ -363,7 +363,7 @@ def colors_for_filling_svg(geo2data_or_color=None, data2color=None,
         geo2color=geo2data_or_color
 
 
-    from cpblUtilities import linearColormapLookup
+    from cpblUtilities.color import linearColormapLookup
     # I think here I assume geo2data are a pandas Series?
 
     # Determine geo2color:
