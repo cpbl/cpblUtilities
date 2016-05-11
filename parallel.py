@@ -1,7 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-
 """ Following is for running functions in parallel.
 We want to 
  - monitor progress of a bunch of function calls, running in parallel
@@ -9,6 +8,7 @@ We want to
  - Close the queues as functions finish. This is key because otherwise the OS shuts us down for using too many open files.
 
 """
+__author__ = "Chris Barrington-Leigh"
 class pWrapper(): # Maybe if I enclose this in a class, the Garbage Collection will work better?
     def __init__(self,thefunc,theArgs=None,thekwargs=None,delay=None,name=None):
         self.callfunc=thefunc
@@ -326,13 +326,13 @@ def breaktest(): # The following demonstrates how to clean up jobs and queues (t
 
 def testParallel():
     # Test use of kwargs
-    def doodle(jj, a=None, b=None):
-        i=0
-        while 0:#i<1e2:
+    def doodle1(jj, a=None, b=None):
+        i=0 + len(str(a))+len(str(b))
+        while i<1e2:
             i=i+1
         return(jj)
     nTest=10
-    runFunctionsInParallel([[doodle,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, expectNonzeroExit=True)
+    runFunctionsInParallel([[doodle1,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, expectNonzeroExit=True)
 
     # Demo simpler use, function takes no arguments
     def doodle2():
@@ -344,13 +344,13 @@ def testParallel():
     runFunctionsInParallel([doodle2 for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=10, showFinished=5)
 
     # Test use of large number of jobs, enough to make some systems get upset without our countermeasures
-    def doodle(jj, a=None, b=None):
+    def doodle3(jj, a=None, b=None):
         i=0
         while 0:#i<1e2:
             i=i+1
         return(jj)
     nTest=2700
-    runFunctionsInParallel([[doodle,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, expectNonzeroExit=True)
+    runFunctionsInParallel([[doodle3,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, expectNonzeroExit=True)
 
 
 

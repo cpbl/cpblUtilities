@@ -1159,7 +1159,7 @@ dgetgetOLD=dgetget
         
 ################################################################################################
 ################################################################################################
-def shelfLoad(infilepath,default=None):
+def shelfLoad(infilepath,default=False):
     ############################################################################################
     ############################################################################################
     """ God knows why there isn't already a one-liner for this: loading/saving a single object.
@@ -1169,8 +1169,10 @@ Dec 2011: adding a default option. ie if it doesn't exist, return {}. If default
     if not infilepath.endswith('elf'):
         infilepath+='.pyshelf'
     if not os.path.exists(infilepath):
-        assert not default==False
-        return(default)
+        if default not in [False]:
+            return(default)
+        else:
+            File_not_found
     fid=shelve.open(infilepath)
     obj=fid['object'] # If this fails, maybe the file was made before I switched from manual shelve to shelfLoad
     fid.close()
