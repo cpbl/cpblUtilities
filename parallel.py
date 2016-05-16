@@ -168,15 +168,19 @@ Bug:
         ishowable=range(min(len(status), showmax))
         istarted=[ii for ii in range(len(status)) if  status[ii] not in ['dns']]
         isuccess=[ii for ii in ishowable if status[ii] in ['success',0,'0']]
+        irunning=[ii for ii in range(len(status)) if  status[ii] in ['running']]
         earliestSuccess= -1 if len(isuccess)<showsuccessful else isuccess[::-1][showsuccessful-1]
-        print(showmax,showsuccessful,earliestSuccess)
-        print(len(isuccess)-showsuccessful)
+        if 0:
+            print(showmax,showsuccessful,earliestSuccess)
+            print(len(isuccess)-showsuccessful)
         tableFormatString='%'+str(max([len(name) for name in names]))+'s:\t%10s\t%10s\t%s()'
         print('\n'+'-'*75+'\n'+ tableFormatString%('Job','Status','Queue','Func',)+ '\n'+'-'*75)
         # Check that we aren't going to show more *successfully finished* jobs than we're allowed: Find index of nth-last successful one. That is, if the limit binds, we should show the latest N=showsuccessful ones only.
         print('\n'.join([tableFormatString%(names[ii],status[ii], queuestatus[ii], '(built-in function)' if not hasattr(listOf_FuncAndArgLists[ii][0],'func_name') else listOf_FuncAndArgLists[ii][0].func_name) for ii in ishowable if status[ii] not in ['success',0,'0'] or ii>=earliestSuccess  ]))
         if len(isuccess)>showsuccessful: # We don't hide failed jobs, but we do sometimes skip older successful jobs
-            print('%d other jobs finished successfully.'%(len(isuccess)-showsuccessful))
+            print('%d job%s running. %d other jobs finished successfully.'%(len(irunning), 's'*(len(irunning)!=1), len(isuccess)-showsuccessful))
+        else:
+            print('%d job%s running.' % (len(irunning),'s'*(len(irunning)!=1)))
         if len(status)>len(istarted):
             print('%d more jobs waiting for their turn to start...'%(len(status)-len(istarted))) ##len(sjobs)-len(djobs)))
         #print('%d open queues...'%len(queues))
@@ -325,6 +329,19 @@ def breaktest(): # The following demonstrates how to clean up jobs and queues (t
 
 
 def testParallel():
+    import numpy as np
+
+    # Demo longer jobs, since other demos' jobs finish too quickly on some platforms
+    def doodle4():
+        ll=np.random.randint(7)+3
+        i=0
+        while i<10**ll:
+            i=i+1
+        return(i)
+    nTest=20
+    runFunctionsInParallel([doodle4 for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=None, maxAtOnce=10, showFinished=5)
+
+
     # Test use of kwargs
     def doodle1(jj, a=None, b=None):
         i=0 + len(str(a))+len(str(b))
@@ -337,12 +354,13 @@ def testParallel():
     # Demo simpler use, function takes no arguments
     def doodle2():
         i=0
-        while i<1e4:
+        while i<1e9:
             i=i+1
         return(i)
     nTest=100
     runFunctionsInParallel([doodle2 for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=10, showFinished=5)
 
+    
     # Test use of large number of jobs, enough to make some systems get upset without our countermeasures
     def doodle3(jj, a=None, b=None):
         i=0
