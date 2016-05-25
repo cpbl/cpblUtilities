@@ -42,9 +42,9 @@ class pWrapper(): # Maybe if I enclose this in a class, the Garbage Collection w
         self.queue=mp.Queue()
 
         self.thejob=mp.Process(target=self.functionWrapper, args=[self.callfunc, self.queue,self.callargs,self.callkwargs],)
-        if self.calldelay:
-            from time import sleep
-            sleep(self.calldelay)
+        #if self.calldelay:
+        #    from time import sleep
+        #    sleep(self.calldelay)
         self.thejob.start()
         funcName='(built-in function)' if not hasattr(self.callfunc,'func_name') else self.callfunc.func_name
         print('MULTIPROCESSING: Launching %s in parallel %s'%(funcName,self.name))
@@ -221,6 +221,7 @@ Bug:
         maxAtOnce=max(1,cpu_count()-1)  #np.inf
     else:
         maxAtOnce=max(min(cpu_count()-2,maxAtOnce),1)  #np.inf
+    # For initial set of launched processes, stagger them with a spacing of the offsetSeconds.
     delays=list((  (np.arange(len(listOf_FuncAndArgLists))-1) * ( np.arange(len(listOf_FuncAndArgLists))<maxAtOnce  ) + 1 )* offsetsSeconds)
     nice(10) # Add 10 to the niceness of this process (POSIX only)
     jobs = [pWrapper(funcArgs[0],funcArgs[1],funcArgs[2],delays[iii],names[iii]) for iii,funcArgs in enumerate(listOf_FuncAndArgLists)]
