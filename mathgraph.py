@@ -6294,5 +6294,18 @@ def resolve_overlaps_vertical(artists,fig=None,shiftResolution=.1):
             #print stext[iis].get_window_extent()
 
 
+def remove_underscores_from_figure(fig=None):
+    """
+    Search for xlabel, ylabel, title, (what else?) and replace underscores with spaces. This avoids problems with the LaTeX processor
+    
+    The searching through subplots is not done yet.
+    """
+    if fig is None:
+        fig=plt.gcf()
+    for ax in fig.get_axes():
+        ax.set_xlabel(ax.get_xlabel().replace('_',' '))
+        ax.set_ylabel(ax.get_ylabel().replace('_',' '))
+        ax.set_title(ax.get_title().replace('_',' '))
+            
 if 0:
     localPolynomialRegression(None,None,None,True)
