@@ -218,7 +218,7 @@ Bug:
     if maxFilesAtOnce is None:
         pass # maxFilesAtOnce =max(10*maxAtOnce,100) 
     if maxAtOnce is None:
-        maxAtOnce=max(1,cpu_count()-1)  #np.inf
+        maxAtOnce=max(1,cpu_count()-2)  #np.inf
     else:
         maxAtOnce=max(min(cpu_count()-2,maxAtOnce),1)  #np.inf
     # For initial set of launched processes, stagger them with a spacing of the offsetSeconds.

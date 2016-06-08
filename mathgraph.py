@@ -1599,7 +1599,7 @@ label=None: Name for the trace (can be a list). If not provided, the column name
 labelson='lines': Specifies whether lines or envelopes are shown in a legend. Value must be in ['patches','envelopes','envelope','patch', 'lines','line'].
    N.B. In an earlier incarnation, you could have both line and envelope in the legend with different labels. If you want that now, plot them separately.
 
-NaNmode=None:  
+NaNmode=None:  Is this the replacement of the all the "lax" keywords in the 2015 version? Still to be developed....
 
 nse=1.96:  How wide (multiples of column 'se_'+xv) the envelope should be (interpreted as confidence interval).
 
@@ -1746,7 +1746,9 @@ def dfPlotWithEnvelope_2015(df, xv, yv, ylow=None, yhigh=None, nse=1.96, linesty
 #                                    patchLabel=None if labelson in ['lines','line'] else ayv if label is None else label if  not hasattr(label,'__iter__') else label[ii],
                                     labelson=labelson,
                                     label= ayv if label is None else label if  not hasattr(label,'__iter__') else label[ii],
-                                    laxSkipNaNsSE=laxSkipNaNsSE,laxSkipNaNsXY=laxSkipNaNsXY,skipZeroSE=skipZeroSE,ax=ax,laxFail=laxFail) for ii,ayv in enumerate( yv) ] )
+                                    # Oh-oh: Following are no longer available in dfplotwithenvelope...def 
+                                    #laxSkipNaNsSE=laxSkipNaNsSE,laxSkipNaNsXY=laxSkipNaNsXY,skipZeroSE=skipZeroSE,laxFail=laxFail
+                                    ax=ax,) for ii,ayv in enumerate( yv) ] )
 
     # Can specify envelope range as standard errors or as explicit bottom, top:
     if ylow is None:
@@ -1759,8 +1761,9 @@ def dfPlotWithEnvelope_2015(df, xv, yv, ylow=None, yhigh=None, nse=1.96, linesty
         yHigh=df[yhigh].valuesyhigh
     return( plotWithEnvelope_2015( df[xv].values,df[yv].values,yLow=yLow,yHigh=yHigh,linestyle=linestyle,color=color,linecolor=linecolor,facecolor=facecolor,alpha=alpha,label=None,
                               lineLabel=None if labelson in ['patches','envelopes','envelope','patch'] else yv if label is None else label,
-                              patchLabel=None if labelson in ['lines','line'] else yv if label is None else label,
-                              laxSkipNaNsSE=laxSkipNaNsSE,laxSkipNaNsXY=laxSkipNaNsXY,skipZeroSE=skipZeroSE,ax=ax,laxFail=laxFail))
+                              patchLabel=None if labelson in ['lines','line'] else yv if label is None else label,ax=ax,
+                              #laxSkipNaNsSE=laxSkipNaNsSE,laxSkipNaNsXY=laxSkipNaNsXY,skipZeroSE=skipZeroSE,laxFail=laxFail
+                              ))
 
 
 
