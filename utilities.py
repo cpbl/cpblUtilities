@@ -1514,21 +1514,31 @@ def downloadOpenGoogleDoc(url, filename=None, format=None, pandas=False, update=
 
 
 
-def merge_dictionaries(default,update, verbose=False):
-    """Given two dictionaries, this deep copies 'default' but updates it with any
-    matching keys from 'update'."""
+def merge_dictionaries(default,update, verboseSource=False, allow_new_keys=True):
+    """Given two dictionaries, this deep copies 'default' but recursively updates it with elements from
+    'update'.  
+
+    allow_new_keys = False ensures that only keys existing in the default are updated from the update, ie it ignores any data found in update which does not exist in the original.
+
+    verboseSource: If not False, verboseSource must be a string, which denotes the updating source file description
+
+    n.b. This function is duplicated in cpblUtilities_config.py, since I simply don't know how to import it otherwise.
+    """
     result=copy.deepcopy(default)
     for key in update:
         if key not in default:
-            print("WARNING: configuration merge_dictionaries got an update, but\
+            if allow_new_keys:
+                result[key]=update[key]
+            else:
+                print("WARNING: configuration merge_dictionaries got an update, but\
  that key doesn't exist in the default config settings. key=%s"%key)
-            continue
+                continue
         if type(update[key])==dict:
-            result[key]=merge_dictionaries(result[key],update[key], verbose=verbose)
+            result[key]=merge_dictionaries(result[key],update[key], verboseSource=verboseSource)
         else:
             result[key]=update[key]
-            if verbose:
-                print('   Using local config value for: '+key)
+            if verboseSource:
+                print('   Using '+verboseSource+' config value for: '+key)
     return result
 
 
