@@ -69,8 +69,12 @@ def readConfigFile(inpath, config_file_structure):
                         dsetset(outdict,(section,option[0]), config.getboolean(section,option[0]))
                     elif option[1]==int:
                         dsetset(outdict,(section,option[0]), config.getint(section,option[0]))
+                    elif option[1]==float:
+                        dsetset(outdict,(section,option[0]), config.getfloat(section,option[0]))
                     elif option[1]=='commasep':
                         dsetset(outdict,(section,option[0]), config.get(section,option[0]).split(','))
+                    else:
+                        raise('Do not know config value type '+str(option[1]))
     return(outdict)
 
 def read_hierarchy_of_config_files(files,config_file_structure):
