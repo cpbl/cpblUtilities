@@ -73,7 +73,7 @@ def readConfigFile(inpath, config_file_structure):
                         dsetset(outdict,(section,option[0]), config.get(section,option[0]).split(','))
     return(outdict)
 
-def read_heirarchy_of_config_files(files,config_file_structure):
+def read_hierarchy_of_config_files(files,config_file_structure):
     configDict={}
     for ff in files:
         if os.path.exists(ff):

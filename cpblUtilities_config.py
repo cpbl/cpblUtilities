@@ -133,7 +133,7 @@ If not False, verboseSource must be a string, which denotes the updating source 
         print result
     return result
 
-def read_heirarchy_of_config_files(files):
+def read_hierarchy_of_config_files(files):
     configDict={}
     for ff in files:
         if os.path.exists(ff):
@@ -163,7 +163,7 @@ def main():
     repoTemplateFile=(repoPath if repoPath else '.')+'/config-template.cfg'
 
 
-    merged_dictionary=read_heirarchy_of_config_files([
+    merged_dictionary=read_hierarchy_of_config_files([
         repoTemplateFile,
         repoFile,
         localConfigTemplateFile,
