@@ -1,106 +1,183 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+import os, re, sys, copy
 """
-Configuration:
- A config.ini file should be used to set up folders to be used by cpblUtilities. The configuration procedure is as follows:
-  (1) cpblUtilities.configure() can be called to explicity set config values.
-  (2) Otherwise, cpblUtilities will look for a config.ini file in the operating system's local path at run time. Typically, this would be a file in the package of some caller module and would be in .gitignore so that it can be locally customized
-  (3) Otherwise, cpblUtilities will look for a config.ini file in its own (the cpblUtilities repository) folder.  
+This module provides dicts paths and defaults, which contain any parameters needed by multiple other modules.
+These parameters are generally unchanging over time, but may vary from one installation/environment to another.
 
+There are four places these config settings could be set. In order of priority:
+
+(1) local config.cfg file
+(2) local config-template.cfg file
+(3) cpblUtilities source folder config.cfg file
+(4) cpblUtilities source folder config-template.cfg file
+
+
+ - Specify structure of file.
+ - Load cascaded values from config files.
+ - Then rearrange as we need to put them into the dict arrays paths and defaults.
 """
-import os
-import re
-import sys
+config_file_structure={
+    'paths': [
+        'working',
+        'input',
+        'graphics',
+        'outputdata',
+        'output',
+        'tex',
+        'scratch',
+        'bin',
+        ],
+    'defaults': [
+        ('rdc',bool),
+        'mode',
+        ],
+    }
 
-def configure(newdefaults=None):
-    assert isinstance(newdefaults,dict)
-    global defaults,paths
-    defaults=newdefaults.copy()
-    paths=defaults['paths']
-    defaults['native']={'paths':paths.copy()} # A relic from running posix os under MS (cygwin)
-    #WP=paths['working']
-    #IP=paths['input']
-    #RDC=defaults.get('RDC',False)
-    return(defaults)
 
 
-def createDefaultConfigFile(outpath='./config.cfg'):
-    """
-    Write a config file which provides the path info that this module requires.  (Or should it ADD the info that this module requires?)
-     
-    In  fact, instead of a function, this could be a template file that is included in the git repository but allowed to be modified, by including in .gitignore
-    """
-    import os
-    import ConfigParser
-    config = ConfigParser.RawConfigParser()
-    defaultRoot="%(pwd)s"
-    defaultRoot=os.path.dirname(__file__)    
-    # When adding sections or items, add them in the reverse order of
-    # how you want them to be displayed in the actual file.
-    config.add_section('paths')
-    config.set('paths', 'working', defaultRoot+'/workingData/')
-    #config.set('paths', 'download', defaultRoot+'/input/download/')
-    config.set('paths', 'input', defaultRoot+'/input/')
-    #config.set('paths', 'output/data', defaultRoot+'/')
-    config.set('paths', 'graphics', defaultRoot+'/output/graphics/')
-    config.set('paths', 'outputData', defaultRoot+'/output/data/')
-    config.set('paths', 'output', defaultRoot+'/output/')
-    config.set('paths', 'tex', defaultRoot+'/texdocs/')
-    config.set('paths', 'scratch', defaultRoot+'/scratch/')
-    config.set('paths', 'bin', defaultRoot+'/')
-
-    config.add_section('defaults') # For as-yet unsectioned settings
-    config.set('defaults', 'RDC', 'False')
-    config.set('defaults', 'mode', 'none')
-
-    # Writing our configuration file to 'example.cfg'
-    with open(outpath, 'wt') as configfile:
-        config.write(configfile)
+# The file config-template.cfg contains an example of a file which should be renamed config.cfg
 
 def readConfigFile(inpath):
     import ConfigParser
-    print('   CONFIG settings: '+__file__+': Parsing '+inpath)
-    # New instance with 'bar' and 'baz' defaulting to 'Life' and 'hard' each
-    config = ConfigParser.SafeConfigParser({'pwd': os.getcwd(),'cwd': os.getcwd(), 'mode':'none'})
-    listfound=config.read(inpath)
-    defaultsDict=dict(
-        paths=dict([
-            [ppp, config.get('paths', ppp)] for ppp in [
-                'working',
-                'input',
-                'output',
-                'tex',
-                'scratch',
-                'bin',
-                'graphics',
-                'outputData',
-             ] ]             ),
-        RDC=config.getboolean('defaults', 'RDC'),
-        mode=config.get('defaults', 'mode'),
-        )
-    return(defaultsDict)
-    
+    config = ConfigParser.SafeConfigParser({'pwd': os.getcwd(),'cwd': os.getcwd()})
+    config.read(inpath)
+    outdict={}
+    for section in     config_file_structure:
+        if config.has_section(section):
+            for option in config_file_structure[section]:
+                if config.has_option(section,option  if isinstance(option,str) else option[0]):
+                    if isinstance(option,str):
+                        dsetset(outdict,(section,option), config.get(section,option))
+                    elif option[1]==bool:
+                        dsetset(outdict,(section,option[0]), config.getboolean(section,option[0]))
+                    elif option[1]==int:
+                        dsetset(outdict,(section,option[0]), config.getint(section,option[0]))
+                    elif option[1]=='commasep':
+                        dsetset(outdict,(section,option[0]), config.get(section,option[0]).split(','))
+    return(outdict)
 
-localConfigFile=os.getcwd()+'/config.cfg'
-repoPath=os.path.abspath(os.path.dirname(__file__ if __file__ is not None else '.'))
+################################################################################################
+################################################################################################
+def dsetset(adict,keys,avalue):
+    ############################################################################################
+    ############################################################################################
+    """
+    July 2011: making the converse of dgetget... but I think rather more efficient!
+    This sets the value of a nested dict, ensuring that the sublevels exist.
+    adict must exist and be a dict, of course.
+    """
+    if len(keys)>1:
+        if keys[0] not in adict:
+            adict[keys[0]]={}
+        dsetset(adict[keys[0]],keys[1:],avalue)
+    else:
+        adict[keys[0]]=avalue
+        return
 
-#path = os.path.abspath(__file__)
-#dir_path = os.path.dirname(path)
+################################################################################################
+################################################################################################
+def dgetget(adict,keys,defaultvalue,*args):
+    ############################################################################################
+    ############################################################################################
+    """
+    July 2011: rewriting degetget, using recursion, and conforming only to the newer format in which a  list of the keys is passed.
+    Much more efficient than the old version which took nargs!
+    adict must exist and be a dict, of course.
 
-repoFile=(repoPath if repoPath else '.')+'/config.cfg'
-repoTemplateFile=(repoPath if repoPath else '.')+'/config-template.cfg'
-# Is there a config file in the local directory?
-if os.path.exists(localConfigFile):
-    configDict=readConfigFile(localConfigFile)
-# Is there a config file in the local directory?    
-elif os.path.exists(repoFile):
-    configDict=readConfigFile(repoFile)
-else:
-    raise Exception("Cannot find config.cfg file in local path ("+localConfigFile+") nor in OSM repo ("+repoFile+").  Copy "+repoTemplateFile+" to config.cfg and edit it for your environment"  )
-#    print('Information: Cannot find your custom '+localConfigFile+'. You may want to look in the '+__file__+' repo for a template to customize folders.')
-#    if not os.path.exists(repoFile):
-#        createDefaultConfigFile(repoFile)
-#    configDict=readConfigFile(repoFile)
-defaults=configure(configDict)
+    *args is vestigial, for backwards compatibility. It should not be used.
+    """
+    # Backwards compatibility: Ancient dgetgetold(adict, key1, key2, key3=None,key4=None,key5=None,key6=None,keyn=None):
+    if not isinstance(keys,list):
+        keylist=[keys,defaultvalue]+list(args)
+        #keylist=keylist[:min([ii  for ii in range(len(keylist)) if keylist[ii] is None])]
+        keylist, defaultvalue= keylist[:-1] ,keylist[-1]
+        return( dgetget(adict,keylist,defaultvalue))
+    #  
+        return( dgetgetOLD(adict,keys,defaultvalue,key3=key3,key4=key4,key5=key5,key6=key6,keyn=keyn))
 
-# Also fill in some other things, through testing?
-#defaults['stataVersion']='linux14' # Deprecated; need to remove
+    # New, recursive algorithm, which takes a list of keys as second argument:
+    if keys[0] not in adict:
+        return(defaultvalue)
+    if len(keys)==1:
+        return(adict[keys[0]])
+    return(dgetget(adict[keys[0]],keys[1:],defaultvalue))
+
+def merge_dictionaries(default,update, verboseSource=False, allow_new_keys=True):
+    """Given two dictionaries, this deep copies 'default' but updates it with any
+    matching keys from 'update'.
+
+    allow_new_keys = False ensures that only keys in the default are taken (updated) from the update.
+
+If not False, verboseSource must be a string, which denotes the updating source file description
+    """
+    result=copy.deepcopy(default)
+    for key in update:
+        if key not in default:
+            if allow_new_keys:
+                result[key]=update[key]
+            else:
+                print("WARNING: configuration merge_dictionaries got an update, but\
+ that key doesn't exist in the default config settings. key=%s"%key)
+                continue
+        if type(update[key])==dict:
+            result[key]=merge_dictionaries(result[key],update[key], verboseSource=verboseSource)
+        else:
+            result[key]=update[key]
+            if verboseSource:
+                print('   Using '+verboseSource+' config value for: '+key)
+    if 0:
+        print('-------')
+        print default
+        print update
+        print result
+    return result
+
+def read_heirarchy_of_config_files(files):
+    configDict={}
+    for ff in files:
+        if os.path.exists(ff):
+            newConfigDict=readConfigFile(ff)
+            configDict=merge_dictionaries(configDict,newConfigDict, verboseSource=False) #bool(configDict))
+
+
+    if not configDict:
+        raise Exception("Cannot find config[-template].cfg file in "+', '.join(files))
+    return configDict
+
+def main():
+    """
+    """
+    localConfigFile=os.getcwd()+'/config.cfg'
+    localConfigTemplateFile=os.getcwd()+'/config-template.cfg'
+    repoPath=os.path.abspath(os.path.dirname(__file__ if __file__ is not None else '.'))
+
+    if 0: 
+        # Change directory to the bin folder, ie location of this module. That way, we always have the config.cfg file as local, which means other utlilities using config.cfg will find the right one.
+        path = os.path.abspath(__file__)
+        dir_path = os.path.dirname(path)
+        if 'cpblUtilities' not in os.getcwd():
+            os.chdir(dir_path)
+
+    repoFile=(repoPath if repoPath else '.')+'/config.cfg'
+    repoTemplateFile=(repoPath if repoPath else '.')+'/config-template.cfg'
+
+
+    merged_dictionary=read_heirarchy_of_config_files([
+        repoTemplateFile,
+        repoFile,
+        localConfigTemplateFile,
+        localConfigFile,
+    ])
+
+    # Now impose our structure
+    defaults=dict([[kk,vv] for kk,vv in merged_dictionary.items() if kk in ['rdc','mode']])
+    defaults.update(dict(paths=merged_dictionary['paths'],
+                  ))
+    defaults['stata']={'paths':copy.deepcopy(defaults['paths'])}
+    return(defaults)
+defaults=main()
+paths=defaults['paths']
+if 'python_utils_path' in paths:
+    sys.path.append(paths['python_utils_path'])
+

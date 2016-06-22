@@ -1513,6 +1513,25 @@ def downloadOpenGoogleDoc(url, filename=None, format=None, pandas=False, update=
     return(full_file_name)
 
 
+
+def merge_dictionaries(default,update, verbose=False):
+    """Given two dictionaries, this deep copies 'default' but updates it with any
+    matching keys from 'update'."""
+    result=copy.deepcopy(default)
+    for key in update:
+        if key not in default:
+            print("WARNING: configuration merge_dictionaries got an update, but\
+ that key doesn't exist in the default config settings. key=%s"%key)
+            continue
+        if type(update[key])==dict:
+            result[key]=merge_dictionaries(result[key],update[key], verbose=verbose)
+        else:
+            result[key]=update[key]
+            if verbose:
+                print('   Using local config value for: '+key)
+    return result
+
+
 if 0:
     try: # Where is this needed? Should import it only where needed.        
         from parallel import *
