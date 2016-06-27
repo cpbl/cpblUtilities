@@ -4,22 +4,28 @@ import pandas as pd
 import numpy as np
 
 def df_impute_values_ols(adf,outvar,model,  verbose=True):
-    """
-    Specify a Pandas DataFrame with some null (eg. np.nan) values in column <outvar>.
+    """Specify a Pandas DataFrame with some null (eg. np.nan) values in column <outvar>.
     Specify a string model (in statsmodels format, which is like R) to use to predict them when they are missing. Nonlinear transformations can be specified in this string.
 
     e.g.: model='  x1 + np.sin(x1) + I((x1-5)**2) '
 
-    A version of df with some null values filled in (those that have the model variables) will be returned, using single imputation.
-    At the moment, this uses OLS, so outvar should be continuous.
+    At the moment, this uses OLS, so outvar should be continuous. 
+
+    Two dfs are returned: one containing just the updated rows and a
+    subset of columns, and version of the incoming DataFrame with some
+    null values filled in (those that have the model variables) will
+    be returned, using single imputation.
 
     AAh!! This bug https://github.com/statsmodels/statsmodels/issues/2171 wasted me hours. :( The latest release of Statsmodels is over a year old...
     So this is written in order to avoid ANY NaN's in the modeldf. That should be less necessary in future versions.
 
-    To do: Add a verbose mode with plots 
+    To do: 
+    - Add plots to  verbose mode 
+    - (It should have a discrete or at least binary outvar model option)
 
     Issues:
     - the "horrid kluge" line below will give trouble if there are column names that are part of other column names.
+
     """
     formula=outvar+' ~ '+model
     rhsv=[vv for vv in adf.columns if vv in model] # This is a horrid kluge! Ne
@@ -31,4 +37,6 @@ def df_impute_values_ols(adf,outvar,model,  verbose=True):
     newvals=adf[pd.isnull(adf[outvar])][rhsv].dropna()
     newvals[outvar] = results.predict(newvals)
     adf.loc[updateIndex,outvar]=newvals[outvar]
-    return(adf)
+    if verbose:
+        print(' %d rows updated for %s'%(len(newvals),outvar))
+    return(newvals, adf)
