@@ -77,12 +77,12 @@ def readConfigFile(inpath, config_file_structure):
                         raise('Do not know config value type '+str(option[1]))
     return(outdict)
 
-def read_hierarchy_of_config_files(files,config_file_structure):
+def read_hierarchy_of_config_files(files,config_file_structure, verbose=False):
     configDict={}
     for ff in files:
         if os.path.exists(ff):
             newConfigDict=readConfigFile(ff,config_file_structure)
-            configDict=merge_dictionaries(configDict,newConfigDict, verboseSource=False) #bool(configDict))
+            configDict=merge_dictionaries(configDict,newConfigDict, verboseSource=False if not verbose else ff) #bool(configDict))
 
 
     if not configDict:
