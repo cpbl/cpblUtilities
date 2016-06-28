@@ -40,3 +40,27 @@ def df_impute_values_ols(adf,outvar,model,  verbose=True):
     if verbose:
         print(' %d rows updated for %s'%(len(newvals),outvar))
     return(newvals, adf)
+
+
+def test_df_impute_values_ols():
+    # Find missing values and fill them in:
+    df = pd.DataFrame({"A": [10, 20, 30, 324, 2353, np.nan],
+                       "B": [20, 30, 10, 100, 2332, 2332],
+                       "C": [0, np.nan, 120, 11, 2, 2 ]})
+    newv,df2=df_impute_values_ols(df,'A',' B + C ',  verbose=True)
+    print df2
+    assert df2.iloc[-1]['A']==2357.5427562610648
+    assert df2.size==18
+
+    # Can we handle some missing values which also have missing predictors?
+    df = pd.DataFrame({"A": [10, 20, 30,     324, 2353, np.nan, np.nan],
+                       "B": [20, 30, 10,     100, 2332, 2332,   2332],
+                       "C": [0, np.nan, 120, 11,   2,    2,     np.nan ]})
+    newv,df2=df_impute_values_ols(df,'A',' B + C + I(C**2) ',  verbose=True)
+    print df2
+
+    assert pd.isnull(  df2.iloc[-1]['A'] )
+    assert  df2.iloc[-2]['A'] == 2352.999999999995
+
+
+
