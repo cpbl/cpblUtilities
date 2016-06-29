@@ -1,0 +1,1563 @@
+% Long table, wide tables, landscape, longtable, beamer table, etc, in LaTeX
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This is a set of wrappers for formatting tables. The idea is to
+% specify tabular/table data in a way which is general enough for
+% various different layout options to be chosen on the fly. In the
+% latest, "C" version, this means having an included .tex file which
+% defines certain possible components of a table, and then an option
+% of several different calls that implement laying it out.
+% 
+% In particular, this was designed originally for use with my
+% cpblStata.py package, so some of the definitions in this file are
+% particular to that.
+%
+% CPBL, Aug 2008
+
+% Jan 2010: 
+%
+% Each table formatting command has three versions: "C", "CA", and "CAC".
+%
+% In "CA", you can leave the format
+% specification blank. (It's built in now to the table's .tex
+% file). 
+%
+% The "CAC" version will also add in default
+% *comments* (caption) from the included tex file.  The automatic
+% comments are often produced in a different colour, so that you can
+% tell they are automatic...
+
+% TO DO:
+% Use array's "\extrarowheight" to get around problem of coloured
+% cells touching the border lines.
+
+% I should add a supertabular mode...
+% longtable has the horrible property that it starts as soon as you
+% invoke it; there is no floating behaviour at all! So you shouldn't
+% mix it in with floats, which was the whole point of the modularity
+% provided by this function. I have been using it, with the call
+% embedded in an \afterpage command. 
+
+% TO DO: Incorporate proper use of afterpage into all long and
+% landscape tables!
+% For some reason, I cannot get this to work. What does work for a
+% landscape table function is to call inside \afterpage{\clearpage <HERE> }
+% So for now, always do that.
+% \ifx \@cpblTableSimple \@empty
+% %Code to be executed if the macro is undefined
+% \else
+% %Code to be executed if the macro IS defined
+% \begin{tabular}{??}
+% \ctFirstHeader
+% \ctBody
+% \fi
+
+
+% OCtober 2008: I want captions to be full text-width when landscape
+% (ie on page by selves) but indented when not landscape, so they are
+% distinguishable from the text. (What did I do for my Stanford
+% thesis?)
+% Hm, well, try the following from my last dissertation: [?]
+
+
+% 2009 April
+% There is a wrinkle to do with using \afterpage within these command
+% definitions. If you do, then 
+% wrapping a command in
+% a small font environment does not work...  So I still don't have a
+% 100% clean set of choices unless I make more variants which specify
+% the font size too...
+%
+% Well, rather, I think that the best format seems to be to leave the 
+% \clearpage\newpage commands outside these table shortcuts. ie call 
+% \clearpage\newpage right after the table call, wrapped in a fontsize
+% command (like \usetinytablefont ).
+%
+% But there is also not currently a consistent font size nor text
+% width for captions.  Need to work on this still! Make up a test set
+% of tables and a test function which displays all table formats. [Not done?! Nov 2010: added settings for caption package here]
+%
+%
+% 2013 September: I have python code to turn a tsv file/ xls extraction / etc into a table file of the kind that my routines here use.  
+
+
+% Anton does the following... But I have just changed code simply to usepackage{pdflscape} instead of or after usepackage{lscape}, and that does the trick all by itself: now landscape pages are turned in a PDF viewer. Nice.
+%
+%
+%\usepackage{pdflscape}
+%\newlength{\lscapewidth}
+%\newlength{\lscapeheight}
+%\setlength{\lscapewidth}{\textheight}
+%\setlength{\lscapeheight}{\textwidth}
+%
+%
+%\begin{document}
+%...
+%
+%\begin{landscape}
+%\begin{table}
+%\newcolumntype{Y}{>{\small\raggedright\arraybackslash}X}
+%\begin{tabularx}{\lscapewidth}{|Y|Y|Y|Y|}
+%[...]
+%\end{tabularx}
+%\caption{...}
+%\end{table}
+%\end{landscape}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SAMPLE INPUT FILE:
+%
+%    \renewcommand{\ctNtabCols}{6}
+%    \renewcommand{\ctFirstHeader}{	&\begin{sideways}\sltheadername{SWL}\end{sideways}	&\begin{sideways}\sltheadername{c.d.:SWL}\end{sideways}	&\begin{sideways}\sltheadername{SWL}\end{sideways}	&\begin{sideways}\sltheadername{SWL}\end{sideways}	&\begin{sideways}\sltheadername{SWL}\end{sideways}\\ 
+%	&\begin{sideways}\sltheadername{(1)}\end{sideways}	&\begin{sideways}\sltheadername{(1)}\end{sideways}	&\begin{sideways}\sltheadername{(2)}\end{sideways}	&\begin{sideways}\sltheadername{(3)}\end{sideways}	&\begin{sideways}\sltheadername{(4)}\end{sideways}\\ 
+%\hline\hline
+%}
+%    \renewcommand{\ctSubsequentHeaders}{\ctFirstHeader}
+%    \renewcommand{\ctBody}{\sltheadername{ln(HH~inc)}	& \wrapSigOnePercent{.14}	& 	& \wrapSigOnePercent{.14}	& \wrapSigOnePercent{.11}	& \wrapSigOnePercent{.12}\\ 
+%\showSEs{	& \coefse{.022}	& 	& \coefse{.022}	& \coefse{.026}	& \coefse{.026} \\ }{}
+%\sltheadername{HH income $>$100k\$/yr}	& \wrapSigOnePercent{.11}	& \wrapSigFivePercent{.82}	& \wrapSigOnePercent{.12}	& .069	& \wrapSigTenPercent{.074}\\ 
+%\showSEs{	& \coefse{.037}	& \coefse{.35}	& \coefse{.037}	& \coefse{.044}	& \coefse{.044} \\ }{}
+%\sltheadername{constant}	& \wrapSigOnePercent{6.3}	& 	& \wrapSigOnePercent{9.2}	& \wrapSigOnePercent{6.5}	& \wrapSigOnePercent{10.4}\\ 
+%\showSEs{	& \coefse{.23}	& 	& \coefse{1.17}	& \coefse{.28}	& \coefse{1.35} \\ }{}
+%\hline 
+%born in home province	& 	& 	& 	& \YesMark	& \YesMark\\ 
+%obs.	& 18381	& 18381	& 18381	& 12547	& 12547\\ 
+%$R^2$(adj)	& .157	& .157	& .158	& .152	& .153\\ 
+%}
+%    
+%    % This .tex file is meant to be called by something from
+%    % cpblTables.sty. If it is not, then output something crude:
+%    \ifx\@ctUsingWrapper\@empty
+%    %Code to be executed if the macro is undefined
+%    \begin{table}
+%    \begin{tabular}{lc|c|ccc}
+%    \ctFirstHeader
+%    \ctBody
+%    \end{tabular}
+%    \end{table}
+%    \else
+%    %Code to be executed if the macro IS defined
+%    \fi
+%
+%    % Better yet, for version "CA" of cpblTables, define methods so that the format need not be specified in the call.
+%    \renewcommand{\ctStartTabular}{\begin{tabular}{lc|c|ccc}}
+%    \renewcommand{\ctStartLongtable}{\begin{longtable}[c]{lc|c|ccc}}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% END OF SAMPLE INPUT FILE    
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SAMPLE USAGE
+%
+% \setlength\tabcolsep{1pt}
+%{\usetinytablefont \cpblTableCACLong{}{Detailed decomposition of SWL model (1)}{Detailed decomposition of SWL model (1)}{}{}{}{\texdocs inputTableFile.tex}
+%\setlength\tabcolsep{6pt} % 6pt is default value
+%}
+%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% END OF SAMPLE USAGE
+
+% 2011 June: I'm going to keep version C to work as is, but allow it to be wrapped by redefining the if switch below, which will make any cpblTablesC command to use values for a transposed version of the table, built in to the file! This means that there is not backwards compatibility; ie for old version C files, this switch will fail. Which is fine, since there are probably two versions of such files, one transposed, if needed.  So, to summarise, each cpblTableC file can now contain two versions of the table, one a transposed version of the other. WHOOPS! DEFINITIONS DO NOT WORK WHEN USING AFTERPAGE INSIDE THE CPBLTABLES FUNCTION. SO WILL NEED TO DEFINE NEW FUNCTIONS, WITH Transposed suffix in name, for the transposed versions. ***** If cpblTableC function does NOT use afterpage, then the Transposed version can just wrap the normal version with setting the ifflag below.
+\newif\ifcpblTableUseTransposed\cpblTableUseTransposedfalse
+% Define a method to switch all core definitions to use the transposed table's values.
+\newcommand{\cpblTablesSwitchTransposed}{
+\renewcommand{\ctNtabCols}{\ctNtabColsTrans}
+\renewcommand{\ctFirstHeader}{\ctFirstHeaderTrans}
+\renewcommand{\ctSubsequentHeaders}{\ctSubsequentHeadersTrans}
+\renewcommand{\ctBody}{\ctBodyTrans}
+\renewcommand{\ctCaption}{\ctCaptionTrans}
+\renewcommand{\ctStartTabular}{\ctStartTabularTrans}
+\renewcommand{\ctStartLongtable}{\ctStartLongtableTrans}
+}
+
+\usepackage{underscore} %% Eek! This is so that included filenames, which are reprinted in default captions, can contain underscores.
+\usepackage{lscape}
+\usepackage{pdflscape}
+\usepackage{rotating}
+\usepackage{relsize}
+%\usepackage{colortbl} %% handy for colored cells in tables, etc.
+% Huh? The table option for xcolor allows for rowcolor in beamer, and rowwise unveiling of tables???
+%\usepackage[table]{xcolor} %% For general, v powerful color handling: e.g simple coloured text.
+% Agh, but there seems to be a conflict if I use the table option. with amsfonts?! no... 2013: Fixed. Use google!  .{Agh. well, no. didn't work for all docs)
+%\makeatletter
+%\@ifpackageloaded{xcolor}{}{}{\usepackage[table]{xcolor}} %% For general, v powerful color handling: e.g simple coloured text.
+%\makeatother
+%\usepackage[svgnames]{xcolor} %% svgnames clashes with Beamer?
+%\usepackage{amsfonts}% Some substitions use mathbb. I think \check
+                     % needs this. I used \check marks in my tables a
+                     % fair bit
+
+
+% Adding the following, April 2010... seems a bit nicer?? Can always
+% override, of course.
+%\usepackage[footnotesize,bf]{caption} % Does this actually call caption2 or caption3?
+% 2014Nov: I'm bringing back amsfonts here, since it is need for \checkmark.  Hopefully whatever old bug was a problem will be no more.
+\usepackage{amsfonts} % For checkmark
+% Options removed from following: ,format=plain
+\usepackage{caption} % caption2 is obselete; use caption instead. Do not put options in the call, here, otherwise there will be conflicts with other packages that call caption? Setting options separately is (maybe?) safer:
+%\usepackage{caption3} % 2013: it seems caption may be obselete? (warnings). Use caption3?
+\captionsetup{font=small,labelfont={bf,up},textfont={it,up}}      %%%margin=10pt,font=small,labelfont=bf}
+
+%\usepackage{ltcaption}
+%\setlength{\captionmargin}{20pt}
+
+
+% Can drop this if using newer, better formats.
+%\usepackage{cpblTables_oldFormats}
+
+
+    %%\newcommand{\redcross}{\textcolor{DarkRed}{$\times$}}
+    %%\newcommand{\bluecheck}{\textcolor{Blue}{$\surd$}}
+    \newcommand{\NoMark}{\textcolor{red}{$\times$}}
+    \newcommand{\YesMark}{\textcolor{blue}{$\checkmark$}}
+    \newcommand{\NOmark}{\textcolor{red}{$\mathbf\times$}}
+    \newcommand{\YESmark}{\textcolor{blue}{$\mathbf\checkmark$}}
+    \newcommand{\showSEs}[2]{#1} % To show SEs
+    %\newcommand{\showSEs}[2]{#2} % To not show SEs
+    % Whhops. see my post on comp.text.tex. Got help. Improve over above, to avoid nested arguments in afterpage!!:
+    %\newcommand{\showSEsone}[2]{#1} 
+    %\newcommand{\showSEstwo}[2]{#2} 
+    %\newcommand{\showSEs}{\showSEsone} % shorter: \let\showSEs=\showSEsone 
+    %\begin{document} 
+    %\afterpage{\clearpage 
+    %\renewcommand{\showSEs}{\showSEStwo} % or \let\showSEs=\showSEstwo 
+    %\showSEs{this one}{or this one} 
+    %\renewcommand{\showSEs}{\showSEstwo} % or \let\showSEs=\showSEsone 
+    %} 
+    %
+    %\end{document} 
+    %For bonus points, note that \showSEsone and \showSEstwo are already 
+    %internal LaTeX macros named \@firstoftwo and \@secondoftwo. 
+    %
+    \newcommand{\showSEsone}[2]{#1} 
+    \newcommand{\showSEstwo}[2]{#2} 
+    \let\showSEs=\showSEsone
+    %\let\showSEs=\@firstoftwo
+
+
+% 2015 March: Based on http://tex.stackexchange.com/questions/107564/space-between-hline-hline-in-longtable-using-package-colortbl
+% moving colortbl from above, and doing strange things to avoid it talking with longtable... This restores spaces between \hline\hline in longtable, but it only works if you aren't loading colortbl-like stuff elsewhere.
+\usepackage{color}
+\makeatletter
+\let\xx@begindocumenthook\@begindocumenthook
+\let\xxhline\hline
+\let\xx@xhline\@xhline
+\usepackage{colortbl}
+\let\hline\xxhline
+\let\@xhline\xx@xhline
+\let\@begindocumenthook\xx@begindocumenthook
+\makeatother
+\usepackage{longtable}
+
+
+
+
+
+
+
+
+
+
+
+    \usepackage{array} % This modifies tabular environment to modern features.
+
+    \usepackage{afterpage} % Caution! Do NOT put any \renewcommand[n>0] inside afterpage. If you do, you will need to double the "#"s in the definition. Or find a way to make definitions outside and then just reassignments inside. With these tricks (see my comp.text.tex lesson, if you like)  you can use afterpage nicely.
+
+    % AGGh! you need to include this, but it's breaking statalatex..
+    %    \usepackage{cpblPDF}  %{graphicx} % for resizebox
+
+    \usepackage{booktabs} % 2015 March: Adding new dependency. Let's use toprule and bottomrule as standard?
+
+%\usepackage{singlespace}
+%%%-    \usepackage[
+%%%-    %\hypersetup{
+%%%-        colorlinks,%
+%%%-        citecolor=black,%
+%%%-        filecolor=black,%
+%%%-        linkcolor=black,%
+%%%-        urlcolor=black
+%%%-    %}
+%%%-    ]{hyperref}
+%     \usepackage[colorlinks]{hyperref}
+% \hypersetup{
+%     bookmarks=true,         % show bookmarks bar?
+% %    unicode=false,          % non-Latin characters in Acrobats bookmarks
+% %    pdftoolbar=true,        % show Acrobats toolbar?
+% %    pdfmenubar=true,        % show Acrobats menu?
+% %    pdffitwindow=true,      % page fit to window when opened
+%     pdftitle={My title},    % title
+%     pdfauthor={Author},     % author
+%     pdfsubject={Subject},   % subject of the document
+%     pdfnewwindow=true,      % links in new window
+%     pdfkeywords={keywords}, % list of keywords
+%     colorlinks=true,       % false: boxed links; true: colored links
+%     linkcolor=grey,%red,          % color of internal links
+%     citecolor=grey,%green,        % color of links to bibliography
+%     filecolor=grey,%magenta,      % color of file links
+%     urlcolor=grey,%cyan           % color of external links
+% }
+
+
+    \definecolor{OLDcSignifOne}{rgb}{.92,.92,.3}
+    \definecolor{OLDcSignifTwo}{rgb}{.78,.78,.3}
+    \definecolor{OLDcSignifThree}{rgb}{.6,.6,.3}
+
+
+    % OVERWRITE For printing grayscale:
+    \definecolor{cSignifOne}{rgb}{.75,.75,.75}
+    \definecolor{cSignifTwo}{rgb}{.63,.63,.63}
+    \definecolor{cSignifThree}{rgb}{.5,.5,.5}
+
+    \definecolor{caggNormal}{rgb}{.9,.9,.9}
+    \definecolor{caggSignifOne}{rgb}{.75,.75,.75}
+    \definecolor{caggSignifTwo}{rgb}{.63,.63,.63}
+    \definecolor{caggSignifThree}{rgb}{.5,.5,.5}
+
+    % Settings for colour display:
+
+    \definecolor{cSignifOne}{rgb}{.92,1,.92}
+    \definecolor{cSignifTwo}{rgb}{.78,1,.78}
+    \definecolor{cSignifThree}{rgb}{.5,1,.5}
+    \definecolor{cSignifThousandth}{rgb}{.6,1,0} % .3 1 .3
+
+\newcommand{\inverseVideoSignifColours}{
+    \definecolor{cSignifOne}{rgb}{0,.1,.18}
+    \definecolor{cSignifTwo}{rgb}{0,.2,.2}
+    \definecolor{cSignifThree}{rgb}{0,.3,0}
+    \definecolor{cSignifThousandth}{rgb}{.3,.4,0} % .3 1 .3
+
+}
+
+    \definecolor{caggNormal}{rgb}{.9,.9,.9}
+    \definecolor{caggSignifOne}{rgb}{.82,.9,.82}
+    \definecolor{caggSignifTwo}{rgb}{.68,.9,.68}
+    \definecolor{caggSignifThree}{rgb}{.4,.9,.4}
+    \definecolor{caggSignifThousandth}{rgb}{.5,.9,0} % .2 .9 .2
+
+    
+    %%\newcommand{\coefse}[1]{\raisebox{.7ex}[0pt]{\smaller\smaller (#1)}}
+    \newcommand{\coefse}[1]{{\smaller\smaller (#1)}}
+    \newcommand{\coefseSmall}[1]{{\smaller\smaller (#1)}}
+    \newcommand{\coefp}[1]{{\smaller\smaller (#1)}}
+    \newcommand{\coefpSmall}[1]{{\footnotesize\smaller (#1)}}
+
+
+
+    %%\newcommand{\signifTenPercent}{$^*$}
+    %%\newcommand{\signifFivePercent}{$^{**}$}
+    %%\newcommand{\signifOnePercent}{$^{***}$}
+
+    \newcommand{\aggc}{\cellcolor{caggNormal}}
+    \newcommand{\aggr}{\rowcolor{caggNormal}}
+    %% bACKWARD compatibility:
+    \newcommand{\signifOne}{\cellcolor{OLDcSignifOne}}
+    \newcommand{\signifTwo}{\cellcolor{OLDcSignifTwo}}
+    \newcommand{\signifThree}{\cellcolor{OLDcSignifThree}}
+
+
+    % Set dummies to be overwritten, below.
+    \newcommand{\wrapSigTenPercent}{}
+    \newcommand{\wrapSigFivePercent}{}
+    \newcommand{\wrapSigOnePercent}{}
+    \newcommand{\wrapSigOneThousandth}{}
+    \newcommand{\aggwrapSigTenPercent}{}
+    \newcommand{\aggwrapSigFivePercent}{}
+    \newcommand{\aggwrapSigOnePercent}{}
+    \newcommand{\aggwrapSigOneThousandth}{}
+
+    \newcommand{\signifTenPercent}{}
+    \newcommand{\signifFivePercent}{}
+    \newcommand{\signifOnePercent}{}
+    \newcommand{\signifOneThousandth}{}
+
+    \newcommand{\aggsignifTenPercent}{}
+    \newcommand{\aggsignifFivePercent}{}
+    \newcommand{\aggsignifOnePercent}{}
+    \newcommand{\aggsignifOneThousandth}{}
+
+    % Now we want to overwrite these dummies with stars or colours:
+    % Colours version definitions
+
+    %% VErsion September 2008: switch to wrappers.
+    
+    % Colours version definitions:
+    \newcommand{\colourswrapSigTenPercent}[1]{#1\cellcolor{cSignifOne}}
+    \newcommand{\colourswrapSigFivePercent}[1]{#1\cellcolor{cSignifTwo}}
+    \newcommand{\colourswrapSigOnePercent}[1]{#1\cellcolor{cSignifThree}}
+    \newcommand{\colourswrapSigOneThousandth}[1]{#1\cellcolor{cSignifThousandth}}
+    \newcommand{\coloursaggwrapSigTenPercent}[1]{#1\cellcolor{caggSignifOne}}
+    \newcommand{\coloursaggwrapSigFivePercent}[1]{#1\cellcolor{caggSignifTwo}}
+    \newcommand{\coloursaggwrapSigOnePercent}[1]{#1\cellcolor{caggSignifThree}}
+    \newcommand{\coloursaggwrapSigOneThousandth}[1]{#1\cellcolor{caggSignifThousandth}}
+
+    \newcommand{\colourssignifTenPercent}{\cellcolor{cSignifOne}}
+    \newcommand{\colourssignifFivePercent}{\cellcolor{cSignifTwo}}
+    \newcommand{\colourssignifOnePercent}{\cellcolor{cSignifThree}}
+    \newcommand{\colourssignifOneThousandth}{\cellcolor{cSignifThousandth}}
+
+
+    \newcommand{\coloursaggsignifTenPercent}{\cellcolor{caggSignifOne}}
+    \newcommand{\coloursaggsignifFivePercent}{\cellcolor{caggSignifTwo}}
+    \newcommand{\coloursaggsignifOnePercent}{\cellcolor{caggSignifThree}}
+    \newcommand{\coloursaggsignifOneThousandth}{\cellcolor{caggSignifThousandth}}
+
+    % Boldness version definitions:
+    \newcommand{\thousym}{$^{\dagger}$}%$^{\star}_{\raisebox{1ex}[0ex]{\star}}$}%****
+    \newcommand{\boldwrapSigTenPercent}[1]{{\em #1}$^{+}$}
+    \newcommand{\boldwrapSigFivePercent}[1]{{\bfseries\em #1}$^{}$}%**
+    \newcommand{\boldwrapSigOnePercent}[1]{{\bfseries #1}$^{\star}$}%***
+    \newcommand{\boldwrapSigOneThousandth}[1]{{\bfseries #1}\thousym}
+    \newcommand{\boldaggwrapSigTenPercent}[1]{{\em #1}$^{+}$\cellcolor{caggNormal}}
+    \newcommand{\boldaggwrapSigFivePercent}[1]{{\bfseries\em #1}$^{*}$\cellcolor{caggNormal}}
+    \newcommand{\boldaggwrapSigOnePercent}[1]{{\bfseries #1}$^{\star}$\cellcolor{caggNormal}}
+    \newcommand{\boldaggwrapSigOneThousandth}[1]{{\bfseries #1}\thousym}%$^{\star}_{\raisebox{1ex}[0ex]{\star}}$\cellcolor{caggNormal}}
+% \raisebox{1ex}[0ex]{\star}
+    \newcommand{\boldsignifTenPercent}{$^{*}$}
+    \newcommand{\boldsignifFivePercent}{$^{**}$}
+    \newcommand{\boldsignifOnePercent}{$^{***}$}
+    \newcommand{\boldsignifOneThousandth}{$^{***}$}
+    \newcommand{\boldaggsignifTenPercent}{$^{*}$\cellcolor{caggNormal}}
+    \newcommand{\boldaggsignifFivePercent}{$^{**}$\cellcolor{caggNormal}}
+    \newcommand{\boldaggsignifOnePercent}{$^{***}$\cellcolor{caggNormal}}
+    \newcommand{\boldaggsignifOneThousandth}{$^{***}$\cellcolor{caggNormal}}
+
+
+    % ColourBoldness version definitions: New 2010: combine colour and boldness/stars!
+    \newcommand{\colourboldwrapSigTenPercent}[1]{{\em #1}$^{+}$\cellcolor{cSignifOne}}
+    \newcommand{\colourboldwrapSigFivePercent}[1]{{\bfseries\em #1}$^{}$\cellcolor{cSignifTwo}}
+    \newcommand{\colourboldwrapSigOnePercent}[1]{{\bfseries #1}$^{\star}$\cellcolor{cSignifThree}}
+    \newcommand{\colourboldwrapSigOneThousandth}[1]{{\bfseries #1}\thousym\cellcolor{cSignifThousandth}}
+    \newcommand{\colourboldaggwrapSigTenPercent}[1]{{\em #1}$^{+}$\cellcolor{caggSignifOne}}
+    \newcommand{\colourboldaggwrapSigFivePercent}[1]{{\bfseries\em #1}$^{*}$\cellcolor{caggSignifTwo}}
+    \newcommand{\colourboldaggwrapSigOnePercent}[1]{{\bfseries #1}$^{\star}$\cellcolor{caggSignifThree}}
+    \newcommand{\colourboldaggwrapSigOneThousandth}[1]{{\bfseries #1}\thousym\cellcolor{caggSignifThousandth}}
+
+    % Stars version definitions:  [Hm, newest bold version kind of makes stars version obselete. DEPRECATE STARS VERSION!]
+    \newcommand{\starswrapSigTenPercent}[1]{{#1}$^{*}$}
+    \newcommand{\starswrapSigFivePercent}[1]{{#1}$^{**}$}
+    \newcommand{\starswrapSigOnePercent}[1]{{ #1}$^{***}$}
+    \newcommand{\starswrapSigOneThousandth}[1]{{ #1}$^{***}$}
+    \newcommand{\starsaggwrapSigTenPercent}[1]{#1$^{*}$\cellcolor{caggNormal}}
+    \newcommand{\starsaggwrapSigFivePercent}[1]{#1$^{**}$\cellcolor{caggNormal}}
+    \newcommand{\starsaggwrapSigOnePercent}[1]{#1$^{***}$\cellcolor{caggNormal}}
+    \newcommand{\starsaggwrapSigOneThousandth}[1]{#1$^{***}$\cellcolor{caggNormal}}
+    \newcommand{\starssignifTenPercent}{$^{*}$}
+    \newcommand{\starssignifFivePercent}{$^{**}$}
+    \newcommand{\starssignifOnePercent}{$^{***}$}
+    \newcommand{\starssignifOneThousandth}{$^{***}$}
+    \newcommand{\starsaggsignifTenPercent}{$^{*}$\cellcolor{caggNormal}}
+    \newcommand{\starsaggsignifFivePercent}{$^{**}$\cellcolor{caggNormal}}
+    \newcommand{\starsaggsignifOnePercent}{$^{***}$\cellcolor{caggNormal}}
+    \newcommand{\starsaggsignifOneThousandth}{$^{***}$\cellcolor{caggNormal}}
+
+    % For online: use colours instead!
+    \newcommand{\useColoursForSignificance}{
+    \renewcommand{\wrapSigTenPercent}{\colourswrapSigTenPercent}
+    \renewcommand{\wrapSigFivePercent}{\colourswrapSigFivePercent}
+    \renewcommand{\wrapSigOnePercent}{\colourswrapSigOnePercent}
+    \renewcommand{\wrapSigOneThousandth}{\colourswrapSigOneThousandth}
+
+    \renewcommand{\aggwrapSigTenPercent}{\coloursaggwrapSigTenPercent}
+    \renewcommand{\aggwrapSigFivePercent}{\coloursaggwrapSigFivePercent}
+    \renewcommand{\aggwrapSigOnePercent}{\coloursaggwrapSigOnePercent}
+    \renewcommand{\aggwrapSigOneThousandth}{\coloursaggwrapSigOneThousandth}
+
+    % Below are deprecated, right??
+    \renewcommand{\signifTenPercent}{\colourssignifTenPercent}
+    \renewcommand{\signifFivePercent}{\colourssignifFivePercent}
+    \renewcommand{\signifOnePercent}{\colourssignifOnePercent}
+    \renewcommand{\signifOneThousandth}{\colourssignifOneThousandth}
+    \renewcommand{\aggsignifTenPercent}{\coloursaggsignifTenPercent}
+    \renewcommand{\aggsignifFivePercent}{\coloursaggsignifFivePercent}
+    \renewcommand{\aggsignifOnePercent}{\coloursaggsignifOnePercent}
+    \renewcommand{\aggsignifOneThousandth}{\coloursaggsignifOneThousandth}
+}
+
+
+    % For online / printed : use colours AND boldness together!
+    \newcommand{\useColourBoldForSignificance}{
+    \renewcommand{\wrapSigTenPercent}{\colourboldwrapSigTenPercent}
+    \renewcommand{\wrapSigFivePercent}{\colourboldwrapSigFivePercent}
+    \renewcommand{\wrapSigOnePercent}{\colourboldwrapSigOnePercent}
+    \renewcommand{\wrapSigOneThousandth}{\colourboldwrapSigOneThousandth}
+
+    \renewcommand{\aggwrapSigTenPercent}{\colourboldaggwrapSigTenPercent}
+    \renewcommand{\aggwrapSigFivePercent}{\colourboldaggwrapSigFivePercent}
+    \renewcommand{\aggwrapSigOnePercent}{\colourboldaggwrapSigOnePercent}
+    \renewcommand{\aggwrapSigOneThousandth}{\colourboldaggwrapSigOneThousandth}
+}
+
+    % For printout: use stars instead!
+    \newcommand{\useStarsForSignificance}{
+    \renewcommand{\wrapSigTenPercent}{\starswrapSigTenPercent}
+    \renewcommand{\wrapSigFivePercent}{\starswrapSigFivePercent}
+    \renewcommand{\wrapSigOnePercent}{\starswrapSigOnePercent}
+    \renewcommand{\wrapSigOneThousandth}{\starswrapSigOneThousandth}
+    \renewcommand{\aggwrapSigTenPercent}{\starsaggwrapSigTenPercent}
+    \renewcommand{\aggwrapSigFivePercent}{\starsaggwrapSigFivePercent}
+    \renewcommand{\aggwrapSigOnePercent}{\starsaggwrapSigOnePercent}
+    \renewcommand{\aggwrapSigOneThousandth}{\starsaggwrapSigOneThousandth}
+
+    \renewcommand{\signifTenPercent}{\starssignifTenPercent}
+    \renewcommand{\signifFivePercent}{\starssignifFivePercent}
+    \renewcommand{\signifOnePercent}{\starssignifOnePercent}
+    \renewcommand{\signifOneThousandth}{\starssignifOneThousandth}
+    \renewcommand{\aggsignifTenPercent}{\starsaggsignifTenPercent}
+    \renewcommand{\aggsignifFivePercent}{\starsaggsignifFivePercent}
+    \renewcommand{\aggsignifOnePercent}{\starsaggsignifOnePercent}
+    \renewcommand{\aggsignifOneThousandth}{\starsaggsignifOneThousandth}
+}
+
+    % For printout: use boldness instead!
+    \newcommand{\useBoldForSignificance}{
+    \renewcommand{\wrapSigTenPercent}{\boldwrapSigTenPercent}
+    \renewcommand{\wrapSigFivePercent}{\boldwrapSigFivePercent}
+    \renewcommand{\wrapSigOnePercent}{\boldwrapSigOnePercent}
+    \renewcommand{\wrapSigOneThousandth}{\boldwrapSigOneThousandth}
+    \renewcommand{\aggwrapSigTenPercent}{\boldaggwrapSigTenPercent}
+    \renewcommand{\aggwrapSigFivePercent}{\boldaggwrapSigFivePercent}
+    \renewcommand{\aggwrapSigOnePercent}{\boldaggwrapSigOnePercent}
+    \renewcommand{\aggwrapSigOneThousandth}{\boldaggwrapSigOneThousandth}
+
+    \renewcommand{\signifTenPercent}{\boldsignifTenPercent}
+    \renewcommand{\signifFivePercent}{\boldsignifFivePercent}
+    \renewcommand{\signifOnePercent}{\boldsignifOnePercent}
+    \renewcommand{\signifOneThousandth}{\boldsignifOneThousandth}
+    \renewcommand{\aggsignifTenPercent}{\boldaggsignifTenPercent}
+    \renewcommand{\aggsignifFivePercent}{\boldaggsignifFivePercent}
+    \renewcommand{\aggsignifOnePercent}{\boldaggsignifOnePercent}
+    \renewcommand{\aggsignifOneThousandth}{\boldaggsignifOneThousandth}
+}
+
+% Start with colours! setting as default
+ \useColoursForSignificance
+
+    \newcommand{\sltheadernum}[1]{#1}  %    \newcommand{\sltheadernum}[1]{\smaller smaller #1}
+    \newcommand{\sltheadername}[1]{#1}
+    % april 2010: sltheadername is deprecated. Use separate ones for row/column headers now.
+    \newcommand{\sltrheadername}[1]{#1}
+    \newcommand{\sltrbheadername}[1]{#1}
+    \newcommand{\sltcheadername}[1]{#1}
+    \newcommand{\slthfill}{\hfill } % Change this to a space to change
+                                % the way transposed cpblStata tables
+                                % are laid out..
+
+    \newcommand{\usetinytablefont}{\scriptsize}    
+
+    \newcommand{\cpblColourLegend}{Significance:~\begin{tabular}{cccc}
+        \wrapSigOneThousandth{0.1\%}~~~~&
+        \wrapSigOnePercent{1\%}~~~~&
+\wrapSigFivePercent{5\%}~~~~&
+\wrapSigTenPercent{10\%}
+\\ \end{tabular} }
+\newcommand{\cpblThreeLevelColourLegend}{Significance:~\begin{tabular}{ccc}
+        \wrapSigOnePercent{1\%}~~~~&
+\wrapSigFivePercent{5\%}~~~~&
+\wrapSigTenPercent{10\%}
+\\ \end{tabular} }
+
+%        1\%\signifOnePercent & 5\%\signifFivePercent &
+%        10\%\signifTenPercent\\ \end{tabular} }
+
+    % I want to make this dependent on whether we are in draft
+    % mode... How??
+% Following darkness is about right for my printer. Should be combined
+% with a marginmark, though.
+    \definecolor{cDraftComment}{rgb}{.8,.8,.8}%{.95,.92,.92}%{.9,.82,.82}
+% Here's one possible definition of draftcomment
+    \newcommand{\ctDraftCommentColouredText}[1]{{\color{cDraftComment} #1}}
+%\definecolor{MyGray}{rgb}{0.96,0.97,0.98}
+\makeatletter\newenvironment{graybox}{%
+   \begin{lrbox}{\@tempboxa}\begin{minipage}{\columnwidth}}{\end{minipage}\end{lrbox}%
+   \colorbox{cDraftComment}{\usebox{\@tempboxa}}
+}\makeatother
+    \newcommand{\ctDraftCommentColouredBox}[1]{
+
+\begin{graybox}\tiny #1 \end{graybox}}
+% Actually, overwrite it again: just use yellow highlighting:
+\usepackage{soul} % This defines the highlighting command, \hl, though
+                  % it apparently needs a postscript-aware
+                  % implementation to view properly??
+    \newcommand{\ctDraftCommentHighlighted}[1]{ \hl{\sc #1} }
+    \newcommand{\ctDraftCommentHidden}[1]{}
+%\usepackage{framed}
+\newcommand{\ctDraftComment}{\ctDraftCommentColouredBox}%{\cpblSwallow}%{\ctDraftCommentHighlighted}%
+%\renewcommand{\ctDraftComment}[1]{\begin{framed} #1 \end{framed}}%\ctDraftCommentColouredBox}%{\cpblSwallow}%{\ctDraftCommentHighlighted}%
+\newcommand{\safeDraftComment}{\ctDraftCommentColouredBox}%{\cpblSwallow}%
+
+\newcommand{\cpblMeanRowName}{}%mm$\mu$}
+
+
+% The height (and width) available in a Beamer presentation vary  with
+% theme!!! and with the length of the title...
+
+\newcommand{\beamertextheight}{42mm}
+
+%    \newcommand{\ctDraftComment}[1]{}%{\sc\scriptsize #1}}
+    %\renewcommand{\ctDraftComment}[1]{{\sc\scriptsize #1}}
+    % In the mean time, just put the draft renewcommand in your
+    % preamble for draft mode.
+
+%% Make a series of capsules to format tables different ways:
+%% ARguments are: {1:format}{2:short caption}{3:caption with label}{4:file}{5:footer}
+            %% \cpblTableALong{1:format}{2:short caption}{3:caption with label}{4:ncols for footer}{5:footer}{6:file}
+
+%% This rubber might still be useful one day:  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}l*{20}{c}}
+
+
+%% The header and multi-page header are written to the included file. 
+%% In all cases, now, the included file will just be &-separated rows... no
+%%
+%% First, define this thing to be used (redefined) within functions, below:
+\newcommand{\ifLongTable}[1]{}
+\newcommand{\ifNotLongTable}[1]{}
+\newcommand{\longTableFooter}{}
+\newcommand{\cpblEcho}[1]{#1} %% Just a tool to help redefine the above commands.
+% Hm.. moved to cpblRef? Or make following robust to redefinition
+%\newcommand{\cpblSwallow}[1]{}%% Just a tool to help redefine the above commands.
+
+\newcommand{\ntabcols}{1}
+\newcommand{\longtableContinueHeader}{\tablename\ \thetable{} -- {\em continued from previous page}}
+\newcommand{\longtableContinueFooter}{{Continued on next page}}
+% Following are implemented oddly: You must currently include \cpbltoprule in your own .tex file, while \cpblbottomrule is added on to the bottom of most/all tables.
+% This is because for some tables we really don't want a top rule, whereas I think we always want a bottom one.  They can always be redefined on the fly.
+% Ah, actually, the problem is that (possibly due to an interaction between colortbl and longtbl?!) for tables, there is a space between \hline\hline. But in longtable, when colortbl is loaded, the same thing has no gap, ie is just a thicker \hline
+\newcommand{\cpbltoprule}{\toprule}%{\hline \hline}
+\newcommand{\cpblbottomrule}{\bottomrule}%{\hline \hline}  % \bottomrule} %{
+
+\newcommand{\ctStartTabular}{}
+\newcommand{\ctStartLongtable}{}
+
+\newcommand{\ctFirstHeader}{}
+\newcommand{\ctSubsequentHeaders}{}
+\newcommand{\ctNtabCols}{}
+\newcommand{\ctBody}{}
+\newcommand{\ctCaption}{}
+\newcommand{\ctLastHline}{\hline \hline} % June 2011: What!? this is redundant with \ctLasthline; get rid of it??
+
+\newcommand{\ctNtabColsTrans}{}
+\newcommand{\ctFirstHeaderTrans}{}
+\newcommand{\ctSubsequentHeadersTrans}{}
+\newcommand{\ctBodyTrans}{}
+\newcommand{\ctCaptionTrans}{}
+\newcommand{\ctStartTabularTrans}{}
+\newcommand{\ctStartLongtableTrans}{}
+
+
+% These definitions should be renewed after each loading of a .tex
+% file that might change them!
+\newcommand{\ctResetDefinitions}{
+\renewcommand{\ctStartTabular}{}
+\renewcommand{\ctStartLongtable}{}
+\renewcommand{\ctFirstHeader}{}
+\renewcommand{\ctSubsequentHeaders}{}
+\renewcommand{\ctNtabCols}{}
+\renewcommand{\ctBody}{}
+\renewcommand{\ctCaption}{}
+
+\renewcommand{\ctStartTabularTrans}{}
+\renewcommand{\ctStartLongtableTrans}{}
+\renewcommand{\ctFirstHeaderTrans}{}
+\renewcommand{\ctSubsequentHeadersTrans}{}
+\renewcommand{\ctNtabColsTrans}{}
+\renewcommand{\ctBodyTrans}{}
+\renewcommand{\ctCaptionTrans}{}
+}
+\newcommand{\ctResetDefinitionsClosing}{\ctResetDefinitions}% Huh? June 2011: replace unexplained code at end of many functions that looks like it's just reclearing a few defs...
+% June 2011: I replaced following, globally, with the reset, above.
+% %
+% \renewcommand{\ctFirstHeader}{}
+% \renewcommand{\ctSubsequentHeaders}{}
+% %\renewcommand{\ctNtabCols}{}
+% \renewcommand{\ctBody}{}
+% \renewcommand{\ctLastHline}{\hline \hline}
+
+
+
+
+\newcommand{\cpblTableSimple}{} % Placeholder so that default
+\newcommand{\ctUsingWrapper}{} % Placeholder so that default
+                                % behaviour of included .tex files
+                                % from my stata code makes no output.
+\newcommand{\ctFormat}{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Below: actual definitions of different table styles/layouts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Format for "B" types:
+%% \cpblTableBWide{1:format}{2:table (toc) name}{3:short caption title}{4:caption}{5:label}{6:ncols for footer}{7:footer}{8:file}
+
+%% Format for "C" types: (including CA..?)
+%% \cpblTableBWide{1:format}{2:table (toc) name}{3:short caption title}{4:caption}{5:label}{6:footer}{7:file}
+
+%% The file must redefine certain commands:
+%% ctFirstHeader
+%% ctSubsequentHeaders
+%% ctNtabCols
+%% ctBody
+%% maybe more, if needed for other formats!
+
+% Aug 2008: I still havent got the first/last hlines quite right for
+% all types...
+
+
+\input{cpblTables-Csimple.sty}
+
+
+%================== \cpblTableCWide ============================
+\newcommand{\cpblTableCWide}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\begin{table}
+%%\begin{center}
+\resizebox{\textwidth}{!}{
+\setlength\tabcolsep{1pt}
+\begin{tabular}{#1}
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{center}
+\caption[#2]{{\bfseries #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+\end{table}
+\ctResetDefinitionsClosing
+}
+
+%================== \cpblTableCAWide ============================
+\newcommand{\cpblTableCAWide}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\begin{table}
+%%\begin{center}
+\resizebox{\textwidth}{!}{
+\setlength\tabcolsep{1pt}
+%\begin{tabular}{#1}
+\ctStartTabular
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{center}
+\caption[#2]{{\bfseries #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+\end{table}
+\ctResetDefinitionsClosing
+}
+
+
+%================== \cpblTableCWidth ============================
+\newcommand{\cpblTableCWidth}[8]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\begin{table}
+%%\begin{center}
+\resizebox{#8}{!}{
+\setlength\tabcolsep{1pt}
+\begin{tabular}{#1}
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{center}
+\caption[#2]{{\bfseries #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+\end{table}
+\ctResetDefinitionsClosing
+}
+%================== \cpblTableCAWidth ============================
+\newcommand{\cpblTableCAWidth}[8]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\begin{table}
+%%\begin{center}
+\resizebox{#8}{!}{
+\setlength\tabcolsep{1pt}
+%\begin{tabular}{#1}
+\ctStartTabular
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{center}
+\caption[#2]{{\bfseries #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+\end{table}
+\ctResetDefinitionsClosing
+}
+
+
+%================== \cpblTableCWidthEightIn ============================
+\newcommand{\cpblTableCWidthEightIn}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\begin{table}
+%%\begin{center}
+\resizebox{8in}{!}{
+\setlength\tabcolsep{1pt}
+\begin{tabular}{#1}
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{center}
+\caption[#2]{{\bfseries #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+\end{table}
+\ctResetDefinitionsClosing
+}
+
+%================== \cpblTableCWidthFiveIn ============================
+\newcommand{\cpblTableCWidthFiveIn}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\begin{table}
+%%\begin{center}
+\resizebox{5in}{!}{
+\setlength\tabcolsep{1pt}
+\begin{tabular}{#1}
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{center}
+\caption[#2]{{\bfseries #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+\end{table}
+\ctResetDefinitionsClosing
+}
+
+
+%================== \cpblTableCBeamerSimple ============================
+\newcommand{\cpblTableCBeamerSimple}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+%%  %\renewcommand{\ctNtabCols}{JUNKME}
+\begin{frame}{#3}
+\begin{center}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\setlength\tabcolsep{1pt}
+\begin{tabular}{#1}
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} 
+\\ #6
+%%\end{table}
+\end{center}
+\end{frame}
+\ctResetDefinitionsClosing
+}
+
+
+%================== \cpblTableCABeamerSimple ============================
+\newcommand{\cpblTableCABeamerSimple}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+%%  %\renewcommand{\ctNtabCols}{JUNKME}
+\begin{frame}{#3}
+\begin{center}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\setlength\tabcolsep{1pt}
+\ctStartTabular
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular}
+\\ #6
+%%\end{table}
+\end{center}
+\end{frame}
+\ctResetDefinitionsClosing
+}
+
+
+%================== \cpblTableCABeamerTall ============================
+\newcommand{\cpblTableCABeamerTall}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+%%  %\renewcommand{\ctNtabCols}{JUNKME}
+\begin{frame}[plain]{#3}  % Oct 2011: added [plain] option here to get rid of top/bottom borders
+\begin{center}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\setlength\tabcolsep{1pt}
+\resizebox{!}{\beamertextheight}{ %%42mm}{ %%was:42mm Beamer pres's are 128x96mm.
+\ctStartTabular
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{table}
+\end{center}
+\end{frame}
+\ctResetDefinitionsClosing
+}
+
+
+%================== \cpblTableCABeamerWide ============================
+\newcommand{\cpblTableCABeamerWide}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+%%  %\renewcommand{\ctNtabCols}{JUNKME}
+\begin{frame}{#3}
+\begin{center}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\setlength\tabcolsep{1pt}
+\resizebox{\textwidth}{!}{
+\ctStartTabular
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{table}
+\end{center}
+\end{frame}
+\ctResetDefinitionsClosing
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%================== \cpblTableCBeamerWide ============================
+\newcommand{\cpblTableCBeamerWide}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+%%\begin{center}
+\begin{frame}{#3}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\resizebox{\textwidth}{!}{
+\setlength\tabcolsep{1pt}
+\begin{tabular}{#1}
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{center}
+%%\end{table}
+\end{frame}
+\ctResetDefinitionsClosing
+}
+
+
+%================== \cpblTableCBeamerTall ============================
+\newcommand{\cpblTableCBeamerTall}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\begin{frame}[plain]{#3}  % Oct 2011: added [plain] option here to get rid of top/bottom borders
+\begin{center}%\centering
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\resizebox{!}{\beamertextheight}{ %%42mm}{ %%was:42mm Beamer pres's are 128x96mm.
+%\setlength\tabcolsep{1pt}
+\begin{tabular}{#1}
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{table}
+\end{center}
+\end{frame}
+\ctResetDefinitionsClosing
+}
+
+
+%================== \cpblTableCBeamerHeight ============================
+\newcommand{\cpblTableCBeamerHeight}[8]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\begin{frame}{#3}
+\begin{center}%\centering
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\resizebox{!}{#8}{ %%42mm}{ %%was:42mm Beamer pres's are 128x96mm.
+\setlength\tabcolsep{1pt}
+\begin{tabular}{#1}
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{table}
+\end{center}
+\end{frame}
+\ctResetDefinitionsClosing
+}
+
+
+%================== \cpblTableCSideways ============================
+% This is under testing.
+\newcommand{\cpblTableCSideways}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\begin{sidewaystable}[h]
+\centering
+\setlength\tabcolsep{1pt}
+\begin{tabular}{#1}
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} 
+\\ #6
+\caption[#2]{{\bfseries #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+\end{sidewaystable}
+
+\ctResetDefinitionsClosing
+}
+
+
+%================== \cpblTableCLong ============================
+%% This is for multi-page tables with longtable
+\newcommand{\cpblTableCLong}[7]{
+\afterpage{\clearpage
+\renewcommand{\longTableFooter}{} %%{\multicolumn{#4}{l}{#}}
+\ctResetDefinitions\input{#7} % Defines some components of a table.
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\begin{longtable}[c]{#1} %% Fails:\centering
+\caption[#2]{{\bfseries #3.}  #4 \\#6 \label{#5} \ctDraftComment{[#5] [#7]}}\\
+
+\ctFirstHeader
+
+\endfirsthead
+\ctSubsequentHeaders
+\hline \endhead 
+ \hline \multicolumn{\ctNtabCols}{r}{\longtableContinueFooter}  \endfoot  \longTableFooter \endlastfoot 
+\ctBody
+\cpblbottomrule 
+%%%  \renewcommand{\ntabcols}{#5}
+%%\usetinytablefont 
+\end{longtable}
+\ctResetDefinitionsClosing
+}% afterpage
+}
+
+%================== \cpblTableCLongTransposed ============================
+%% This is for multi-page tables with longtable
+% June 2011: this just started causing trouble. Missing number error in latex later... agh. Can't figure it out.
+\newcommand{\cpblTableCLongTransposed}[7]{
+\afterpage{\clearpage
+\renewcommand{\longTableFooter}{} %%{\multicolumn{#4}{l}{#}} % June 2011: why is this not ust in resetdefinitions?
+\ctResetDefinitions\input{#7} % Defines some components of a table.
+\cpblTablesSwitchTransposed
+\begin{longtable}[c]{#1} %% Fails:\centering
+\caption[#2]{{\bfseries #3.}  #4 \\#6 \label{#5} \ctDraftComment{[#5] [#7]}}\\
+
+\ctFirstHeader
+
+\endfirsthead
+\ctSubsequentHeaders
+\hline \endhead 
+ \hline \multicolumn{\ctNtabCols}{r}{\longtableContinueFooter}  \endfoot  \longTableFooter \endlastfoot 
+\ctBody
+\cpblbottomrule
+%%%  \renewcommand{\ntabcols}{#5}
+%%\usetinytablefont 
+\end{longtable}
+\ctResetDefinitionsClosing
+}% afterpage
+}
+
+
+%================== \cpblTableCALong ============================
+%% This is for multi-page tables with longtable
+\newcommand{\cpblTableCALong}[7]{
+\afterpage{\clearpage
+\renewcommand{\longTableFooter}{} %%{\multicolumn{#4}{l}{#}}
+\ctResetDefinitions\input{#7} % Defines some components of a table.
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\ctStartLongtable
+%%%%\begin{longtable}[c]{#1} %% Fails:\centering
+\caption[#2]{{\bfseries #3.}  #4 \\#6 \label{#5} \ctDraftComment{[#5] [#7]}}\\
+
+\ctFirstHeader
+
+\endfirsthead
+\ctSubsequentHeaders
+\hline \endhead 
+ \hline \multicolumn{\ctNtabCols}{r}{\longtableContinueFooter}  \endfoot  \longTableFooter \endlastfoot 
+\ctBody
+\cpblbottomrule
+%%%  \renewcommand{\ntabcols}{#5}
+%%\usetinytablefont 
+\end{longtable}
+\newpage\clearpage
+\ctResetDefinitionsClosing
+}
+}% afterpage
+
+%================== \cpblTableCALongTransposed ============================
+%% This is for multi-page tables with longtable
+\newcommand{\cpblTableCALongTransposed}[7]{
+\afterpage{\clearpage
+\renewcommand{\longTableFooter}{} %%{\multicolumn{#4}{l}{#}}
+\ctResetDefinitions\input{#7} % Defines some components of a table.
+\cpblTablesSwitchTransposed
+\ctStartLongtable
+%%%%\begin{longtable}[c]{#1} %% Fails:\centering
+\caption[#2]{{\bfseries #3.}  #4 \\#6 \label{#5} \ctDraftComment{[#5] [#7]}}\\
+
+\ctFirstHeader
+
+\endfirsthead
+\ctSubsequentHeaders
+\hline \endhead 
+ \hline \multicolumn{\ctNtabCols}{r}{\longtableContinueFooter}  \endfoot  \longTableFooter \endlastfoot 
+\ctBody
+\cpblbottomrule
+%%%  \renewcommand{\ntabcols}{#5}
+%%\usetinytablefont 
+\end{longtable}
+\newpage\clearpage
+\ctResetDefinitionsClosing
+}
+}% afterpage
+
+
+%================== \cpblTableCACLong ============================
+%% This is for multi-page tables with longtable
+\newcommand{\cpblTableCACLong}[7]{
+\afterpage{\clearpage
+\renewcommand{\longTableFooter}{} %%{\multicolumn{#4}{l}{#}}
+\ctResetDefinitions\input{#7} % Defines some components of a table.
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\ctStartLongtable
+%%%%\begin{longtable}[c]{#1} %% Fails:\centering
+\caption[#2]{{\bfseries #3.}  #4 \\#6 \label{#5} \ctDraftComment{[#5] [#7]} \ctCaption }\\
+
+\ctFirstHeader
+
+\endfirsthead
+\ctSubsequentHeaders
+\hline \endhead 
+ \hline \multicolumn{\ctNtabCols}{r}{\longtableContinueFooter}  \endfoot  \longTableFooter \endlastfoot 
+\ctBody
+\cpblbottomrule
+%%%  \renewcommand{\ntabcols}{#5}
+%%\usetinytablefont 
+\end{longtable}
+\newpage\clearpage
+\ctResetDefinitionsClosing
+}
+}% afterpage
+
+
+%================== \cpblTableCACLongTransposed ============================
+%% This is for multi-page tables with longtable
+\newcommand{\cpblTableCACLongTransposed}[7]{
+\afterpage{\clearpage
+\renewcommand{\longTableFooter}{} %%{\multicolumn{#4}{l}{#}}
+\ctResetDefinitions\input{#7} % Defines some components of a table.
+\cpblTablesSwitchTransposed
+\ctStartLongtable
+%%%%\begin{longtable}[c]{#1} %% Fails:\centering
+\caption[#2]{{\bfseries #3.}  #4 \\#6 \label{#5} \ctDraftComment{[#5] [#7]} \ctCaption }\\
+
+\ctFirstHeader
+
+\endfirsthead
+\ctSubsequentHeaders
+\hline \endhead 
+ \hline \multicolumn{\ctNtabCols}{r}{\longtableContinueFooter}  \endfoot  \longTableFooter \endlastfoot 
+\ctBody
+\cpblbottomrule
+%%%  \renewcommand{\ntabcols}{#5}
+%%\usetinytablefont 
+\end{longtable}
+\newpage\clearpage
+\ctResetDefinitionsClosing
+}
+}% afterpage
+
+%================== \cpblTableCACLongLandscape ============================
+\newcommand{\cpblTableCACLongLandscape}[7]{
+\afterpage{\clearpage
+\setlength\tabcolsep{1pt}
+\addtolength\textwidth{6cm}%
+\begin{landscape}
+%\thispagestyle{empty}
+\addtolength\oddsidemargin{-3cm}%
+\cpblTableCACLong{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+\clearpage\newpage
+\end{landscape}
+\addtolength\oddsidemargin{3cm}%
+\addtolength\textwidth{-6cm}%
+\setlength\tabcolsep{6pt} % Default
+} % end afterpage
+}
+
+%================== \cpblTableCACLongLandscapeTransposed ============================
+\newcommand{\cpblTableCACLongLandscapeTransposed}[7]{
+\afterpage{\clearpage
+\setlength\tabcolsep{1pt}
+\addtolength\textwidth{6cm}%
+\begin{landscape}
+%\thispagestyle{empty}
+\addtolength\oddsidemargin{-3cm}%
+\cpblTableCACLongTransposed{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+\clearpage\newpage
+\end{landscape}
+\addtolength\oddsidemargin{3cm}%
+\addtolength\textwidth{-6cm}%
+\setlength\tabcolsep{6pt} % Default
+} % end afterpage
+}
+
+
+% May 2011. For 10pt mode, the following worked okay for a wide simple table:
+\newcommand{\justacommentfornow}{
+\afterpage{\clearpage
+\useColoursForSignificance
+\setlength\tabcolsep{1pt}
+%\addtolength\textwidth{6cm}%
+\addtolength\textheight{6cm}%
+\thispagestyle{empty}
+\begin{landscape}
+%\addtolength\oddsidemargin{-3cm}%
+\addtolength\topmargin{-2cm}%
+%{\smaller\usetinytablefont \cpblTableCACSimple{lp{3cm}*{28}{r}}{GSS17-22-XS-micro-selected}{GSS17-22-XS-micro-selected}{}{tab:GSS1722XSmicroselected}{{\footnotesize\cpblColourLegend} }{\texdocs AYU-GSS1722XS-CPBLtimeseriesB2011-micro-selected-transposed}}
+\clearpage\newpage
+\end{landscape}
+%\addtolength\oddsidemargin{3cm}%
+%\addtolength\textwidth{-6cm}%
+\addtolength\textheight{-6cm}%
+\setlength\tabcolsep{6pt} % Default
+\useColourBoldForSignificance
+} % end afterpage
+}
+
+%================== \cpblTableCALongHere ============================
+% Huh?? I am just trying to create this since CLongHere ends up with
+% much smaller fonts than CALong, when the command is enclosed in {\usetinytablefont }
+%
+%% This is for multi-page tables with longtable
+\newcommand{\cpblTableCALongHere}[7]{
+%\afterpage{\clearpage
+\renewcommand{\longTableFooter}{} %%{\multicolumn{#4}{l}{#}}
+\ctResetDefinitions\input{#7} % Defines some components of a table.
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\ctStartLongtable
+%%%%\begin{longtable}[c]{#1} %% Fails:\centering
+\caption[#2]{{\bfseries #3.}  #4 \\#6 \label{#5} \ctDraftComment{[#5] [#7]}}\\
+
+\ctFirstHeader
+
+\endfirsthead
+\ctSubsequentHeaders
+\hline \endhead 
+ \hline \multicolumn{\ctNtabCols}{r}{\longtableContinueFooter}  \endfoot  \longTableFooter \endlastfoot 
+\ctBody
+\cpblbottomrule
+%%%  \renewcommand{\ntabcols}{#5}
+%%\usetinytablefont 
+\end{longtable}
+\newpage\clearpage
+\ctResetDefinitionsClosing
+}
+%}% afterpage
+
+
+%================== \cpblTableCLongHere ============================
+%% This is for multi-page tables with longtable
+\newcommand{\cpblTableCLongHere}[7]{
+\renewcommand{\longTableFooter}{} %%{\multicolumn{#4}{l}{#}}
+\ctResetDefinitions\input{#7} % Defines some components of a table.
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\begin{longtable}[c]{#1} %% Fails:\centering
+\caption[#2]{{\bfseries #3.}  #4 \\#6 \label{#5} \ctDraftComment{[#5] [#7]}}\\
+
+\ctFirstHeader
+
+\endfirsthead
+\ctSubsequentHeaders
+\hline \endhead 
+ \hline \multicolumn{\ctNtabCols}{r}{\longtableContinueFooter}  \endfoot  \longTableFooter \endlastfoot 
+\ctBody
+\cpblbottomrule
+%%%  \renewcommand{\ntabcols}{#5}
+%%\usetinytablefont 
+\end{longtable}
+\ctResetDefinitionsClosing
+}
+
+
+
+%================== \cpblTableCWideLandscape ============================
+\newcommand{\cpblTableCWideLandscape}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+%%\afterpage{\clearpage}
+%%\afterpage{
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\setlength\tabcolsep{1pt}
+\begin{landscape}
+%\thispagestyle{empty}
+{\usetinytablefont
+\begin{table}
+%%\begin{center}
+\resizebox{8in}{!}{   %%\resizebox{\textwidth}{!}{
+\setlength\tabcolsep{1pt}
+\begin{tabular}{#1}
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{center}
+\caption[#2]{{\bfseries #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+\end{table}
+%
+}% Tinytablefont
+%\newpage ?
+\end{landscape}
+\setlength\tabcolsep{6pt}% Default
+%%} % End afterpage
+\ctResetDefinitionsClosing
+}
+
+% FOLLOWING CHANGED DEC 2008: THE AFTERPAGE STUFF NOW IS PART OF THE
+% CALL. This seems to work if done with a clearpage (or newpage?) at
+% the end, before end of afterpage. So maybe I sould do it for all
+% other landscapes... Well.. I couldn't get it working with
+% LongLandscapes, right?
+% %================== \cpblTableCAWideLandscape ============================
+% \newcommand{\cpblTableCAWideLandscape}[7]{
+%   \renewcommand{\ifLongTable}[1]{}
+%   \renewcommand{\ifNotLongTable}{\cpblEcho}
+%   \renewcommand{\longTableFooter}{}
+%   %\renewcommand{\ctNtabCols}{JUNKME}
+% %%\afterpage{\clearpage}
+% %%\afterpage{
+% \ctResetDefinitions\input{#7}
+% \setlength\tabcolsep{1pt}
+% \begin{landscape}
+% %\thispagestyle{empty}
+% {\usetinytablefont
+% \begin{table}
+% %%\begin{center}
+% \resizebox{8in}{!}{   %%\resizebox{\textwidth}{!}{
+% \setlength\tabcolsep{1pt}
+% %%\begin{tabular}{#1}
+% \ctStartTabular
+% \ctFirstHeader
+% \ctBody
+% \cpblbottomrule 
+% \end{tabular} }
+% \\ #6
+% %%\end{center}
+% \caption[#2]{{\bfseries #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+% \end{table}
+% %
+% }% Tinytablefont
+% %\newpage ?
+% \end{landscape}
+% \setlength\tabcolsep{6pt}% Default
+% %%} % End afterpage
+% \renewcommand{\ctFirstHeader}{}
+% \renewcommand{\ctSubsequentHeaders}{}
+% %\renewcommand{\ctNtabCols}{}
+% \renewcommand{\ctBody}{}
+% \renewcommand{\ctLastHline}{\hline \hline}
+% }
+
+ % N.B : JUNE 2011. STILL NEED TO MAKE TRANSPOSED VERSION OF EVERYTHING BELOW. FOR THOSE THAT USE AFTERPAGE, NEED TO COPY WHOLE THING. FOR THE REST, CAN JUST WRAP THEM WITH THE IFDEF.
+
+%================== \cpblTableCAWideLandscape ============================
+\newcommand{\cpblTableCAWideLandscape}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\afterpage{\clearpage
+%%\afterpage{
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+\setlength\tabcolsep{1pt}
+\begin{landscape}
+%\thispagestyle{empty}
+{\usetinytablefont
+\begin{table}
+%%\begin{center}
+\resizebox{8in}{!}{   %%\resizebox{\textwidth}{!}{
+\setlength\tabcolsep{1pt}
+%%\begin{tabular}{#1}
+\ctStartTabular
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular} }
+\\ #6
+%%\end{center}
+\caption[#2]{{\bfseries #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+\end{table}
+%
+}% Tinytablefont
+%\newpage ?
+\end{landscape}
+\setlength\tabcolsep{6pt}% Default
+\clearpage} % End afterpage
+\ctResetDefinitionsClosing
+}
+
+
+% Following does not work! I need to know the textwidth properly..
+%\newcommand{\cpblTableCWideLandscape}[7]{
+%\begin{landscape}
+%\cpblTableCWide{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+%\end{landscape}
+%}
+
+%  Following DOES work. Change margins before calling a long landscape
+%  table. This fits more length of table on each page. Can look a big
+%  ugly, of course... And the change needed depends on what is
+%  current! 10pt? 11pt?12pt? all different.
+
+%================== \cpblTableCLongLandscape ============================
+\newcommand{\cpblTableCLongLandscape}[7]{
+\afterpage{\clearpage
+\setlength\tabcolsep{1pt}
+\addtolength\textwidth{6cm}%
+\begin{landscape}
+%\thispagestyle{empty}
+\addtolength\oddsidemargin{-3cm}%
+\cpblTableCLong{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+\clearpage\newpage
+\end{landscape}
+\addtolength\textwidth{-6cm}%
+\setlength\tabcolsep{6pt} % Default
+} % end afterpage
+
+}
+%================== \cpblTableCALongLandscape ============================
+\newcommand{\cpblTableCALongLandscape}[7]{
+\afterpage{\clearpage
+\setlength\tabcolsep{1pt}
+\addtolength\textwidth{6cm}%
+\begin{landscape}
+%\thispagestyle{empty}
+\addtolength\oddsidemargin{-3cm}%
+\cpblTableCALong{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+\clearpage\newpage
+\end{landscape}
+\addtolength\oddsidemargin{3cm}%
+\addtolength\textwidth{-6cm}%
+\setlength\tabcolsep{6pt} % Default
+} % end afterpage
+}
+
+
+
+%================== \cpblTableCLongHereLandscape ============================
+\newcommand{\cpblTableCLongHereLandscape}[7]{
+\setlength\tabcolsep{1pt}
+\addtolength\textwidth{6cm}%
+\begin{landscape}
+%\thispagestyle{empty}
+\addtolength\oddsidemargin{-3cm}%
+\cpblTableCLong{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+\end{landscape}
+\addtolength\textwidth{-6cm}%
+\setlength\tabcolsep{6pt} % Default
+}
+
+
+
+
+%================== \cpblTableCSimpleLandscape ============================
+\newcommand{\cpblTableCSimpleLandscape}[7]{
+\begin{landscape}
+\cpblTableCSimple{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+\end{landscape}
+}
+%================== \cpblTableCASimpleLandscape ============================
+\newcommand{\cpblTableCASimpleLandscape}[7]{
+\begin{landscape}
+\cpblTableCASimple{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+\end{landscape}
+}
+
+
+
+
+
+
+
+\useColourBoldForSignificance
+\usepackage{multirow} % Moved here may 2014

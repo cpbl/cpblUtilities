@@ -1,0 +1,102 @@
+
+    \renewcommand{\ctNtabCols}{19}
+    \renewcommand{\ctFirstHeader}{\ctSubsequentHeaders \hline }
+    \renewcommand{\ctSubsequentHeaders}{\cpbltoprule
+	&\multicolumn{9}{c|}{\sltcheadername{degree}}	&\multicolumn{9}{c|}{\sltcheadername{fourway}}\\ 
+	&\multicolumn{3}{c|}{\sltcheadername{bg}}	&\multicolumn{3}{c|}{\sltcheadername{county}}	&\multicolumn{3}{c|}{\sltcheadername{state}}	&\multicolumn{3}{c|}{\sltcheadername{bg}}	&\multicolumn{3}{c|}{\sltcheadername{county}}	&\multicolumn{3}{c|}{\sltcheadername{state}}\\ 
+	&\sltcheadername{(1)}	&\sltcheadername{(2)}	&\sltcheadername{(3)}	&\sltcheadername{(4)}	&\sltcheadername{(5)}	&\sltcheadername{(6)}	&\sltcheadername{(7)}	&\sltcheadername{(8)}	&\sltcheadername{(9)}	&\sltcheadername{(10)}	&\sltcheadername{(11)}	&\sltcheadername{(12)}	&\sltcheadername{(13)}	&\sltcheadername{(14)}	&\sltcheadername{(15)}	&\sltcheadername{(16)}	&\sltcheadername{(17)}	&\sltcheadername{(18)}\\ 
+}
+    \renewcommand{\ctBody}{\sltrheadername{mean slope}	& \wrapSigOneThousandth{$-$.29}	& 	& \wrapSigOnePercent{$-$.025}	& \wrapSigOneThousandth{$-$.43}	& 	& \wrapSigOnePercent{.14}	& \wrapSigOneThousandth{$-$.46}	& 	& $-$.47	& \wrapSigOneThousandth{$-$.22}	& 	& .004	& \wrapSigOneThousandth{$-$.34}	& 	& \wrapSigOneThousandth{.19}	& \wrapSigOneThousandth{$-$.33}	& 	& $-$.030\\ 
+\showSEs{	& \coefse{.004}	& 	& \coefse{.009}	& \coefse{.022}	& 	& \coefse{.049}	& \coefse{.083}	& 	& \coefse{.30}	& \coefse{.003}	& 	& \coefse{.008}	& \coefse{.021}	& 	& \coefse{.046}	& \coefse{.080}	& 	& \coefse{.33} \\ }{}
+\sltrheadername{fraction  $>$10$^{\small\circ}$}	& 	& \wrapSigOneThousandth{$-$.30}	& \wrapSigOneThousandth{$-$.28}	& 	& \wrapSigOneThousandth{$-$.47}	& \wrapSigOneThousandth{$-$.60}	& 	& \wrapSigOneThousandth{$-$.43}	& .009	& 	& \wrapSigOneThousandth{$-$.24}	& \wrapSigOneThousandth{$-$.24}	& 	& \wrapSigOneThousandth{$-$.38}	& \wrapSigOneThousandth{$-$.56}	& 	& \wrapSigOneThousandth{$-$.34}	& $-$.31\\ 
+\showSEs{	& 	& \coefse{.003}	& \coefse{.010}	& 	& \coefse{.017}	& \coefse{.050}	& 	& \coefse{.093}	& \coefse{.31}	& 	& \coefse{.003}	& \coefse{.008}	& 	& \coefse{.017}	& \coefse{.048}	& 	& \coefse{.097}	& \coefse{.36} \\ }{}
+\hline 
+obs.	& 72876	& 72876	& 72876	& 2383	& 2383	& 2383	& 51	& 51	& 51	& 72876	& 72876	& 72876	& 2383	& 2383	& 2383	& 51	& 51	& 51\\ 
+$R^2$(adj)	& .082	& .091	& .091	& .187	& .223	& .224	& .196	& .172	& .180	& .049	& .055	& .055	& .118	& .146	& .150	& .088	& .099	& .080\\ 
+}
+    
+    % Default caption:
+    \renewcommand{\ctCaption}{ {\color{blue} first stage-subset-byscale \footnotesize \cpblColourLegend    } }
+    % This .tex file is meant to be called by something from
+    % cpblTables.sty. If it is not, then output something crude:
+    \ifx\@ctUsingWrapper\@empty
+    %Code to be executed if the macro is undefined
+    \begin{table}
+    \begin{tabular}{lccc|ccc|ccc|ccc|ccc|ccc|}
+    \ctFirstHeader
+    \ctBody
+    \end{tabular}
+    \end{table}
+    \else
+    %Code to be executed if the macro IS defined
+    \fi
+
+    % Better yet, for version "CA" of cpblTables, define methods so that the format need not be specified in the call.
+    \renewcommand{\ctStartTabular}{\begin{tabular}{lccc|ccc|ccc|ccc|ccc|ccc|}}
+    \renewcommand{\ctStartLongtable}{\begin{longtable}[c]{lccc|ccc|ccc|ccc|ccc|ccc|}}
+    
+
+% BEGIN TRANSPOSED VERSION
+
+    \renewcommand{\ctNtabColsTrans}{6}
+    \renewcommand{\ctFirstHeaderTrans}{\cpbltoprule 
+	&	&\begin{sideways}\sltcheadername{mean slope}\end{sideways}	&\begin{sideways}\sltcheadername{fraction  $>$10$^{\small\circ}$}\end{sideways}	&\begin{sideways}\sltcheadername{obs.}\end{sideways}	&\begin{sideways}\sltcheadername{$R^2$(adj)}\end{sideways}\\ 
+\hline
+}
+    \renewcommand{\ctSubsequentHeadersTrans}{\hline 
+ 	&	&\begin{sideways}\sltcheadername{mean slope}\end{sideways}	&\begin{sideways}\sltcheadername{fraction  $>$10$^{\small\circ}$}\end{sideways}	&\begin{sideways}\sltcheadername{obs.}\end{sideways}	&\begin{sideways}\sltcheadername{$R^2$(adj)}\end{sideways}\\ 
+\hline
+}
+    \renewcommand{\ctBodyTrans}{\sltheadernum{(1)}	& \sltrheadername{bg}	& \wrapSigOneThousandth{$-$.29}	& 	& 72876	& .082\\ 
+\showSEs{	& 	& \coefse{.004}	& 	& 	&  \\ }{}
+\sltheadernum{(2)}	& \sltrheadername{bg}	& 	& \wrapSigOneThousandth{$-$.30}	& 72876	& .091\\ 
+\showSEs{	& 	& 	& \coefse{.003}	& 	&  \\ }{}
+\sltheadernum{(3)}	& \sltrheadername{bg}	& \wrapSigOnePercent{$-$.025}	& \wrapSigOneThousandth{$-$.28}	& 72876	& .091\\ 
+\showSEs{	& 	& \coefse{.009}	& \coefse{.010}	& 	&  \\ }{}
+\bottomrule
+\sltheadernum{(4)}	& \sltrheadername{county}	& \wrapSigOneThousandth{$-$.43}	& 	& 2383	& .187\\ 
+\showSEs{	& 	& \coefse{.022}	& 	& 	&  \\ }{}
+\sltheadernum{(5)}	& \sltrheadername{county}	& 	& \wrapSigOneThousandth{$-$.47}	& 2383	& .223\\ 
+\showSEs{	& 	& 	& \coefse{.017}	& 	&  \\ }{}
+\sltheadernum{(6)}	& \sltrheadername{county}	& \wrapSigOnePercent{.14}	& \wrapSigOneThousandth{$-$.60}	& 2383	& .224\\ 
+\showSEs{	& 	& \coefse{.049}	& \coefse{.050}	& 	&  \\ }{}
+\bottomrule
+\sltheadernum{(7)}	& \sltrheadername{state}	& \wrapSigOneThousandth{$-$.46}	& 	& 51	& .196\\ 
+\showSEs{	& 	& \coefse{.083}	& 	& 	&  \\ }{}
+\sltheadernum{(8)}	& \sltrheadername{state}	& 	& \wrapSigOneThousandth{$-$.43}	& 51	& .172\\ 
+\showSEs{	& 	& 	& \coefse{.093}	& 	&  \\ }{}
+\sltheadernum{(9)}	& \sltrheadername{state}	& $-$.47	& .009	& 51	& .180\\ 
+\showSEs{	& 	& \coefse{.30}	& \coefse{.31}	& 	&  \\ }{}
+\bottomrule
+\sltheadernum{(10)}	& \sltrheadername{bg}	& \wrapSigOneThousandth{$-$.22}	& 	& 72876	& .049\\ 
+\showSEs{	& 	& \coefse{.003}	& 	& 	&  \\ }{}
+\sltheadernum{(11)}	& \sltrheadername{bg}	& 	& \wrapSigOneThousandth{$-$.24}	& 72876	& .055\\ 
+\showSEs{	& 	& 	& \coefse{.003}	& 	&  \\ }{}
+\sltheadernum{(12)}	& \sltrheadername{bg}	& .004	& \wrapSigOneThousandth{$-$.24}	& 72876	& .055\\ 
+\showSEs{	& 	& \coefse{.008}	& \coefse{.008}	& 	&  \\ }{}
+\bottomrule
+\sltheadernum{(13)}	& \sltrheadername{county}	& \wrapSigOneThousandth{$-$.34}	& 	& 2383	& .118\\ 
+\showSEs{	& 	& \coefse{.021}	& 	& 	&  \\ }{}
+\sltheadernum{(14)}	& \sltrheadername{county}	& 	& \wrapSigOneThousandth{$-$.38}	& 2383	& .146\\ 
+\showSEs{	& 	& 	& \coefse{.017}	& 	&  \\ }{}
+\sltheadernum{(15)}	& \sltrheadername{county}	& \wrapSigOneThousandth{.19}	& \wrapSigOneThousandth{$-$.56}	& 2383	& .150\\ 
+\showSEs{	& 	& \coefse{.046}	& \coefse{.048}	& 	&  \\ }{}
+\bottomrule
+\sltheadernum{(16)}	& \sltrheadername{state}	& \wrapSigOneThousandth{$-$.33}	& 	& 51	& .088\\ 
+\showSEs{	& 	& \coefse{.080}	& 	& 	&  \\ }{}
+\sltheadernum{(17)}	& \sltrheadername{state}	& 	& \wrapSigOneThousandth{$-$.34}	& 51	& .099\\ 
+\showSEs{	& 	& 	& \coefse{.097}	& 	&  \\ }{}
+\sltheadernum{(18)}	& \sltrheadername{state}	& $-$.030	& $-$.31	& 51	& .080\\ 
+\showSEs{	& 	& \coefse{.33}	& \coefse{.36}	& 	&  \\ }{}
+\bottomrule
+}
+    
+    % Default caption:
+    \renewcommand{\ctCaptionTrans}{ {\color{blue} first stage-subset-byscale \footnotesize \cpblColourLegend    } }
+
+    % Better yet, for version "CA" of cpblTables, define methods so that the format need not be specified in the call.
+    \renewcommand{\ctStartTabularTrans}{\begin{tabular}{lp{3cm}*{4}{r}}}
+    \renewcommand{\ctStartLongtableTrans}{\begin{longtable}[c]{lp{3cm}*{4}{r}}}
+    
+
+%

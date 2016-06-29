@@ -1,0 +1,140 @@
+% For functions that don't use \afterpage, the transposed versions of the functions are just ifdef wrapped around the non-transposed call:
+
+%================== \cpblTableCSimpleTransposed ============================
+\newcommand{\cpblTableCSimpleTransposed}[7]{
+\cpblTableUseTransposedtrue
+\cpblTableCSimple{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+\cpblTableUseTransposedfalse
+}
+%================== \cpblTableCASimpleTransposed ============================
+\newcommand{\cpblTableCASimpleTransposed}[7]{
+\cpblTableUseTransposedtrue
+\cpblTableCASimple{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+\cpblTableUseTransposedfalse
+}
+%================== \cpblTableCACSimpleTransposed ============================
+\newcommand{\cpblTableCACSimpleTransposed}[7]{
+\cpblTableUseTransposedtrue
+\cpblTableCACSimple{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+\cpblTableUseTransposedfalse
+}
+
+
+
+
+%================== \cpblTableCSimple ============================
+\newcommand{\cpblTableCSimple}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+%\begin{singlespace}
+\begin{table}
+\centering
+%%\begin{center} %% This does not work. Neither does \centering
+%\setlength\tabcolsep{1pt}
+\begin{tabular}{#1} % [c] has no effect, and table is not centred here.
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular}
+
+#6
+%%\end{center}
+\caption[#2]{{\bf #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+\end{table}
+\ctResetDefinitionsClosing
+%\end{singlespace}
+}
+
+
+%================== \cpblTableCACSimple ============================
+\newcommand{\cpblTableCACSimple}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+%\begin{singlespace}
+\begin{table}
+\centering
+%%\begin{center} %% This does not work. Neither does \centering
+%\setlength\tabcolsep{1pt}
+%%\begin{tabular}{#1} % [c] has no effect, and table is not centred here.
+\ctStartTabular
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular}
+
+#6
+%%\end{center}
+
+\caption[#2]{{\bf #3.}  #4      \label{#5} \ctDraftComment{[#5] [#7]} \ctCaption }  
+
+\end{table}
+\ctResetDefinitionsClosing
+%\end{singlespace}
+}
+
+
+%================== \cpblTableCASimple ============================
+\newcommand{\cpblTableCASimple}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+%\begin{singlespace}
+\begin{table}
+\centering
+%%\begin{center} %% This does not work. Neither does \centering
+%\setlength\tabcolsep{1pt}
+%%\begin{tabular}{#1} % [c] has no effect, and table is not centred here.
+\ctStartTabular
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular}
+
+#6
+%%\end{center}
+\caption[#2]{{\bf #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+\end{table}
+\ctResetDefinitionsClosing
+%\end{singlespace}
+}
+
+
+%================== \cpblTableCSimpleKLUDGE_FOR-GALLUP ============================
+\newcommand{\cpblTableCSimpleNum}[7]{
+  \renewcommand{\ifLongTable}[1]{}
+  \renewcommand{\ifNotLongTable}{\cpblEcho}
+  \renewcommand{\longTableFooter}{}
+  %\renewcommand{\ctNtabCols}{JUNKME}
+\ctResetDefinitions\input{#7}
+\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
+%\begin{singlespace}
+\begin{table}
+\centering
+%%\begin{center} %% This does not work. Neither does \centering
+%\setlength\tabcolsep{1pt}
+\begin{tabular}{#1} % [c] has no effect, and table is not centred here.
+\ctFirstHeader
+\ctBody
+\cpblbottomrule 
+\end{tabular}
+
+#6
+%%\end{center}
+%\caption
+\\#2% [#2]{{\bf #3.} #4 \label{#5} \ctDraftComment{[#5] [#7]}}
+\end{table}
+\ctResetDefinitionsClosing
+%\end{singlespace}
+}
+

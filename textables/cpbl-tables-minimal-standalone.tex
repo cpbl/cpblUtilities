@@ -1,0 +1,49 @@
+\usepackage{multirow}
+\usepackage[table]{xcolor}
+\usepackage{relsize}
+\newcommand{\ctNtabCols}{}
+\newcommand{\ctFirstHeader}{}
+\newcommand{\ctSubsequentHeaders}{}
+\newcommand{\ctFirstHeaderTrans}{}
+\newcommand{\ctSubsequentHeadersTrans}{}
+\newcommand{\ctBody}{}
+\newcommand{\ctBodyTrans}{}
+\newcommand{\ctCaption}{}
+\newcommand{\ctCaptionTrans}{}
+\newcommand{\ctStartTabular}{}
+\newcommand{\ctStartTabularTrans}{}
+\newcommand{\ctStartLongtable}{}
+\newcommand{\ctStartLongtableTrans}{}
+\newcommand{\ctNtabColsTrans}{}
+\newcommand{\sltrheadername}[1]{#1}
+\newcommand{\sltcheadername}[1]{#1}
+\newcommand{\cpblbottomrule}{}
+\newcommand{\cpbltoprule}{}
+\newcommand{\showSEs}[2]{#1} % To show SEs
+    \newcommand{\coefse}[1]{{\smaller\smaller (#1)}}
+
+    \definecolor{cSignifOne}{rgb}{.92,1,.92}
+    \definecolor{cSignifTwo}{rgb}{.78,1,.78}
+    \definecolor{cSignifThree}{rgb}{.5,1,.5}
+    \definecolor{cSignifThousandth}{rgb}{.6,1,0} % .3 1 .3
+    \newcommand{\colourswrapSigTenPercent}[1]{#1\cellcolor{cSignifOne}}
+    \newcommand{\colourswrapSigFivePercent}[1]{#1\cellcolor{cSignifTwo}}
+    \newcommand{\colourswrapSigOnePercent}[1]{#1\cellcolor{cSignifThree}}
+    \newcommand{\colourswrapSigOneThousandth}[1]{#1\cellcolor{cSignifThousandth}}
+    \newcommand{\wrapSigTenPercent}{\colourswrapSigTenPercent}
+    \newcommand{\wrapSigFivePercent}{\colourswrapSigFivePercent}
+    \newcommand{\wrapSigOnePercent}{\colourswrapSigOnePercent}
+    \newcommand{\wrapSigOneThousandth}{\colourswrapSigOneThousandth}
+
+    \newcommand{\YesMark}{{\sc y}}%\textcolor{blue}$\checkmark$}}
+
+
+    \newcommand{\cpblColourLegend}{{\footnotesize Significance:~\begin{tabular}{cccc}
+        \wrapSigOneThousandth{0.1\%}~~~~&
+        \wrapSigOnePercent{1\%}~~~~&
+        \wrapSigFivePercent{5\%}~~~~&
+        \wrapSigTenPercent{10\%}
+        \\ \end{tabular} }}
+
+
+
