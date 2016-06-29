@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys,os
 import numpy as np
-import cpblUtilities.utilities as cpblu
+import cpblUtilities.textables as cpblt
 def test_chooseSFormat():
 # ff,conditionalWrapper=['',''],lowCutoff=None,lowCutoffOOM=True,convertStrings=False,highCutoff=1e8,noTeX=False,threeSigDigs=False,se=None, leadingZeros=False):
     """ This chooses a reasonable number of significant figures for a numerical value in a results table...
@@ -25,44 +25,30 @@ se is the standard error. you can just specify that for smarter choices about si
 2014-03 adding leadingZeros: In regression tables, I don't want them. But in general I might.
 """
     assertVals=[
-       ['4','4',''],
-       ['.','',''],
-       [4,'4',''],
-       [0.4,'.40',''],
-       [123456789098,'big',''],
-       [0.00049239847,'.0005',''],
-        ]
-    for fff,sss,ccc in assertVals:
-        outs=cpblu.chooseSFormat(fff)
-        print('chooseSFormat('+str(fff)+') == \t'+outs+'          '+ccc)
-        assert outs==sss
-
-
-    assertVals=[
-       ['4','4',''],
-       [4,'4',''],
-       [0.4,'.400',''],
-       [0.00049239847,'.0005',' Sic??'],
-        ]
-    for fff,sss,ccc in assertVals:
-        outs=cpblu.chooseSFormat(fff, threeSigDigs=True)
-        print('chooseSFormat('+str(fff)+',\t\tthreeSigDigs=True) == \t'+outs+'          '+ccc)
-        assert outs==sss
-
-
-    assertVals=[
+       ['4','4',{},''],
+       ['.','',{},''],
+       [4,'4',{},''],
+       [0.4,'.40',{},''],
+       [123456789098,'big',{},''],
+       [0.00049239847,'.0005',{},''],
+        ]+[
+       ['4','4',dict(threeSigDigs=True),''],
+       [4,'4',dict(threeSigDigs=True),''],
+       [0.4,'.400',dict(threeSigDigs=True),''],
+       [0.00049239847,'.0005',dict(threeSigDigs=True),' Sic??'],
+        ]+[
+       [0.0,  '0',dict(lowCutoff=1e-5), ''],
+       [0,  '0',dict(lowCutoff=1e-5), ''],
        ['4','4',dict(lowCutoff=1e-5), ''],
        [4,'4',dict(lowCutoff=1e-5), ''],
        [0.4,'.40',dict(lowCutoff=1e-5), ''],
         [0.00049239847,'.0005',dict(lowCutoff=1e-5), ''],
-       [0,  '0',dict(lowCutoff=1e-5), ''],
-       [0.0,  '0',dict(lowCutoff=1e-5), ''],
-       [-1e-9,  '$-$1e-09',dict(lowCutoff=1e-5),' Is this right? '],
+       [-1e-9,  '-$<$10$^{-9}$',dict(lowCutoff=1e-5),' Is this right? '],
        [-np.inf,'big',dict(lowCutoff=1e-5), ''],
       [.0001,'.0001',dict(lowCutoff=1e-5), ''],
         ]
     for fff,sss,ddd,ccc in assertVals:
-        outs=cpblu.chooseSFormat(fff, *ddd)
+        outs=cpblt.chooseSFormat(fff, **ddd)
         print('chooseSFormat('+str(fff)+',\t\t'+str(ddd)+') == \t'+outs+'          '+ccc)
         assert outs==sss
 

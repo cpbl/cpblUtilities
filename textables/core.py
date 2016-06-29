@@ -76,38 +76,38 @@ se is the standard error. you can just specify that for smarter choices about si
     ss='%.1g'%ff
     if aa<lowCutoff:
         ss='0'
-        if lowCutoffOOM in [True,'log']:
+        if lowCutoffOOM in [True,'log'] and not aa==0:
             negexp=int(np.ceil(np.log10(aa)))
             ss='-'*(ff<0)+ r'$<$10$^{%d}$'%negexp
         elif isinstance(lowCutoffOOM,basestring):
             ss=lowCutoffOOM
-    if aa>=0.0001:
-        ss=('%.4f'%ff)
-    if aa>=0.001:
-        ss=('%.3f'%ff)
-    if aa>=0.01:
-        ss='%.3f'%ff
-    if aa>=0.1:
-        ss='%.2f'%ff
-    if threeSigDigs and aa>=0.1:
-        ss='%.3f'%ff
-    if aa>2.0:
-        ss='%.1f'%ff
-    if aa>10.0:
-        ss='%.1f'%ff
-    if aa>100.0:
-        ss='%.0f'%ff
-    if ss[0:2]=='0.' and not leadingZeros:
-        ss=ss[1:]
-    if ss[0:3]=='-0.' and not leadingZeros:
-        ss='-'+ss[2:]
-    if ss[0]=='-' and not noTeX:
-        ss='$-$'+ss[1:]
+    else:
+        if aa>=0.0001:
+            ss=('%.4f'%ff)
+        if aa>=0.001:
+            ss=('%.3f'%ff)
+        if aa>=0.01:
+            ss='%.3f'%ff
+        if aa>=0.1:
+            ss='%.2f'%ff
+        if threeSigDigs and aa>=0.1:
+            ss='%.3f'%ff
+        if aa>2.0:
+            ss='%.1f'%ff
+        if aa>10.0:
+            ss='%.1f'%ff
+        if aa>100.0:
+            ss='%.0f'%ff
+        if ss[0:2]=='0.' and not leadingZeros:
+            ss=ss[1:]
+        if ss[0:3]=='-0.' and not leadingZeros:
+            ss='-'+ss[2:]
+        if ss[0]=='-' and not noTeX:
+            ss='$-$'+ss[1:]
 
     # Override all this for integers:
     if isinstance(ff,int):
         ss='$-$'*(ff<0)+str(abs(ff))
-
 
     return(conditionalWrapper[0]+ss+conditionalWrapper[1])
 
