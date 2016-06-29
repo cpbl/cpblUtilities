@@ -20,11 +20,6 @@ from copy import deepcopy
 import sys
 import time
 
-#try: # Where is this needed? Should import it only where needed.        
-#    from cpbl_tables import *
-#except ImportError:
-#    print(__file__+":Unable to find CPBL's tables TeX package")
-
 
 def debugprint(a='',b='',c='',d='',f='',g='',h='',i='',j='',k='',l='',m='',n=''):
     #print 'DEBUG -- '+str([a,b,c,d,f,g,h,i,j,k,l,m,n])
