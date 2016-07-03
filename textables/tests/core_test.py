@@ -25,6 +25,11 @@ se is the standard error. you can just specify that for smarter choices about si
 2014-03 adding leadingZeros: In regression tables, I don't want them. But in general I might.
 """
     assertVals=[
+        [   1382.797202,'1383',{},''],
+        [   1382,'1400',dict(sigdigs=2),''],
+        [   1382,'1380',dict(sigdigs=3),''],
+        [   1382,'1382',{},''],
+        [   1382,'1382',dict(sigdigs=5),''],
        ['4','4',{},''],
        ['.','',{},''],
        [4,'4',{},''],

@@ -20,6 +20,9 @@ import os
 
 import pandas as pd
 import numpy as np
+from cpblUtilities import doSystemLatex
+from cpblUtilities.mathgraph import tonumeric
+
 def open(fn,mm,encoding='utf-8'): # Replace default "open" to be unicode-safe
     import codecs
     return(codecs.open(fn,mm,encoding=encoding))
@@ -27,7 +30,7 @@ def open(fn,mm,encoding='utf-8'): # Replace default "open" to be unicode-safe
 
 ###########################################################################################
 ###
-def chooseSFormat(ff,conditionalWrapper=['',''],lowCutoff=None,lowCutoffOOM=True,convertStrings=False,highCutoff=1e8,noTeX=False,threeSigDigs=False,se=None, leadingZeros=False):
+def chooseSFormat(ff,conditionalWrapper=['',''],lowCutoff=None,lowCutoffOOM=True,convertStrings=False,highCutoff=1e8,noTeX=False,sigdigs=4,threeSigDigs=False,se=None, leadingZeros=False):
     ###
     #######################################################################################
     """ This chooses a reasonable number of significant figures for a numerical value in a results table...
@@ -49,12 +52,14 @@ If highCutoff is supplied, larger numbers will be shown as "big". May 2011: redu
 se is the standard error. you can just specify that for smarter choices about sig digs to show...
 
 2014-03 adding leadingZeros: In regression tables, I don't want them. But in general I might.
+
+To do: New parameter sigdigs only implemented for integers so far. And it needs to be reconciled with threeSigDigs (which should become deprecated).  threeSigDigs is really about precision; it corresponds closely/directly to decimal places.
 """
     if lowCutoff==None:
         lowCutoff==1.0e-99 # Sometimes "None" is explicitly passed to invoke default value.
     import numpy#from numpy import ndarray
     if isinstance(ff,list) or isinstance(ff,numpy.ndarray): # Deal with lists
-        return([chooseSFormat(fff,conditionalWrapper=conditionalWrapper,lowCutoff=lowCutoff,convertStrings=convertStrings,threeSigDigs=threeSigDigs) for fff in ff])
+        return([chooseSFormat(fff,conditionalWrapper=conditionalWrapper,lowCutoff=lowCutoff,convertStrings=convertStrings,sigdigs=sigdigs,threeSigDigs=threeSigDigs) for fff in ff])
     if ff=='': # Leave blanks unchanged
         return('')
     if ff=='.': # lone dots can mean NaN to Stata
@@ -106,7 +111,11 @@ se is the standard error. you can just specify that for smarter choices about si
             ss='$-$'+ss[1:]
 
     # Override all this for integers:
-    if isinstance(ff,int):
+    if isinstance(ff,int) and not ff==0:
+        round_to_n = lambda x, n: np.round(x, -int(np.floor(np.log10(x))) + (n - 1)) 
+        ff=round_to_n(ff,sigdigs)
+        #if ff>10**sigdigs:
+        #    ff=int(np.round(ff % (10**sigdigs)))* (10**sigdigs)
         ss='$-$'*(ff<0)+str(abs(ff))
 
     return(conditionalWrapper[0]+ss+conditionalWrapper[1])
@@ -118,7 +127,6 @@ def extractExcelRange(spreadsheetfile, sheet=None ,cells=None,transpose=False):
     sheet=None should just give first sheet. cells=None should give entire sheet.
     
     """
-    from cpblUtilities import tonumeric
 
     if cells is not None:
         cols=''.join([cc for cc in cells if cc.isalpha() or cc in [':']]) # Extract "B:F"
@@ -160,14 +168,14 @@ Allow for output as just the tabular component, rather than a full cpblTable, so
 
 Pandas' excel import does not respect sig figs. There's anothre package that gives option to copy formatting???
 
-Decide on and document combined decimals / sigfigs behaviour.
+Decide on and document combined decimals / sigdigs behaviour.
 
     """
     """
     Don't use pd.DataFrame as a subclass. This is not normal behaviour in python, and pd.DataFrame returns its own class from most functions, not the class it was given, so it's not useful/easy to do this. Instead, this class will just a dataframe internally, as self.df.
 
     """
-    def __init__(self, spreadsheetfile=None, sheet=None, cells=None,topleft=None,bottomright=None,decimals=None,sigfigs=None, leadingZeros=True, title=None,caption=None,footercell=None,transpose=False):
+    def __init__(self, spreadsheetfile=None, sheet=None, cells=None,topleft=None,bottomright=None,decimals=None,sigdigs=None, leadingZeros=True, title=None,caption=None,footercell=None,transpose=False):
         super(self.__class__, self).__init__() # To initialize the base class??!
         self._cformat=None
         self._tabletitle=None
@@ -196,7 +204,7 @@ Decide on and document combined decimals / sigfigs behaviour.
         else:
             raise('unknown_spreadsheet_file_type')
 
-        formatDFforLaTeX(df,row=None,sigfigs=sigfigs,colour=None,leadingZeros=leadingZeros)
+        formatDFforLaTeX(df,row=None,sigdigs=sigdigs,colour=None,leadingZeros=leadingZeros)
         self.df=df
         print df
         return # init() just return None
@@ -973,7 +981,7 @@ formatCodes is really kludgy. This is a partial or complete list of single-lette
     #print(callerTex.replace('PUT-TABLETEX-FILEPATH-HERE',outfile))
     return (callerTex.replace('PUT-TABLETEX-FILEPATH-HERE',outfile))
 
-def formatDFforLaTeX(df,row=None,sigfigs=None,colour=None,leadingZeros=False):
+def formatDFforLaTeX(df,row=None,sigdigs=None,colour=None,leadingZeros=False):
     """ Convert  dataframe entries from numeric to formatted strings.
     This is probably not for use by cpblLaTeX regression class. But useful in general for making LaTeX tables from pandas work.
     How to do this...?
@@ -981,12 +989,11 @@ def formatDFforLaTeX(df,row=None,sigfigs=None,colour=None,leadingZeros=False):
     For colouring alternating rows, for instance, do not do it here! Just call rowcolors before tabular.
     Here's a nice colour: \definecolor{lightblue}{rgb}{0.93,0.95,1.0}
     """
-    def sformat(aval):
-        from cpblUtilities import chooseSFormat
+    def sformat(aval,sigdigs=sigdigs):
         if isinstance(aval,basestring):
             return(aval)
         return(
-        chooseSFormat(aval,conditionalWrapper=['',''],lowCutoff=None,lowCutoffOOM=False,convertStrings=False,highCutoff=1e90,noTeX=False,threeSigDigs=False,se=None,leadingZeros=leadingZeros)
+        chooseSFormat(aval,conditionalWrapper=['',''],lowCutoff=None,lowCutoffOOM=False,convertStrings=False,highCutoff=1e90,noTeX=False,sigdigs=sigdigs,threeSigDigs=False,se=None,leadingZeros=leadingZeros)
 )
     if row is None:
         for irow in range(len(df.index)):
@@ -1059,7 +1066,7 @@ if __name__ == '__main__':
         \end{document}
         """)
     # If cpblUtilities is around, compile the LaTeX, too:
-    from cpblUtilities import doSystemLatex
+    
     if not os.path.exists('./tmpTEX'):
         os.makedirs('./tmpTEX')
     os.rename('test-cpbl.tex','tmpTEX/test-cpbl.tex')
