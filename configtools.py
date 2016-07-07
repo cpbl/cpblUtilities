@@ -78,13 +78,45 @@ def readConfigFile(inpath, config_file_structure):
     return(outdict)
 
 def read_hierarchy_of_config_files(files,config_file_structure, verbose=False):
+    """
+    Reads a sequence of config files, successively updating a dict of config settings.
+    Returns the dict.
+
+    if verbose is True, it also reports file was the last to set each setting.
+
+    Note that there is also a verboseSource feature in merge_dictionaries, which reports updating as it goes, but this is less useful than the verbose behaviour given here.
+    """
     configDict={}
+    configDictOrigins={}
+    def setOrigin(filename,adict):
+        for kk in adict:
+            if isinstance(adict[kk],dict):
+                setOrigin(filename,adict[kk])
+            else:
+                adict[kk]=filename
+    def reportOrigin(adict):
+        for kk in adict:
+            if isinstance(adict[kk],dict):
+                reportOrigin(adict[kk])
+            else:
+                print('Used '+adict[kk]+' \t for '+kk)
     for ff in files:
         if os.path.exists(ff):
             newConfigDict=readConfigFile(ff,config_file_structure)
-            configDict=merge_dictionaries(configDict,newConfigDict, verboseSource=False if not verbose else ff) #bool(configDict))
+            if verbose:
+                newConfigOrigins=newConfigDict.copy()
+                setOrigin(ff,newConfigOrigins)
+                configDictOrigins=merge_dictionaries(configDictOrigins,newConfigOrigins)
+            configDict=merge_dictionaries(configDict,newConfigDict, verboseSource=False) #False if not verbose else ff) #bool(configDict))
 
-
+    
     if not configDict:
         raise Exception("Cannot find config[-template].cfg file in "+', '.join(files))
+    if verbose:
+        reportOrigin(configDict)
     return configDict
+
+
+
+
+
