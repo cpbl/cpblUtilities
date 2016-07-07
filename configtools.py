@@ -50,7 +50,7 @@ working = /home/foo
 parallel = True
 
 """
-import os
+import os,copy
 from .utilities import dsetset,dgetget,merge_dictionaries
 def readConfigFile(inpath, config_file_structure):
     """
@@ -77,7 +77,7 @@ def readConfigFile(inpath, config_file_structure):
                         raise('Do not know config value type '+str(option[1]))
     return(outdict)
 
-def read_hierarchy_of_config_files(files,config_file_structure, verbose=False):
+def read_hierarchy_of_config_files(files,config_file_structure, verbose=True):
     """
     Reads a sequence of config files, successively updating a dict of config settings.
     Returns the dict.
@@ -94,17 +94,17 @@ def read_hierarchy_of_config_files(files,config_file_structure, verbose=False):
                 setOrigin(filename,adict[kk])
             else:
                 adict[kk]=filename
-    def reportOrigin(adict):
+    def reportOrigin(adict, vdict):
         for kk in adict:
             if isinstance(adict[kk],dict):
-                reportOrigin(adict[kk])
+                reportOrigin(adict[kk], vdict[kk])
             else:
-                print('Used '+adict[kk]+' \t for '+kk)
+                print('Used '+adict[kk]+' \t for '+kk+' == '+str(vdict[kk]))
     for ff in files:
         if os.path.exists(ff):
             newConfigDict=readConfigFile(ff,config_file_structure)
             if verbose:
-                newConfigOrigins=newConfigDict.copy()
+                newConfigOrigins=copy.deepcopy(newConfigDict)
                 setOrigin(ff,newConfigOrigins)
                 configDictOrigins=merge_dictionaries(configDictOrigins,newConfigOrigins)
             configDict=merge_dictionaries(configDict,newConfigDict, verboseSource=False) #False if not verbose else ff) #bool(configDict))
@@ -113,7 +113,7 @@ def read_hierarchy_of_config_files(files,config_file_structure, verbose=False):
     if not configDict:
         raise Exception("Cannot find config[-template].cfg file in "+', '.join(files))
     if verbose:
-        reportOrigin(configDict)
+        reportOrigin(configDictOrigins, configDict)
     return configDict
 
 
