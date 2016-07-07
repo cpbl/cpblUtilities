@@ -55,25 +55,85 @@ Solutions for bounding box / whitespace in output figures:
 
 
 #####################################################################################
-def dfOverplotLinFit(df,xv,yv,label=None,**kwargs): # This is for a bivariate relationship just now.
+def dfOverplotLinFit(df,xv,yv,aweights=None, label=None,ax=None,**kwargs): # This is for a bivariate relationship just now.
     """ 2015June: overplot a linear fit (no se shown now) and return b, se for bivariate DataFrame
-     You can pass a label string which refers to some of the fit parameters: ['beta','2se'] as floats. For example:
+     You can pass a label string which refers to some of the fit parameters: ['beta','2se','r2'] as floats. For example:
            label=' OLS '+r' ($\beta$=%(beta).2g$\pm$%(2se).2g)'
+
+To do:
+  This should  (that this is not obvious/trivial is sad for Python)
+   - show the envelope of cI
+   - allow for confidence weights for each datapoint
+   - or allow for sampling weights for each datapoint
+
     """
-    
+    if ax is None:
+        ax=plt.gca()
+    if 0: # Here's one quick method!!
+        import seaborn as sns; sns.set(color_codes=True)
+        #>>> tips = sns.load_dataset("tips")
+        g = sns.lmplot(xv,yv,data=df, markers=None, )
+
+
     import statsmodels.formula.api as smf
     import statsmodels.regression.linear_model as olsm
     import statsmodels.api as sm
-
-    from pandas.stats.api import ols
+    # WTH? which of these three (one above, two below) are we to use?
+    import pandas.stats.api as pds
     ###df = pd.DataFrame({"A": [10,20,30,40,50], "B": [20, 30, 10, 40, 50], "C": [32, 234, 23, 23, 42523]})
-    res = ols(y=df[yv], x=df[[xv]])
+    weights = 1 if aweights is None  else df[aweights] # Careful!! Do I want 1/weights or weights?!
+    res = pds.ols(y=df[yv], x=df[[xv]], weights=weights)
     beta,se= res.beta[xv], res.std_err[xv]
     from pylab import plot
     if label is not None:
-        label=label%{'beta':beta,'2se':1.96*se}
-    plot(df[xv],res.y_predict,label=label,**kwargs)
+        label=label%{'beta':beta,'2se':1.96*se, 'r2':res.r2}
+    ax.plot(df[xv],res.y_predict,label=label,**kwargs)
+
+    if 1:
+        #import statsmodels.api as sm
+        #x = sm.add_constant(x) # constant intercept term
+        # Model: y ~ x + c
+        #model = sm.OLS(y, x)
+        #fitted = model.fit()
+        x_pred = np.linspace(df[xv].min(), df[xv].max(), 50)
+        #y_pred = fitted.predict(x_pred2)
+        y_pred=res.beta['intercept'] + x_pred*beta
+        #ax.plot(x_pred, y_pred, '-', color='darkorchid', linewidth=2)
+        mean_x = df[xv].mean()
+        n = len(df)
+        dof = n - res.df_model - 1
+        from scipy import stats
+        t = stats.t.ppf(1-0.025, df=dof)
+        s_err = np.sum(np.power(res.resid, 2))
+        conf = t * np.sqrt((s_err/(n-2))*(1.0/n + (np.power((x_pred-mean_x),2) / 
+            ((np.sum(np.power(x_pred,2))) - n*(np.power(mean_x,2))))))
+        upper = y_pred + abs(conf)
+        lower = y_pred - abs(conf)
+        ax.fill_between(x_pred, lower, upper, color='#888888', alpha=0.4)
+    if 0: # Last part: show 95% confidence interval of predicted values (as opposed to regression line)
+        x_pred2 = sm.add_constant(x_pred)
+        from statsmodels.sandbox.regression.predstd import wls_prediction_std
+        sdev, lower, upper = wls_prediction_std(fitted, exog=x_pred2, alpha=0.05)
+        ax.fill_between(x_pred, lower, upper, color='#888888', alpha=0.1)
+
     if 0:
+        from statsmodels.sandbox.regression.predstd import wls_prediction_std
+
+        #measurements genre
+        nmuestra = 100
+
+        x = np.linspace(0, 10, nmuestra)
+        e = np.random.normal(size=nmuestra)
+        y = 1 + 0.5*x + 2*e
+        X = sm.add_constant(x)
+
+        re = sm.OLS(y, X).fit()
+        print re.summary()    #print the result type Stata
+
+        prstd, iv_l, iv_u = wls_prediction_std(re)
+
+
+
         from statsmodels.sandbox.regression.predstd import wls_prediction_std
         prstd, iv_l, iv_u = wls_prediction_std(res)
         ax.plot(x, iv_u, color+'--')
@@ -573,12 +633,28 @@ def resizeSVG_or_PDF_with_inkscape(infile,outfile=None,use_xvfb=False):
 And it seems you can't automate this from the command line in inkscape. See: https://answers.launchpad.net/inkscape/+question/143221
 
  """
+def tightBoundingBoxPDF(infile,outfile=None,overwrite=False):
+    """
+    Uses command line "pdfcrop" on Linux (from tex installation) to clip a PDF to its bounding box.
+    Availability of this command (2016) makes the old Inkscape method obselete; in fact this is even more powerful
+    """
+    if outfile is None and overwrite and infile.endswith('.pdf'):
+        outfile = infile
+    if infile.endswith('.pdf'):
+        infile=infile[:-4]
+    if outfile is None and not overwrite:
+        outfile=infile+'-tightbb.pdf'
+    if not outfile.endswith('.pdf'):
+        outfile+='.pdf'
+    os.system(' pdfcrop --margins 0 %s %s '%(infile,outfile))
+    print(' Wrote bounding-box cropped %s.'%outfile)
 
 def tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=False,overwrite=False):
     """Makes POSIX-specific OS calls. Need xvfb installed. If it fails anyway, could always resort to use_xvfb=False
 
 Also, see https://github.com/skagedal/svgclip/blob/master/svgclip.py but I find rsvg buggy: it ignored the clipping boxes in my svg.
  """
+    print('This is obselete. Use  tightBoundingBoxPDF() instead.')
     # Why is xvfb failing 2015 still?
 
     #if use_xvfb is None:
@@ -3795,17 +3871,19 @@ Okay, but ALSO provide the un-averaged version, in case I need a more continuous
 
     return(byQtl)
 
-def scaledHist(rawData,bins=None,histtype=None,weights=None,color=None,label=None):
+def scaledHist(rawData,bins=None,maxval=1.0,histtype=None,weights=None,color=None,label=None,ax=None, **kwargs):
     """
     I find it hard scale a histogram so its max value is 1. So make a function to do this using a kludge.
 
     So normed arg not allowed in this call, unlike for hist()
     """
+    if ax is None:
+        ax=plt.gca()
     if weights==None:
         weights=array([1.0 for xx in rawData])
     [a,b]=plt.histogram(rawData,bins=bins,weights=weights)
-    weights=weights/max(a*1.0)
-    return(plt.hist(rawData,bins=bins,histtype=histtype,weights=weights,color=color,label=label))
+    weights=weights/max(a*1.0/maxval)
+    return(ax.hist(rawData,bins=bins,histtype=histtype,weights=weights,color=color,label=label,**kwargs))
 
 def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,fig=None,clearfig=False,width=None,cvarRange=None,cmap='jet',Ncolors=256):#,saveas=None): 
     #pvardesc='Nearby fraction of dead-ends'
