@@ -112,7 +112,7 @@ To do: New parameter sigdigs only implemented for integers so far. And it needs 
 
     # Override all this for integers:
     if isinstance(ff,int) and not ff==0:
-        round_to_n = lambda x, n: np.round(x, -int(np.floor(np.log10(x))) + (n - 1)) 
+        round_to_n = lambda x, n: np.round(x, -int(np.floor(np.log10(abs(x)))) + (n - 1)) 
         ff=round_to_n(ff,sigdigs)
         #if ff>10**sigdigs:
         #    ff=int(np.round(ff % (10**sigdigs)))* (10**sigdigs)
