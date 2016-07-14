@@ -1159,6 +1159,84 @@ if 0:
         pass
 
 
+def doSystemLatex_newdraft2016(fname, texcode=None):#,latexPath=None,launch=None,launchViewer=None,tex=None,viewLatestSuccess=True,bgCompile=True,fgCompile=False):
+    """
+    Version 2 / from scratch. I'm eliminating arguments which can be taken from config file defaults. Focus on POSIX systems only.
+    fname: either a fully-specified path to a .tex file, or a .tex filename located in the defaults['paths']['tex'] folder
+    texcode: if fname is to be written, rather than read, this is the LaTeX source code to write there.
+
+    In general, I find latexmk horribly buggy. -aux-directory does not work. -cd does not work until I upgrade to a newer version than the LTS release. It also claims it's failed, when it has apparently finished (according to the next run). However, it's passable, maybe.
+As of July 2016, the tmpTEX folder isn't really used at all, except for the fdb_latexmk file.
+
+
+Ah. Parse this and fix accordingly:
+
+
+Date: Thu, 14 Jul 2016 14:39:54 -0400
+From: John Collins <jcc8@psu.edu>
+To: C P Barrington-Leigh <Chris.Barrington-Leigh@McGill.ca>
+Subject: Re: latexmk
+
+Hi Chris,
+
+Almost certainly the cause of the problems you are finding is that the -aux-directory option is not supported by the distribution of TeX
+you are using, which on linux systems is normally TeXLive.
+
+Latexmk implements the -aux-directory option by passing the option to the underlying latex engine.  So the option doesn't work when it
+isn't supported by by latex/pdflatex, as with TeXLive.   The only distribution that I know of that supports -aux-directory is MiKTeX.
+The best that can done with TeXLive is to use the -out-directory option.
+
+In fact, this issue is mentioned in latexmk's documentation, but obviously better diagnostics could be done.  There are interesting
+possibilities for cross-operating-system uses, and non-standard TeX distributions, which is why I haven't implemented anything
+previously.
+
+But I now see that the combination of not finding the log file in the expected place and the use of the -aux-directory option (or the
+equivalent setting of $aux_dir) is sufficient to indicate that -aux-directory is not supported by the latex program.  In this situation
+a more informative error message for the user would be appropriate.  So I'll put this on the list of future improvements.
+
+Of course, it would be rather nice to have an -aux-directory option, distinct from the -out-directory option.  But I haven't implemented
+any fix ups that would let this be done.
+
+
+> but when run again claims everything's up to date.
+
+That's not quite a bug.  Latexmk sees that no source files have changed since the previous run, so that there is no point trying to run
+pdflatex again.  In that sense, it is correct to say that everything is up to date.  But I would agree that since there was an error,
+up-to-dateness doesn't seem exactly the right concept
+
+Best regards and thanks for the communication,
+John
+
+
+
+
+
+    """
+    # Choose .tex file location, either to read or to write
+    ppa,fname=os.path.split(fname)
+    latexPath = ppa+'/' if ppa else paths['tex']
+    if fname.endswith('.tex'):
+        fname=fname[0:-4]
+    if texcode is not None: # Clobber freely
+        fout=open(latexPath+fname+'.tex','wt')
+        fout.write(texcode+'\n')
+        fout.close()
+    tmpLatexPath=latexPath+'tmpTEX/'
+    if not os.path.exists(tmpLatexPath):
+        os.mkdir(tmpLatexPath)
+    assert os.path.exists(latexPath+fname+'.tex')
+    # -c is really an alternative to using the aux-directory ?
+    cli=""" latexmk -cd -pdf -aux-directory=%(auxdir)s %(fullpath)s  """%dict(auxdir=latexPath+'tmpTEX',fullpath=latexPath+fname)
+     #latexmk -c -pdf -aux-directory=%(auxdir)s %(fullpath)s 
+    print(cli)#.replace('latexmk','latexmk -commands '))
+    os.system(cli)
+    # Give up; for now, follow up on horribly broken latexmk to do another compile: But this is straight to the output file, which will make viewers crash a lot. The following is really horrible:
+    #/dev/null 2>&1
+    cli=r""" cd %(lpath)s 
+            pdflatex %(fname)s  |grep -i "Rerun \|Error\|Output written\|Fatal"  & """%dict(auxdir=latexPath+'tmpTEX',fullpath=latexPath+fname, lpath=latexPath, fname=fname)
+    os.system(cli)
+
+    return
 
 ###########################################################################################
 ###
@@ -1186,7 +1264,7 @@ bgCompile=True : ie compile in the background, either in a new window (if local 
 
 So there should be no way to run that doesn't result in compiling, one way or another...
 
-Dec 2010: Damn. I don't think I know how to check for local display after all! make yet another argument.
+Dec 2010: I don't think I know how to check for local display after all! make yet another argument. Or rely on config settings? or try/except
 
     """
     ppa,ppb=os.path.split(fname)
@@ -1196,7 +1274,7 @@ Dec 2010: Damn. I don't think I know how to check for local display after all! m
             latexPath=ppa
             fname=ppb
         else:
-            latexPath=defaults['native']['paths']['tex']
+            latexPath=defaults['paths']['tex']
 
 
     if fname.endswith('.tex'):
@@ -1210,8 +1288,7 @@ Dec 2010: Damn. I don't think I know how to check for local display after all! m
     if not os.path.exists(tmpLatexPath):
         os.mkdir(tmpLatexPath)
 
-
-    import shutil
+    #import shutil
     #shutil.copyfile(self.fpathname+'.partial.tex',self.fpathname+'.tex')#latexPath+'tables-allCR.tex')
     #os.rename(latexPath+'tablesPreview.tex',latexPath+'tables-allCR.tex')
     # On MS windows, since there's no reasonable interface, do the latex compilation automatically:
@@ -1231,8 +1308,8 @@ Dec 2010: Damn. I don't think I know how to check for local display after all! m
             shellfile.write("""
             cp %(pp)s%(fp)s.tex %(tp)s%(fp)s-tmp.tex
             cd %(tp)s
-            pdflatex %(fp)s-tmp |grep "\(Fatal error\)\|\(Output\)\|\(Rerun\)"
-            bibtex %(fp)s-tmp |grep "rror"
+            pdflatex %(fp)s-tmp |grep -i "\(Fatal error\)\|\(Output written\)\|\(Rerun \)"
+            bibtex %(fp)s-tmp |grep "Error"
             echo             cp %(tp)s%(fp)s-tmp.pdf %(pp)s%(fp)s.pdf
             cp %(tp)s%(fp)s-tmp.pdf %(pp)s%(fp)s.pdf
             """%{'pp':latexPath,'tp':tmpLatexPath,'fp':fname}) #yap tables-allCR\npause
@@ -1262,11 +1339,12 @@ Dec 2010: Damn. I don't think I know how to check for local display after all! m
     shellDisplayV=subprocess.Popen(['echo $DISPLAY'], stdout=subprocess.PIPE,shell=True).communicate()[0]
     import socket
     whereami=socket.gethostbyaddr(socket.gethostname())
+    os.system('bash %s &'%texsh)    
     print 'shellDisplayV=',shellDisplayV
-    if '0.0' in shellDisplayV and bgCompile:#'cpbl-server' in whereami[0]:
-        print 'Compiling LaTeX: '+fname+'...'
-        
-        print os.system('gnome-terminal -e "bash %s" &'%texsh)
+    if ':0.0' in shellDisplayV and bgCompile:#'cpbl-server' in whereami[0]:
+        #print 'Compiling LaTeX: '+fname+'...'
+        #print os.system('gnome-terminal -e "bash %s" &'%texsh)
+        #os.system('bash %s &'%texsh)
         #print os.system('bash %stmpcompile.bat '%latexPath)
         ####if ':0.0' in shellDisplayV and launch and bgCompile:
         if     viewLatestSuccess and launchViewer:
@@ -1278,7 +1356,7 @@ Dec 2010: Damn. I don't think I know how to check for local display after all! m
         print os.system('bash %s '%texsh)
 
     else:
-        print 'Suppressing launch of PDF viewer due to non local X terminal.... right?'
+        print 'Suppressing launch of PDF viewer due to non local X terminal.'
         if launch:
             print '...  but making an attempt to compile in bg anyway. (Caution: stderr/out from LaTeX will follow, mixed in)..'
             print os.system('bash %s &'%texsh)
