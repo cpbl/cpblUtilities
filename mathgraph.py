@@ -55,10 +55,12 @@ Solutions for bounding box / whitespace in output figures:
 
 
 #####################################################################################
-def dfOverplotLinFit(df,xv,yv,aweights=None, label=None,ax=None,**kwargs): # This is for a bivariate relationship just now.
+def dfOverplotLinFit(df,xv,yv,aweights=None, label=None,ax=None,ci=True,**kwargs): # This is for a bivariate relationship just now.
     """ 2015June: overplot a linear fit (no se shown now) and return b, se for bivariate DataFrame
      You can pass a label string which refers to some of the fit parameters: ['beta','2se','r2'] as floats. For example:
            label=' OLS '+r' ($\beta$=%(beta).2g$\pm$%(2se).2g)'
+
+ci=False suppresses the confidence interval shadow band
 
 To do:
   This should  (that this is not obvious/trivial is sad for Python)
@@ -109,7 +111,8 @@ To do:
             ((np.sum(np.power(x_pred,2))) - n*(np.power(mean_x,2))))))
         upper = y_pred + abs(conf)
         lower = y_pred - abs(conf)
-        ax.fill_between(x_pred, lower, upper, color='#888888', alpha=0.4)
+        if ci in [True]:
+            ax.fill_between(x_pred, lower, upper, color='#888888', alpha=0.4)
     if 0: # Last part: show 95% confidence interval of predicted values (as opposed to regression line)
         x_pred2 = sm.add_constant(x_pred)
         from statsmodels.sandbox.regression.predstd import wls_prediction_std
@@ -636,7 +639,7 @@ And it seems you can't automate this from the command line in inkscape. See: htt
 def tightBoundingBoxPDF(infile,outfile=None,overwrite=False):
     """
     Uses command line "pdfcrop" on Linux (from tex installation) to clip a PDF to its bounding box.
-    Availability of this command (2016) makes the old Inkscape method obselete; in fact this is even more powerful
+    Availability of this command (2016) makes the old Inkscape method obselete; in fact this is even more powerful [Well.. not 100% sure of that]
     """
     if outfile is None and overwrite and infile.endswith('.pdf'):
         outfile = infile
@@ -646,8 +649,9 @@ def tightBoundingBoxPDF(infile,outfile=None,overwrite=False):
         outfile=infile+'-tightbb.pdf'
     if not outfile.endswith('.pdf'):
         outfile+='.pdf'
-    os.system(' pdfcrop --margins 0 %s %s '%(infile,outfile))
-    print(' Wrote bounding-box cropped %s.'%outfile)
+    # No need to enclose this in a try catch, since os.system doesn't mind failing?
+    os.system(""" pdfcrop --margins 0 %s %s 
+  echo "Wrote bounding-box cropped %s."  """%(infile,outfile,outfile))
 
 def tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=False,overwrite=False):
     """Makes POSIX-specific OS calls. Need xvfb installed. If it fails anyway, could always resort to use_xvfb=False
@@ -697,6 +701,12 @@ Also, see https://github.com/skagedal/svgclip/blob/master/svgclip.py but I find 
         print(' Overwriting original file!: '+sout)
         os.system(sout)
 
+def tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=False,overwrite=False):
+    """ Inkscape no nlonger necessary on Debian-based systems: just use pdfcrop.
+    The key to making either work is use savefigall() instead of savefig() (or to set the facecolor and transparent when using savefig)
+    """
+    return tightBoundingBoxPDF(infile,outfile=outfile,overwrite=overwrite)
+
 
 def saveAllFiguresToPDF(filename, figs=None, dpi=200):# : a trick to save all open figures. To a single PDF file.
     from matplotlib.backends.backend_pdf import PdfPages
@@ -710,11 +720,18 @@ def saveAllFiguresToPDF(filename, figs=None, dpi=200):# : a trick to save all op
 ##############################################################################
 ##############################################################################
 #
-def savefigall(fn,transparent=True,ifany=None,fig=None,skipIfExists=False,pauseForMissing=True,onlyPNG=False,jpeg=False,jpeghi=False,svg=False,pdf=True,bw=False,FitCanvasToDrawing=False,eps=False,tikz=False,rv=None,facecolor='None',dpi=1000):
+def savefigall(fn,transparent=True,ifany=None,fig=None,skipIfExists=False,pauseForMissing=True,onlyPNG=False,jpeg=False,jpeghi=False,svg=False,pdf=True,bw=False,FitCanvasToDrawing=False,eps=False,tikz=False,rv=None,facecolor='None',dpi=1000, overwrite=True):
     ##########################################################################
     ##########################################################################
     """
-    Like savefig, but saves in multiple formats; make this standard
+    Like savefig, but implements important (transparent, facecolor) tweaks to ensure we can crop to bounding box, and it saves in multiple formats. 
+
+    Note that savefig() overwrites the figure's facecolor. So should always use this rather than built-in savefig(); or else always do something like
+           savefig('figname.png', facecolor=fig.get_facecolor(), transparent=True)
+    I think if you don't deal with facecolor, especially, then inkscape and pdfcrop will not work.
+
+
+    A new file with "-tightbb" suffix will be created when FitCanvasToDrawing is used, unless overwrite=True
 
     April 2010: adding transparent option for png only. (right now it's automatic for pdf)
 
@@ -766,7 +783,7 @@ Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pd
 
     (root,tail)=os.path.split(fn)
     if bw:
-        savefigall(fn,transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv,facecolor=facecolor)
+        savefigall(fn,transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv,facecolor=facecolor, )
         if 1: # ahhhh... issues jan 2012. kludge it off:
             figureToGrayscale() 
         savefigall(fn+'-bw',transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv,facecolor=facecolor)
@@ -802,7 +819,7 @@ Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pd
         root+='/'
 
     from cpblUtilities import str2pathname
-    tail=str2pathname(tail) # Get rid of any punctuation in the name.
+    tail=str2pathname(os.path.splitext(tail)[0]) # Get rid of any punctuation in the name.
 
 
     if skipIfExists and  os.path.exists(root+tail+'.png') and  os.path.exists(root+tail+'.pdf'):
@@ -840,18 +857,18 @@ Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pd
     if pdf and not onlyPNG: # What?! I don't have to use stupidOnlyUseGivenArguments here? If I did it for PNG, everything's fine?
         plt.savefig(root+tail+'.pdf',transparent=transparent,facecolor=facecolor)
         if FitCanvasToDrawing:
-            from cpblUtilities import doSystem
-            """
-            xvfb is the /dev/null of X servers, if you like... ie normally command-line verbs of inkscape generate a gui, so this prefix hides them:
-            """
-            print('You need xvfb installed. You need your .config/inkscape/extensions script. March 2014: XRANDR extension missing?! !"AAAAAAAAAAAAAARRRRCH')
+            #from cpblUtilities import doSystem
+            #"""
+            #xvfb is the /dev/null of X servers, if you like... ie normally command-line verbs of inkscape generate a gui, so this prefix hides them:
+            #"""
+            #print('You need xvfb installed. You need your .config/inkscape/extensions script. March 2014: XRANDR extension missing?! !"AAAAAAAAAAAAAARRRRCH')
 
-            print("""inkscape -f %(fn)s.pdf -l %(fn)sTMPTMPTMP.svg
+            if 0: print("""inkscape -f %(fn)s.pdf -l %(fn)sTMPTMPTMP.svg
 inkscape -f %(fn)sTMPTMPTMP.svg --verb=FitCanvasToDrawing  --verb=FileSave  --verb=FileQuit
 inkscape -f %(fn)sTMPTMPTMP.svg -A %(fn)s-autotrimmed.pdf
  """%{'fn':root+tail})
 
-            tightBoundingBoxInkscape(root+tail)#,use_xvfb=True) # ARGH March 2014: I'm getting an error from xvfb. So do it with GUI popping up!
+            tightBoundingBoxPDF(root+tail+'.pdf', overwrite=overwrite)#,use_xvfb=True) # ARGH March 2014: I'm getting an error from xvfb. So do it with GUI popping up!
        
     if svg:
         plt.savefig(root+tail+'.svg',transparent=transparent,facecolor=facecolor)
