@@ -640,6 +640,10 @@ def tightBoundingBoxPDF(infile,outfile=None,overwrite=False):
     """
     Uses command line "pdfcrop" on Linux (from tex installation) to clip a PDF to its bounding box.
     Availability of this command (2016) makes the old Inkscape method obselete; in fact this is even more powerful [Well.. not 100% sure of that]
+
+Hey, this looks promising! Otherwise, pdfcrop makes huge files!
+
+http://tex.stackexchange.com/questions/42236/pdfcrop-generates-larger-file
     """
     if outfile is None and overwrite and infile.endswith('.pdf'):
         outfile = infile
@@ -657,8 +661,10 @@ def tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=False,overwrite=False)
     """Makes POSIX-specific OS calls. Need xvfb installed. If it fails anyway, could always resort to use_xvfb=False
 
 Also, see https://github.com/skagedal/svgclip/blob/master/svgclip.py but I find rsvg buggy: it ignored the clipping boxes in my svg.
+
+This would be entirely obselete due to pdfcrop working fine (command line), except that the Inkscape method produces tiny files while the pdfcrop makes them enormous.
  """
-    print('This is obselete. Use  tightBoundingBoxPDF() instead.')
+
     # Why is xvfb failing 2015 still?
 
     #if use_xvfb is None:
@@ -701,9 +707,11 @@ Also, see https://github.com/skagedal/svgclip/blob/master/svgclip.py but I find 
         print(' Overwriting original file!: '+sout)
         os.system(sout)
 
-def tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=False,overwrite=False):
+def _no_tightBoundingBoxInkscape(infile,outfile=None,use_xvfb=False,overwrite=False):
     """ Inkscape no nlonger necessary on Debian-based systems: just use pdfcrop.
     The key to making either work is use savefigall() instead of savefig() (or to set the facecolor and transparent when using savefig)
+
+Actually, this is false: Inkscape still produces small files, while pdfcrop's are huge.
     """
     return tightBoundingBoxPDF(infile,outfile=outfile,overwrite=overwrite)
 
@@ -868,7 +876,7 @@ inkscape -f %(fn)sTMPTMPTMP.svg --verb=FitCanvasToDrawing  --verb=FileSave  --ve
 inkscape -f %(fn)sTMPTMPTMP.svg -A %(fn)s-autotrimmed.pdf
  """%{'fn':root+tail})
 
-            tightBoundingBoxPDF(root+tail+'.pdf', overwrite=overwrite)#,use_xvfb=True) # ARGH March 2014: I'm getting an error from xvfb. So do it with GUI popping up!
+            tightBoundingBoxInkscape(root+tail+'.pdf', overwrite=overwrite)#,use_xvfb=True) # ARGH March 2014: I'm getting an error from xvfb. So do it with GUI popping up!
        
     if svg:
         plt.savefig(root+tail+'.svg',transparent=transparent,facecolor=facecolor)
