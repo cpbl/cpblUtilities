@@ -49,6 +49,7 @@ class OptimizationExplorer:
             if self.xranges is not None:
                 ax.set_xlim(self.xranges[iib])
         self.fig.canvas.draw()
+        print(' Zoom into an axis. Right-click to set a new value for one parameter and initiate a new optimization.')
         
     def __call__(self, event):
         """
