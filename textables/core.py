@@ -27,7 +27,6 @@ def open(fn,mm,encoding='utf-8'): # Replace default "open" to be unicode-safe
     import codecs
     return(codecs.open(fn,mm,encoding=encoding))
 
-
 ###########################################################################################
 ###
 def chooseSFormat(ff,conditionalWrapper=['',''],lowCutoff=None,lowCutoffOOM=True,convertStrings=False,highCutoff=1e8,noTeX=False,sigdigs=4,threeSigDigs=False,se=None, leadingZeros=False):
@@ -54,6 +53,13 @@ se is the standard error. you can just specify that for smarter choices about si
 2014-03 adding leadingZeros: In regression tables, I don't want them. But in general I might.
 
 To do: New parameter sigdigs only implemented for integers so far. And it needs to be reconciled with threeSigDigs (which should become deprecated).  threeSigDigs is really about precision; it corresponds closely/directly to decimal places.
+
+   - N.B.: see new (2016Aug)   format_to_n_sigfigs and round_to_n_sigfigs in mathgraph.py, which should probably be used here.
+   The latter  rounds correctly but does not do the displaying part.
+
+
+
+
 """
     if lowCutoff==None:
         lowCutoff==1.0e-99 # Sometimes "None" is explicitly passed to invoke default value.

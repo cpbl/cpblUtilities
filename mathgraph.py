@@ -6412,6 +6412,31 @@ def remove_underscores_from_figure(fig=None):
         ax.set_xlabel(ax.get_xlabel().replace('_',' '))
         ax.set_ylabel(ax.get_ylabel().replace('_',' '))
         ax.set_title(ax.get_title().replace('_',' '))
-            
+
+
+
+def round_to_n_sigfigs(x,n):
+    """ Return a float (?) rounded to n significant digits.
+ Formatting/displaying the result should be done separately, e.g. with %g or using chooseSFormat
+    """
+    if pd.isnull(x): return(x)
+    return(
+        round(x, -int(np.floor(np.log10(x))) + (n - 1))
+        )
+def format_to_n_sigfigs(x,sigfigs, nanstr='', maxval=None, maxstr='large',minval=None,minstr='0', min_sci_notation=None):
+    """                                                                                                                                                                                                         
+    Not yet implemented: maxval, minval, min_sci_notation                                                                                                                                                       
+    min_sci_notation: for values above this level, use scientific notation to avoid too many zeros in integer representation                                                                                    
+
+    Issues: this still truncates trailing zeros after a decimal.
+    """
+    if min_sci_notation is None: min_sci_notation =np.inf
+
+    x=round_to_n_sigfigs(x,sigfigs)
+    if pd.isnull(x): return(nanstr)
+    if abs(x)>10**sigfigs and abs(x)<min_sci_notation and (maxval is None or abs(x)<maxval): return('%d'%x)                                                                                                     
+    return(('%.'+str(sigfigs)+'g')%x)
+
+        
 if 0:
     localPolynomialRegression(None,None,None,True)
