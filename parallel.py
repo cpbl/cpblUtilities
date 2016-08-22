@@ -8,6 +8,8 @@ We want to
  - Close the queues as functions finish. This is key because otherwise the OS shuts us down for using too many open files.
 
 """
+from datetime import datetime
+
 __author__ = "Chris Barrington-Leigh"
 class pWrapper(): # Maybe if I enclose this in a class, the Garbage Collection will work better?
     def __init__(self,thefunc,theArgs=None,thekwargs=None,delay=None,name=None):
@@ -120,8 +122,6 @@ showFinished= (int) . : Specifies the maximum number of successfully finished jo
 
 2013July: You can now pass os.system or etc to this as the function, with no need for a wrapper: I made use of hasattr(builtinfunction,'func_name') to check for a name.
 
-Bug:
- - "too many files open" if more than ~1000 jobs are given (or whatever is set as your user-level limit for open files).  Function should be rewritten so that the Queues are only created when the instance is being launched. Right now, all queues are created at once at the beginning. [Done: 2015Nov. In testing.]
 
     """
     import numpy as np
@@ -164,7 +164,10 @@ Bug:
         
     assert len(names)==len(listOf_FuncAndArgLists)
 
-    def reportStatus(status, exitcodes,names,showmax,showsuccessful=np.inf):#jobs):
+    def reportStatus(status, exitcodes,names,showmax,showsuccessful=np.inf, previousReportString=''):#jobs):
+        """
+        """
+        outs=''
         ishowable=range(min(len(status), showmax))
         istarted=[ii for ii in range(len(status)) if  status[ii] not in ['dns']]
         isuccess=[ii for ii in ishowable if status[ii] in ['success',0,'0']]
@@ -174,18 +177,22 @@ Bug:
             print(showmax,showsuccessful,earliestSuccess)
             print(len(isuccess)-showsuccessful)
         tableFormatString='%'+str(max([len(name) for name in names]))+'s:\t%10s\t%10s\t%s()'
-        print('\n'+'-'*75+'\n'+ tableFormatString%('Job','Status','Queue','Func',)+ '\n'+'-'*75)
+        outs+= '-'*75+'\n'+ tableFormatString%('Job','Status','Queue','Func',)+ '\n'+'-'*75+'\n'
         # Check that we aren't going to show more *successfully finished* jobs than we're allowed: Find index of nth-last successful one. That is, if the limit binds, we should show the latest N=showsuccessful ones only.
-        print('\n'.join([tableFormatString%(names[ii],status[ii], queuestatus[ii], '(built-in function)' if not hasattr(listOf_FuncAndArgLists[ii][0],'func_name') else listOf_FuncAndArgLists[ii][0].func_name) for ii in ishowable if status[ii] not in ['success',0,'0'] or ii>=earliestSuccess  ]))
+        outs+=  '\n'.join([tableFormatString%(names[ii],status[ii], queuestatus[ii], '(built-in function)' if not hasattr(listOf_FuncAndArgLists[ii][0],'func_name') else listOf_FuncAndArgLists[ii][0].func_name) for ii in ishowable if status[ii] not in ['success',0,'0'] or ii>=earliestSuccess  ]) + '\n'
         if len(isuccess)>showsuccessful: # We don't hide failed jobs, but we do sometimes skip older successful jobs
-            print('%d job%s running. %d other jobs finished successfully.'%(len(irunning), 's'*(len(irunning)!=1), len(isuccess)-showsuccessful))
+            outs+=   '%d job%s running. %d other jobs finished successfully.\n'%(len(irunning), 's'*(len(irunning)!=1), len(isuccess)-showsuccessful)
         else:
-            print('%d job%s running.' % (len(irunning),'s'*(len(irunning)!=1)))
+            outs+=   '%d job%s running.\n' % (len(irunning),'s'*(len(irunning)!=1))
         if len(status)>len(istarted):
-            print('%d more jobs waiting for their turn to start...'%(len(status)-len(istarted))) ##len(sjobs)-len(djobs)))
+            outs+=   '%d more jobs waiting for their turn to start...\n'%(len(status)-len(istarted)) ##len(sjobs)-len(djobs))
         #print('%d open queues...'%len(queues))
-        print('-'*75+'\n')
+        outs+= '-'*75+'\n'
         #return([exitcode(job) for ii,job in enumerate(sjobs)])
+        if outs != previousReportString:
+            print('\n'+datetime.now().strftime("%Y-%m-%d %H:%M:%S")            )
+            print(outs+'\n')
+        return(outs)
 
     def emptyQueues():#jobs,queues,gotQueues):
         for ii,job in enumerate(jobs):
@@ -256,8 +263,10 @@ Bug:
 
     """ Now, wait for all the jobs to finish.  Allow for everything to finish quickly, at the beginning. 
     """
+    lastreport=''
     while any([status[ijj]=='running' for  ijj in range(len(jobs))]) or istart<len(jobs):
         sleepTime=5*(timeElapsed>2) + np.log(1.5+timeElapsed)/2 
+        sleepTime=5*(timeElapsed>2) #+ np.log(1.5+timeElapsed)/2 
         #print('DEBUG: ',n,newStatus,lastStatus,sleepTime)
         if timeElapsed>0:
             time.sleep(1+sleepTime) # Wait a while before next update. Slow down updates for really long runs.
@@ -273,13 +282,13 @@ Bug:
             newjobs+=1
             updateStatus()
             if newjobs>=maxAtOnce:
-                reportStatus(status, exitcodes,names,istart,showFinished) #istart)#jobs)
+                lastreport=reportStatus(status, exitcodes,names,istart,showFinished,   previousReportString=lastreport)
                 newjobs=0
             istart+=1
             timeElapse=.01
 
         updateStatus()
-        reportStatus(status, exitcodes,names,istart,showFinished) #istart)#jobs)
+        lastreport=reportStatus(status, exitcodes,names,istart,showFinished,  previousReportString=lastreport)
         #emptyQueues()#jobs,queues,gotQueues)
 
     #for job in jobs: job.join() # Wait for them all to finish... Hm, Is this needed to get at the Queues?
