@@ -118,8 +118,6 @@ maxFilesAtOnce: Set this below your user limit for how many files you can have o
 
 showFinished= (int) . : Specifies the maximum number of successfully finished jobs to show in reports (before the last, which should always show them all).
 
-2013 Feb: when there's a change in the statuses, update again immediately rather than sleeping.
-
 2013July: You can now pass os.system or etc to this as the function, with no need for a wrapper: I made use of hasattr(builtinfunction,'func_name') to check for a name.
 
 
