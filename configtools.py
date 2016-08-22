@@ -99,7 +99,7 @@ def read_hierarchy_of_config_files(files,config_file_structure, verbose=True):
             if isinstance(adict[kk],dict):
                 reportOrigin(adict[kk], vdict[kk])
             else:
-                print('Used '+adict[kk]+' \t for '+kk+' == '+str(vdict[kk]))
+                print(kk+'\t = \t'+str(vdict[kk])+' :\t (from '+adict[kk]+ ')')
     for ff in files:
         if os.path.exists(ff):
             newConfigDict=readConfigFile(ff,config_file_structure)
