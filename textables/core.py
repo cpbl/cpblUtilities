@@ -522,8 +522,8 @@ def cpblTableStyC(tableElements=None,filepath=None,masterLatexFile=None,
     """%(tE.ncols,tE.firstPageHeader,tE.otherPageHeader,tE.body)  +r"""
     % Default caption:
     \renewcommand{\ctCaption}{"""+tE.CACcomments+r"""}
-    % This .tex file is meant to be called by something from
-    % cpblTables.sty. If it is not, then output something crude:
+    % This .tex file is meant to be called by something from cpblTables.sty. 
+    % If instead it is included directly, output something crude:
     \ifx\@ctUsingWrapper\@empty
     %Code to be executed if the macro is undefined
     \begin{table}
@@ -536,11 +536,10 @@ def cpblTableStyC(tableElements=None,filepath=None,masterLatexFile=None,
     %Code to be executed if the macro IS defined
     \fi
 
-    % Better yet, for version "CA" of cpblTables, define methods so that the format need not be specified in the call.
+    % For "CA" versions of cpblTables, the format need not be specified in the call:
     \renewcommand{\ctStartTabular}{\begin{tabular}{"""+tE.format+r"""}}
     \renewcommand{\ctStartLongtable}{\begin{longtable}[c]{"""+tE.format+r"""}}
     """
-
     if tEt is not None:
         includeTex+=r"""
 

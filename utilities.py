@@ -1486,7 +1486,9 @@ def downloadOpenGoogleDoc(url, filename=None, format=None, pandas=False, update=
         format='xlsx'
     full_file_name        =paths['scratch']+filename
     if update or not os.path.exists(full_file_name):
-        result=os.system(' wget '+url+'export?format='+format+' -O '+full_file_name+'-dl')
+        oss=' wget '+url+'export?format='+format+' -O '+full_file_name+'-dl'
+        print(oss)
+        result=os.system(oss)
         if result:
             print('  NO INTERNET CONNECTION, or other problem grabbing Google Docs file. Using old offline version ('+filename+')...')
         else:

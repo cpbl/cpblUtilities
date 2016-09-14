@@ -3310,9 +3310,13 @@ def transLegend(comments=None,title=None,loc='best',bbox_to_anchor=None,ncol=1,t
 
 
 This can be deprecated, though, in favour of this approach:
-        lh=legend(loc='lower left',ncol=2)
+        lh=legend(loc='lower left',ncol=2, title='Here are the symbols:')
         assert lh is not None
-        addCommentToLegend(r'Bands show 90% confidence intervals', transbg(lh))
+        lh.get_title().set_fontsize(titlefontsize)
+        addCommentToLegend(r'Bands show 90% confidence intervals')
+        transbg(lh)
+
+or , for a title
     """
 #    lh=plt.legend(loc=loc)
 
@@ -6436,11 +6440,29 @@ def format_to_n_sigfigs(x,sigfigs, nanstr='', maxval=None, maxstr='large',minval
     if min_sci_notation is None: min_sci_notation =np.inf
 
     x=round_to_n_sigfigs(x,sigfigs)
+
     if pd.isnull(x): return(nanstr)
-    if abs(x)>10**sigfigs and abs(x)<min_sci_notation and (maxval is None or abs(x)<maxval): return('%d'%x)
+    if abs(x)>10**sigfigs and abs(x)<min_sci_notation and (maxval is None or abs(x)<maxval):        return('%d'%x)
     return(('%.'+str(sigfigs)+'g')%x)
 
-                                                                                                        
+def human_format(x,sigfigs=2):
+    """
+    Round to 2 sig digs, and if large, use SI suffixes to convey large numbers
+    sigfigs !=2 is not yet tested.
+
+    print('the answer is %s' % human_format(7436313))  # prints 'the answer is 7.4M'
+    """
+    magnitude = 0
+    while abs(x) >= 1000:
+        magnitude += 1
+        x /= 1000.0
+    # add more suffixes if you need them
+    return(format_to_n_sigfigs(x,sigfigs)+['', 'k', 'M', 'G', 'T', 'P'][magnitude])
+    assert 'e' not in  ('%.'+str(sigfigs)+'g%s')%(x, ['', 'k', 'M', 'G', 'T', 'P'][magnitude])
+    return ('%.'+str(sigfigs)+'g%s')%(x, ['', 'k', 'M', 'G', 'T', 'P'][magnitude])
+    
+
+
 
         
 if 0:
