@@ -52,8 +52,8 @@ parallel = True
 """
 import os,copy
 # Following seems amazing. Shouldn't I just get these from cpblUtilities_config? 
-from .utilities import dsetset,dgetget,merge_dictionaries, read_hierarchy_of_config_files
-def readConfigFile(inpath, config_file_structure):
+from .utilities import dsetset,dgetget,merge_dictionaries, read_hierarchy_of_config_files,readConfigFile
+def __readConfigFile(inpath, config_file_structure):
     """
     """
     import ConfigParser
