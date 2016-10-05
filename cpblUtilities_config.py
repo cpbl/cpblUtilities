@@ -1,8 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import os, re, sys, copy
-"""
-This module provides dicts paths and defaults, which contain any parameters needed by multiple other modules.
+"""This module provides dicts paths and defaults, which contain any parameters needed by multiple other modules.
 These parameters are generally unchanging over time, but may vary from one installation/environment to another.
 
 There are four places these config settings could be set. In order of priority:
@@ -16,8 +15,13 @@ There are four places these config settings could be set. In order of priority:
  - Specify structure of file.
  - Load cascaded values from config files.
  - Then rearrange as we need to put them into the dict arrays paths and defaults.
+
+Note that some key functions located in other modules of cpblUtilities are reproduced
+here, in order to avoid circular dependencies. e.g. dsetset, dgetget,
+and even a version of read_hierarchy_of_config_files()
+
 """
-config_file_structure={
+UTILS_config_file_structure={
     'paths': [
         'working',
         'input',
@@ -37,8 +41,32 @@ config_file_structure={
 
 
 # The file config-template.cfg contains an example of a file which should be renamed config.cfg
+def readConfigFile(inpath, config_file_structure):
+    """
+    """
+    import ConfigParser
+    config = ConfigParser.SafeConfigParser({'pwd': os.getcwd(),'cwd': os.getcwd()})
+    config.read(inpath)
+    outdict={}
+    for section in     config_file_structure:
+        if config.has_section(section):
+            for option in config_file_structure[section]:
+                if config.has_option(section,option  if isinstance(option,str) else option[0]):
+                    if isinstance(option,str):
+                        dsetset(outdict,(section,option), config.get(section,option))
+                    elif option[1]==bool:
+                        dsetset(outdict,(section,option[0]), config.getboolean(section,option[0]))
+                    elif option[1]==int:
+                        dsetset(outdict,(section,option[0]), config.getint(section,option[0]))
+                    elif option[1]==float:
+                        dsetset(outdict,(section,option[0]), config.getfloat(section,option[0]))
+                    elif option[1]=='commasep':
+                        dsetset(outdict,(section,option[0]), config.get(section,option[0]).split(','))
+                    else:
+                        raise('Do not know config value type '+str(option[1]))
+    return(outdict)
 
-def readConfigFile(inpath):
+def _notgeneral_readConfigFile(inpath):
     import ConfigParser
     config = ConfigParser.SafeConfigParser({'pwd': os.getcwd(),'cwd': os.getcwd()})
     config.read(inpath)
@@ -133,7 +161,12 @@ If not False, verboseSource must be a string, which denotes the updating source 
         print result
     return result
 
-def read_hierarchy_of_config_files(files):
+
+def _co_read_hierarchy_of_config_files(files):
+    """
+    There is a more general version of this in configtools, which is used by other modules. But I can't use that one because these modules would be cross-dependent
+    
+    """
     configDict={}
     for ff in files:
         if os.path.exists(ff):
@@ -144,6 +177,46 @@ def read_hierarchy_of_config_files(files):
     if not configDict:
         raise Exception("Cannot find config[-template].cfg file in "+', '.join(files))
     return configDict
+
+def read_hierarchy_of_config_files(files,config_file_structure, verbose=True):
+    """
+    Reads a sequence of config files, successively updating a dict of config settings.
+    Returns the dict.
+
+    if verbose is True, it also reports file was the last to set each setting.
+
+    Note that there is also a verboseSource feature in merge_dictionaries, which reports updating as it goes, but this is less useful than the verbose behaviour given here.
+    """
+    configDict={}
+    configDictOrigins={}
+    def setOrigin(filename,adict):
+        for kk in adict:
+            if isinstance(adict[kk],dict):
+                setOrigin(filename,adict[kk])
+            else:
+                adict[kk]=filename
+    def reportOrigin(adict, vdict):
+        for kk in adict:
+            if isinstance(adict[kk],dict):
+                reportOrigin(adict[kk], vdict[kk])
+            else:
+                print(kk+'\t = \t'+str(vdict[kk])+' :\t (from '+adict[kk]+ ')')
+    for ff in files:
+        if os.path.exists(ff):
+            newConfigDict=readConfigFile(ff,config_file_structure)
+            if verbose:
+                newConfigOrigins=copy.deepcopy(newConfigDict)
+                setOrigin(ff,newConfigOrigins)
+                configDictOrigins=merge_dictionaries(configDictOrigins,newConfigOrigins)
+            configDict=merge_dictionaries(configDict,newConfigDict, verboseSource=False) #False if not verbose else ff) #bool(configDict))
+
+    
+    if not configDict:
+        raise Exception("Cannot find config[-template].cfg file in "+', '.join(files))
+    if verbose:
+        reportOrigin(configDictOrigins, configDict)
+    return configDict
+
 
 def main():
     """
@@ -163,12 +236,13 @@ def main():
     repoTemplateFile=(repoPath if repoPath else '.')+'/config-template.cfg'
 
 
+    print('cpblUtilities setting defaults:')
     merged_dictionary=read_hierarchy_of_config_files([
         repoTemplateFile,
         repoFile,
         localConfigTemplateFile,
         localConfigFile,
-    ])
+    ], UTILS_config_file_structure)
 
     # Now impose our structure
     defaults=dict([[kk,vv] for kk,vv in merged_dictionary.items() if kk in ['rdc','mode']])
