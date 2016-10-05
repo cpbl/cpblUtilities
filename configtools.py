@@ -51,8 +51,9 @@ parallel = True
 
 """
 import os,copy
-from .utilities import dsetset,dgetget,merge_dictionaries
-def readConfigFile(inpath, config_file_structure):
+# Following seems amazing. Shouldn't I just get these from cpblUtilities_config? 
+from .utilities import dsetset,dgetget,merge_dictionaries, read_hierarchy_of_config_files,readConfigFile
+def __readConfigFile(inpath, config_file_structure):
     """
     """
     import ConfigParser
@@ -77,7 +78,7 @@ def readConfigFile(inpath, config_file_structure):
                         raise('Do not know config value type '+str(option[1]))
     return(outdict)
 
-def read_hierarchy_of_config_files(files,config_file_structure, verbose=True):
+def tmp_read_hierarchy_of_config_files(files,config_file_structure, verbose=True):
     """
     Reads a sequence of config files, successively updating a dict of config settings.
     Returns the dict.
