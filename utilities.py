@@ -1159,7 +1159,10 @@ if 0:
         pass
 
 
-def doSystemLatex_newdraft2016(fname, texcode=None):#,latexPath=None,launch=None,launchViewer=None,tex=None,viewLatestSuccess=True,bgCompile=True,fgCompile=False):
+def doSystemLatex(fname, texcode=None,
+                  launchDaemon=False, # keep watching for the source file to change
+):
+    #,latexPath=None,launch=None,launchViewer=None,tex=None,viewLatestSuccess=True,bgCompile=True,fgCompile=False):
     """
     Version 2 / from scratch. I'm eliminating arguments which can be taken from config file defaults. Focus on POSIX systems only.
     fname: either a fully-specified path to a .tex file, or a .tex filename located in the defaults['paths']['tex'] folder
@@ -1225,22 +1228,22 @@ John
     if not os.path.exists(tmpLatexPath):
         os.mkdir(tmpLatexPath)
     assert os.path.exists(latexPath+fname+'.tex')
-    # -c is really an alternative to using the aux-directory ?
-    cli=""" latexmk -cd -pdf -aux-directory=%(auxdir)s %(fullpath)s  """%dict(auxdir=latexPath+'tmpTEX',fullpath=latexPath+fname)
-     #latexmk -c -pdf -aux-directory=%(auxdir)s %(fullpath)s 
-    print(cli)#.replace('latexmk','latexmk -commands '))
-    os.system(cli)
-    # Give up; for now, follow up on horribly broken latexmk to do another compile: But this is straight to the output file, which will make viewers crash a lot. The following is really horrible:
-    #/dev/null 2>&1
-    cli=r""" cd %(lpath)s 
-            pdflatex %(fname)s  |grep -i "Rerun \|Error\|Output written\|Fatal"  & """%dict(auxdir=latexPath+'tmpTEX',fullpath=latexPath+fname, lpath=latexPath, fname=fname)
-    os.system(cli)
-
+    if 1*"Use newest features of latexmk":
+        # Use -cd option of latexmk, and assume that we want it compiled whereever the .tex file is, but in the local subfolder tmpTEX
+        # -pvc should be optionalized here!
+        # Insert " -commands " in the following for debuggin
+        cli=""" latexmk -silent  -cd -pdf %(fullpath)s --output-directory=tmpTEX %(pvc)s   && cp -a %(latexfolder)stmpTEX/%(texfn)s.pdf %(latexfolder)s%(texfn)s.pdf """%dict(auxdir=latexPath+'tmpTEX',fullpath=latexPath+fname, latexfolder=latexPath, pvc=' -pvc '*launchDaemon, texfn=fname)
+        print(cli)
+        os.system(cli)
+        # Only want to do following if success. How to tell?
+        os.system('evince '+latexPath+fname+'.pdf&') # Don't use latexmk's -v because that will view the version in tmpTEX
+    elif "Use own kludges":
+        notnecyay
     return
 
 ###########################################################################################
 ###
-def doSystemLatex(fname,latexPath=None,launch=None,launchViewer=None,tex=None,viewLatestSuccess=True,bgCompile=True,fgCompile=False):
+def doSystemLatex_pre2016(fname,latexPath=None,launch=None,launchViewer=None,tex=None,viewLatestSuccess=True,bgCompile=True,fgCompile=False):
     ###
     #######################################################################################
     """
@@ -1266,6 +1269,7 @@ So there should be no way to run that doesn't result in compiling, one way or an
 
 Dec 2010: I don't think I know how to check for local display after all! make yet another argument. Or rely on config settings? or try/except
 
+Oct 2016: Above sounds like a mess. This 
     """
     ppa,ppb=os.path.split(fname)
     assert latexPath is None or ppa ==''
@@ -1340,8 +1344,10 @@ Dec 2010: I don't think I know how to check for local display after all! make ye
     import socket
     whereami=socket.gethostbyaddr(socket.gethostname())
     os.system('bash %s &'%texsh)    
+
+    # Now run a viewer for the resulting PDF: But this is not just a viewer. Is the line above a kludge?
     print 'shellDisplayV=',shellDisplayV
-    if ':0.0' in shellDisplayV and bgCompile:#'cpbl-server' in whereami[0]:
+    if (':0.0' in shellDisplayV or ':0' in shellDisplayV) and bgCompile:#'cpbl-server' in whereami[0]:
         #print 'Compiling LaTeX: '+fname+'...'
         #print os.system('gnome-terminal -e "bash %s" &'%texsh)
         #os.system('bash %s &'%texsh)
@@ -1351,9 +1357,10 @@ Dec 2010: I don't think I know how to check for local display after all! make ye
             print os.system('sleep 2&evince '+latexPath+fname+'.pdf&')
         elif  launchViewer:
             print os.system('sleep 2&evince '+tmpLatexPath+fname+'-tmp.pdf&')
-    elif fgCompile or ':0.0' in shellDisplayV:
+    elif fgCompile or ':0.0' in shellDisplayV  or ':0' in shellDisplayV:
         print 'Calling in foreground: '+texsh
         print os.system('bash %s '%texsh)
+        print os.system('sleep 2&evince '+latexPath+fname+'.pdf&')
 
     else:
         print 'Suppressing launch of PDF viewer due to non local X terminal.'

@@ -4,6 +4,8 @@
 """
 Lessons from doing tricky multi-variate optimization
  (n.b., cpbl: Also see osm_history.py)
+
+( n.b., cpbl: Also maybe see nested_optimization.py in continuousScales)
 """
 import numpy as np
 import pylab as plt

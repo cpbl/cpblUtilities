@@ -777,7 +777,7 @@ Is transparent obselete, ie don't I always want it on? Maybe sometimes png was c
 rv=True
 rv=False
 rv="both" and rv=None
-
+2016 Sept: pdf output does not have transparency with "rv". Why?
 
 June 2013: I still think use of facecolor and transparent in savefig is horribly buggy. I'm getting blue borders around all my figures now, except with rv. :(
 
