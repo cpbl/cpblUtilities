@@ -225,8 +225,8 @@ The return value is the full svg text with colorbar added.
     hbax=addColorbarNonImage(data2color,ylabel=colorbar_ylabel) # data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None):
     plt.setp(hax,'visible',False) # In fact, I think I've seen example where this hax was even in a different figure, already closed!
     hbax.ax.set_aspect(colorbar_aspectratio)
+    plt.savefig(CBfilename+'.svg', bbox_inches='tight', pad_inches=0.1) # What is this for?2015April  #@cpbl: it is needed below, but I'm not sure why we need to save and reload
     if 0: 
-        plt.savefig(CBfilename+'.svg', bbox_inches='tight', pad_inches=0.1) # What is this for?2015April
         plt.savefig(CBfilename+'.png', bbox_inches='tight', pad_inches=0.1) # for testing
     # Or, I can just grab it directly!  So above saving is no longer needed, except that I want one colorbar created at some point for each standard variable...
     from svgutils.transform import from_mpl
@@ -272,6 +272,7 @@ The return value is the full svg text with colorbar added.
     # else: # Use cblocation values
     # get the plot objects from constituent figures.
     cbsvg=sg.fromfile(CBfilename+'.svg')
+    os.remove(CBfilename+'.svg') # no longer needed
     svg1,svg2 = base_svg.getroot(),cbsvg.getroot()
     """
     if cblocation['movebartox']=='auto':
