@@ -2181,7 +2181,7 @@ def axisNearlyTight(ax=None):
         ylim(min(ylim())-yr/20.0,max(ylim())+yr/20.0)
 
 
-def figureFontSetup(uniform=12,figsize='paper'):
+def figureFontSetup(uniform=12,figsize='paper', amsmath=True):
     """
 Set font size settings for matplotlib figures so that they are reasonable for exporting to PDF to use in publications / presentations..... [different!]
 If not for paper, this is not yet useful.
@@ -2231,8 +2231,12 @@ n.b.  a clf() erases size settings on a figure!
            'ytick.labelsize': uniform,
            'text.usetex': True,
            'text.latex.unicode': True,
+            'text.latex.preamble':r'\usepackage{amsmath},\usepackage{amssymb}',
            'figure.figsize': figsize
            }
+        if not amsmath:
+            params.update({'text.latex.preamble':''})
+
     plt.rcParams.update(params)
     plt.rcParams['text.latex.unicode']=True
     #if figsize:
