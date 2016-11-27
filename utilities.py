@@ -1094,7 +1094,8 @@ def shelfSave(outfilepath,anobj):
     import shelve
     if not outfilepath.endswith('elf'):
         outfilepath+='.pyshelf'
-    os.remove(outfilepath) # It seems it's otherwise not necessarily updated?! 
+    if os.path.exists(outfilepath):
+        os.remove(outfilepath) # It seems it's otherwise not necessarily updated?! 
     fid=shelve.open(outfilepath)
     fid['object']=anobj
     fid.close()
