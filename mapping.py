@@ -225,8 +225,9 @@ The return value is the full svg text with colorbar added.
     hbax=addColorbarNonImage(data2color,ylabel=colorbar_ylabel) # data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None):
     plt.setp(hax,'visible',False) # In fact, I think I've seen example where this hax was even in a different figure, already closed!
     hbax.ax.set_aspect(colorbar_aspectratio)
-    plt.savefig(CBfilename+'.svg', bbox_inches='tight', pad_inches=0.1) # What is this for?2015April
-    plt.savefig(CBfilename+'.png', bbox_inches='tight', pad_inches=0.1) # for testing
+    plt.savefig(CBfilename+'.svg', bbox_inches='tight', pad_inches=0.1) # What is this for?2015April  #@cpbl: it is needed below, but I'm not sure why we need to save and reload
+    if 0: 
+        plt.savefig(CBfilename+'.png', bbox_inches='tight', pad_inches=0.1) # for testing
     # Or, I can just grab it directly!  So above saving is no longer needed, except that I want one colorbar created at some point for each standard variable...
     from svgutils.transform import from_mpl
     cbsvg=sg.from_mpl(plt.gcf()) 
@@ -271,6 +272,7 @@ The return value is the full svg text with colorbar added.
     # else: # Use cblocation values
     # get the plot objects from constituent figures.
     cbsvg=sg.fromfile(CBfilename+'.svg')
+    os.remove(CBfilename+'.svg') # no longer needed
     svg1,svg2 = base_svg.getroot(),cbsvg.getroot()
     """
     if cblocation['movebartox']=='auto':
@@ -325,10 +327,18 @@ The return value is the full svg text with colorbar added.
 
     plt.close(6354)
     try: # Some old version don't have to_str()
-        return(base_svg.to_str())
+        svgstr = base_svg.to_str()
     except AttributeError:
-        return(open(outfilename,'r').read())
-
+        with open(outfilename, 'r') as f:
+            svgstr = f.read()
+            
+    for fhandle, fname in [(tmpfh,insvgfn),(tmpfinalfh,outfilename),(tmpcbfh,CBfilename)]:
+        try:
+            os.close(fhandle) # see http://stackoverflow.com/questions/9944135/how-do-i-close-the-files-from-tempfile-mkstemp
+            os.remove(fname)
+        except NameError: # we didn't open them
+            pass
+    return svgstr
     
 def colors_for_filling_svg(geo2data_or_color=None, data2color=None,
                  demo=False,colorbarlimits=None):
