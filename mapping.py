@@ -228,9 +228,8 @@ The return value is the full svg text with colorbar added.
     hbax=addColorbarNonImage(data2color,ylabel=colorbar_ylabel) # data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None):
     plt.setp(hax,'visible',False) # In fact, I think I've seen example where this hax was even in a different figure, already closed!
     hbax.ax.set_aspect(colorbar_aspectratio)
-    if colorbar_filename is not None: # save for future use, as requested by function call
-        plt.savefig(CBfilename+'.svg', bbox_inches='tight', pad_inches=0.1) 
-        #plt.savefig(CBfilename+'.png', bbox_inches='tight', pad_inches=0.1) # for testing
+    plt.savefig(CBfilename+'.svg', bbox_inches='tight', pad_inches=0.1) 
+    #plt.savefig(CBfilename+'.png', bbox_inches='tight', pad_inches=0.1) # for testing
     # Or, I can just grab it directly!  So above saving is no longer needed, except that I want one colorbar created at some point for each standard variable...
     from svgutils.transform import from_mpl
     cbsvg=sg.from_mpl(plt.gcf()) 
@@ -275,7 +274,7 @@ The return value is the full svg text with colorbar added.
     # else: # Use cblocation values
     # get the plot objects from constituent figures. I don't know why using the cbsvg from above doesn't work
     cbsvg=sg.fromfile(CBfilename+'.svg')
-    os.remove(CBfilename+'.svg') # no longer needed
+    if colorbar_filename is None: os.remove(CBfilename+'.svg') # no longer needed
     svg1,svg2 = base_svg.getroot(),cbsvg.getroot()
     """
     if cblocation['movebartox']=='auto':
