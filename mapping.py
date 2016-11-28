@@ -192,13 +192,10 @@ The return value is the full svg text with colorbar added.
         insvgfn=svgtext_or_filename
     else:
         tmpfh,insvgfn=tempfile.mkstemp()
-        with open(insvgfn,'w') as fout:
-            fout.write(svgtext_or_filename)
-    if colorbar_filename is None:
-        tmpcbfh,CBfilename=tempfile.mkstemp() #scratchpath+os.path.split(outfilename)[1]+'-tmpCB.svg'
-    else:
-        CBfilename=colorbar_filename
+        os.write(tmpfh, svgtext_or_filename)
+        os.close(tmpfh) # see http://stackoverflow.com/questions/9944135/how-do-i-close-the-files-from-tempfile-mkstemp
     tmpfinalfh,outfilename=tempfile.mkstemp()
+    os.close(tmpfinalfh) # see #153. Otherwise, we have a file descriptor leak. But this way we get the file name
 
     # Load svg into svgutils; determine units of the layout
     base_svg=sg.fromfile(insvgfn)
@@ -225,9 +222,9 @@ The return value is the full svg text with colorbar added.
     hbax=addColorbarNonImage(data2color,ylabel=colorbar_ylabel) # data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None):
     plt.setp(hax,'visible',False) # In fact, I think I've seen example where this hax was even in a different figure, already closed!
     hbax.ax.set_aspect(colorbar_aspectratio)
-    plt.savefig(CBfilename+'.svg', bbox_inches='tight', pad_inches=0.1) # What is this for?2015April  #@cpbl: it is needed below, but I'm not sure why we need to save and reload
-    if 0: 
-        plt.savefig(CBfilename+'.png', bbox_inches='tight', pad_inches=0.1) # for testing
+    if colorbar_filename is not None: # save for future use, as requested by function call
+        plt.savefig(colorbar_filename+'.svg', bbox_inches='tight', pad_inches=0.1) 
+        #plt.savefig(colorbar_filename+'.png', bbox_inches='tight', pad_inches=0.1) # for testing
     # Or, I can just grab it directly!  So above saving is no longer needed, except that I want one colorbar created at some point for each standard variable...
     from svgutils.transform import from_mpl
     cbsvg=sg.from_mpl(plt.gcf()) 
@@ -271,8 +268,7 @@ The return value is the full svg text with colorbar added.
 
     # else: # Use cblocation values
     # get the plot objects from constituent figures.
-    cbsvg=sg.fromfile(CBfilename+'.svg')
-    os.remove(CBfilename+'.svg') # no longer needed
+
     svg1,svg2 = base_svg.getroot(),cbsvg.getroot()
     """
     if cblocation['movebartox']=='auto':
@@ -332,12 +328,9 @@ The return value is the full svg text with colorbar added.
         with open(outfilename, 'r') as f:
             svgstr = f.read()
             
-    for fhandle, fname in [(tmpfh,insvgfn),(tmpfinalfh,outfilename),(tmpcbfh,CBfilename)]:
-        try:
-            os.close(fhandle) # see http://stackoverflow.com/questions/9944135/how-do-i-close-the-files-from-tempfile-mkstemp
-            os.remove(fname)
-        except NameError: # we didn't open them
-            pass
+    for fname in [insvgfn, outfilename]:
+        if os.path.exists(fname):  os.remove(fname)
+            
     return svgstr
     
 def colors_for_filling_svg(geo2data_or_color=None, data2color=None,
