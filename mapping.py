@@ -197,6 +197,12 @@ The return value is the full svg text with colorbar added.
     tmpfinalfh,outfilename=tempfile.mkstemp()
     os.close(tmpfinalfh) # see #153. Otherwise, we have a file descriptor leak. But this way we get the file name
 
+    if colorbar_filename is None:
+        tmpcbfh,CBfilename=tempfile.mkstemp()
+        os.close(tmpcbfh)
+    else:
+        CBfilename = colorbar_filename
+        
     # Load svg into svgutils; determine units of the layout
     base_svg=sg.fromfile(insvgfn)
     def _getSizeWithUnits(svgbase):
@@ -223,8 +229,8 @@ The return value is the full svg text with colorbar added.
     plt.setp(hax,'visible',False) # In fact, I think I've seen example where this hax was even in a different figure, already closed!
     hbax.ax.set_aspect(colorbar_aspectratio)
     if colorbar_filename is not None: # save for future use, as requested by function call
-        plt.savefig(colorbar_filename+'.svg', bbox_inches='tight', pad_inches=0.1) 
-        #plt.savefig(colorbar_filename+'.png', bbox_inches='tight', pad_inches=0.1) # for testing
+        plt.savefig(CBfilename+'.svg', bbox_inches='tight', pad_inches=0.1) 
+        #plt.savefig(CBfilename+'.png', bbox_inches='tight', pad_inches=0.1) # for testing
     # Or, I can just grab it directly!  So above saving is no longer needed, except that I want one colorbar created at some point for each standard variable...
     from svgutils.transform import from_mpl
     cbsvg=sg.from_mpl(plt.gcf()) 
@@ -267,8 +273,9 @@ The return value is the full svg text with colorbar added.
 #
 
     # else: # Use cblocation values
-    # get the plot objects from constituent figures.
-
+    # get the plot objects from constituent figures. I don't know why using the cbsvg from above doesn't work
+    cbsvg=sg.fromfile(CBfilename+'.svg')
+    os.remove(CBfilename+'.svg') # no longer needed
     svg1,svg2 = base_svg.getroot(),cbsvg.getroot()
     """
     if cblocation['movebartox']=='auto':
