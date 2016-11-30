@@ -1449,6 +1449,26 @@ def pandasReadTSV(tsvF,dtypeoverrides=None):
         dataDF=pd.read_table(fn,dtype=dt)
     return(dataDF)
 
+def google_api_spreadsheet_to_pandas(credentials_json_file_or_dict, spreadsheetname, tabname):
+    """
+    Follow the directions here and linked here: https://github.com/burnash/gspread
+    You'll need to share your doc with the strange email address in your credentials file.
+    """
+    import gspread # Installed with pip!  "pip install --user gspread "
+    from oauth2client.service_account import ServiceAccountCredentials # Installed with pip!  "pip install --user oauth2client"
+    scope = ['https://spreadsheets.google.com/feeds']
+    if isinstance(credentials_json_file_or_dict,dict):
+        credentials = ServiceAccountCredentials.from_json_keyfile_dict(google_api_credentials, scope)
+    else:
+        credentials = ServiceAccountCredentials.from_json_keyfile_something(google_api_credentials, scope)
+        
+    gc = gspread.authorize(credentials)
+    wks = gc.open(spreadsheetname).worksheet(tabname)
+    dfe=pd.DataFrame(wks.get_all_values())
+    dfe.columns=dfe.iloc[1,:]
+    dfe=dfe.iloc[2:]
+    return(dfe)
+
 def ods2pandas(infile,sheetname=None,tmpfile=None,skiprows=None, forceUpdate=False):#,header=None):
     """
     Pandas still cannot read ODF (grr)
