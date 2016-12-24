@@ -1458,16 +1458,16 @@ def google_api_spreadsheet_to_pandas(credentials_json_file_or_dict, spreadsheetn
     from oauth2client.service_account import ServiceAccountCredentials # Installed with pip!  "pip install --user oauth2client"
     scope = ['https://spreadsheets.google.com/feeds']
     if isinstance(credentials_json_file_or_dict,dict):
-        credentials = ServiceAccountCredentials.from_json_keyfile_dict(google_api_credentials, scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_dict(credentials_json_file_or_dict, scope)
     else:
-        credentials = ServiceAccountCredentials.from_json_keyfile_something(google_api_credentials, scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_json_file_or_dict, scope)
         
     gc = gspread.authorize(credentials)
     wks = gc.open(spreadsheetname).worksheet(tabname)
-    dfe=pd.DataFrame(wks.get_all_values())
-    dfe.columns=dfe.iloc[1,:]
-    dfe=dfe.iloc[2:]
-    return(dfe)
+    df=pd.DataFrame(wks.get_all_values())
+    df.columns=df.iloc[0,:]
+    df=df.iloc[1:]
+    return(df)
 
 def ods2pandas(infile,sheetname=None,tmpfile=None,skiprows=None, forceUpdate=False):#,header=None):
     """

@@ -6388,24 +6388,26 @@ def get_vertical_repulsion(bboxes):
                 shifts[ii2]=-onehigher
     return(shifts)
 
-def resolve_overlaps_vertical(artists,fig=None,shiftResolution=.1):
+def resolve_overlaps_vertical(artists,fig=None,shiftResolution=.1, animate=False):
     if fig is None:
         fig=plt.gcf()
     shifts=[1]
     ShiftResolution=.2
     hvIndex=1 # ie vertical; 0=horizontal
-    plt.show()
     while any(shifts):
         plt.draw()
         #raw_input()
         bboxes=get_text_bounding_box(fig,artists)
         shifts=get_vertical_repulsion(bboxes)
-        print shifts
+        #print shifts
         #stext=[]
         for iis,sh in enumerate(shifts):
             #print stext[iis].get_window_extent()
             artists[iis].set_y(artists[iis].get_position()[hvIndex]+sh*ShiftResolution)
             #print stext[iis].get_window_extent()
+            if animate:
+                plt.show(), plt.draw()
+
 
 
 def remove_underscores_from_figure(fig=None):
