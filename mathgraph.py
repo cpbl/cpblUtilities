@@ -3961,7 +3961,7 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,ax = None, fig=
             fig=plt.gcf()
         if clearfig:
             clf()
-        ax = add_subplot(111)
+        ax = fig.add_subplot(111)
     dfn=adf
     if not len(dfn):
         print('Skipping a histogram with no data...')
@@ -4011,25 +4011,18 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,ax = None, fig=
         a2_b=np.array(layerDepth[np.where(bins[1:]>=1950)])
         layerDepth=np.concatenate([a2_a,a2_b])
         return(layerDepth[Nbox-1:],bins[Nbox-1:])
-        
+
+    import time
     sofar=0
-    print('  About to gropuby')
+    print('  About to groupby')
+    print(len(dfn.groupby('cvar1')))
     for yy,adf in dfn.groupby('cvar1'):#allyears:
-        # 201703: neg 1e-17 color vales break this:
-        adf.color=adf.color.map(lambda ff: np.maximum(ff,0*ff))
-        
-        #a1,b1=np.histogram(dfn[dfn.cvar1==yy][pvar],bins=bb)
+        # 201703: neg 1e-17 color vales break this. And updating adf.color rather than making a temp variable causes some strange bug which grinds Python to a halt after many of these.[201703]
+        tmpcolor = adf.color.map(lambda ff: np.maximum(ff,0*ff))
         a1,b1=np.histogram(adf[pvar],bins=bb)
-        # June2014: I had to add the .values now, yet this worked before?!:
-        #plt.hist(dfn[dfn.cvar1==yy][pvar].values,bins=bb,bottom=sofar,edgecolor='none',color=colors[yy])#,width=width)
-        if 0 and customSmoothing is not None:
-            a1,b1=customSmoothing(a1,b1)
-        # Adam (2014, sprawl project) wanted to smooth layers over a subrange of the x axis. But then we have to plot ourselves, rather than using hist(). I'm abandoning this for now.
-        # These are all the same color. so
-
-
         # Following fails if len(adf.color)==1   [2017-03]
-        ax.hist(adf[pvar].values,bins=bb, bottom=sofar,edgecolor='none',color=adf.color.values[0] if len(adf.color)>1 else np.array([adf.color.values[0]]))#,width=width)
+        #ax.hist(adf[pvar].values,bins=bb, bottom=sofar,edgecolor='none',color=adf.color.values[0] if len(adf.color)>1 else np.array([adf.color.values[0]]))#,width=width)
+        ax.hist(adf[pvar].values,bins=bb, bottom=sofar,edgecolor='none',color=tmpcolor.values[0] if len(tmpcolor)>1 else np.array([tmpcolor.values[0]]))#,width=width)
         sofar+=a1
     ylabel('Number')# of streets (edges)')
     xlabel(pvar)
