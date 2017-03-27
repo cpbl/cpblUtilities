@@ -788,7 +788,11 @@ dpi:  Resolution used for png format only.
 Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pdf and png work okay.
 """
     #transparent=True # Huh? 2013 June: commenting this out.
-
+    bbox_inches="tight"
+    pad_inches=0
+    if FitCanvasToDrawing:
+        print("2017Jan: I don't think this Inkscape use is needed anymore. bbox_inches and pad_inches in savefig do the job.")
+        raw_input('acknowlege:')
     (root,tail)=os.path.split(fn)
     if bw:
         savefigall(fn,transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv,facecolor=facecolor, )
@@ -837,7 +841,7 @@ Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pd
     if ifany:
         if not plt.findobj(match=ifany):
             print '   savefigall: Empty plot (no %s), so not saving %s.'%(str(ifany),root+tail)
-            plt.savefig(root+tail+'.png.FAILED',format='png',facecolor=facecolor)
+            plt.savefig(root+tail+'.png.FAILED',format='png',facecolor=facecolor, bbox_inches=bbox_inches, pad_inches=pad_inches)
             if pauseForMissing:
                 plt.show()
                 from cpblUtilities import cwarning
@@ -846,24 +850,24 @@ Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pd
 
     def stupidOnlyUseGivenArguments(name,transparent=None,facecolor=None): #June 2013
         if transparent and facecolor in ['None','none',None,False]:
-            fig.savefig(name,transparent=transparent,dpi=dpi)
+            fig.savefig(name,transparent=transparent,dpi=dpi, bbox_inches=bbox_inches, pad_inches=pad_inches)
         elif  transparent:
-            fig.savefig(name,transparent=transparent,facecolor=facecolor,dpi=dpi)
+            fig.savefig(name,transparent=transparent,facecolor=facecolor,dpi=dpi, bbox_inches=bbox_inches, pad_inches=pad_inches)
         elif  facecolor in ['None','none',None,False]:
-            fig.savefig(name,dpi=dpi)
+            fig.savefig(name,dpi=dpi, bbox_inches=bbox_inches, pad_inches=pad_inches)
         else:
-            fig.savefig(name,facecolor=facecolor,dpi=dpi)
+            fig.savefig(name,facecolor=facecolor,dpi=dpi, bbox_inches=bbox_inches, pad_inches=pad_inches)
         
     print 'Saving graphics: '+root+tail+' (+ext)'
     stupidOnlyUseGivenArguments(root+tail+'.png',transparent=transparent,facecolor=facecolor)
 
     if eps:
         try: # Damn. Feb 2012 postscript is crashing.
-            plt.savefig(root+tail+'.eps',transparent=transparent,facecolor=facecolor)
+            plt.savefig(root+tail+'.eps',transparent=transparent,facecolor=facecolor, bbox_inches=bbox_inches, pad_inches=pad_inches)
         except:
             print('*****************\n\n\n\n\nFAILED TO PRODUCE AN EPS\n\n\n\n\n***********')
     if pdf and not onlyPNG: # What?! I don't have to use stupidOnlyUseGivenArguments here? If I did it for PNG, everything's fine?
-        plt.savefig(root+tail+'.pdf',transparent=transparent,facecolor=facecolor)
+        plt.savefig(root+tail+'.pdf',transparent=transparent,facecolor=facecolor, bbox_inches=bbox_inches, pad_inches=pad_inches)
         if FitCanvasToDrawing:
             #from cpblUtilities import doSystem
             #"""
@@ -879,7 +883,7 @@ inkscape -f %(fn)sTMPTMPTMP.svg -A %(fn)s-autotrimmed.pdf
             tightBoundingBoxInkscape(root+tail+'.pdf', overwrite=overwrite)#,use_xvfb=True) # ARGH March 2014: I'm getting an error from xvfb. So do it with GUI popping up!
        
     if svg:
-        plt.savefig(root+tail+'.svg',transparent=transparent,facecolor=facecolor)
+        plt.savefig(root+tail+'.svg',transparent=transparent,facecolor=facecolor, bbox_inches=bbox_inches, pad_inches=pad_inches)
     if tikz:
         from matplotlib2tikz import save as tikz_save
         tikz_save(root+tail+'_tikz.tex', figureheight='\\figureheight', figurewidth='\\figurewidth' )
@@ -887,7 +891,7 @@ inkscape -f %(fn)sTMPTMPTMP.svg -A %(fn)s-autotrimmed.pdf
         # jpeg Not supported by pylab!!
         #plt.savefig(root+tail+'.jpeg')#transparent=True)
         # 2013: I think jpeg is supported now. But "quality" keyword may not be.
-        plt.savefig(root+tail+'.jpeg',transparent=transparent,facecolor=facecolor)
+        plt.savefig(root+tail+'.jpeg',transparent=transparent,facecolor=facecolor, bbox_inches=bbox_inches, pad_inches=pad_inches)
         #os.system('convert '+ root+tail+'.png '+root+tail+'.jpeg'+' &'*('apollo' in os.uname()[1]))
         #if jpeghi:
         #os.system('convert -quality 100 '+ root+tail+'.png '+root+tail+'.jpeg'+' &'*('apollo' in os.uname()[1]))
@@ -1149,8 +1153,8 @@ They need to be floats at the moment
     sy=array(sy)
 
     f=x/y
-    sfoverf=sqrt((sx/x)*(sx/x)+(sy/y)*(sy/y))
-    sf=sfoverf*f
+    sfoverf=np.sqrt((sx/x)*(sx/x)+(sy/y)*(sy/y))
+    sf=abs(sfoverf*f)
     return(f,sf)
 
 
@@ -3547,9 +3551,14 @@ def labelAbscissaSurveyYears(surveys,yGood=None,years=None,addQuebecHistory=Fals
         for ayear,aevent in history:
             plt.text(ayear,min(ylim()),aevent,horizontalalignment='center',verticalalignment='bottom',rotation=90,color=fgcolor)
 
+def empiricalcdf(a, num_bins =  20):
+    """ Not yet used. revise/ develop this..."""
+    from scipy.stats import cumfreq
+    b = cumfreq(a, num_bins)
+    plt.plot(b)
+    return(b)
 
-# I THINK FOLLOWING NOT USED ANYWHERE. PYGREP AND TRASH IT.
-def empiricalcdf(data, method='Hazen'):
+def empiricalcdf(data, method='Hazen'): # I THINK THIS NOT USED ANYWHERE. PYGREP AND TRASH IT.
 	    """Return the empirical cdf.
             [copied from scipi...]
 hih? trash
@@ -3997,6 +4006,9 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,fig=None,clearf
         
     sofar=0
     for yy,adf in dfn.groupby('cvar1'):#allyears:
+        # 201703: neg 1e-17 color vales break this:
+        adf.color=adf.color.map(lambda ff: np.maximum(ff,0*ff))
+        
         #a1,b1=np.histogram(dfn[dfn.cvar1==yy][pvar],bins=bb)
         a1,b1=np.histogram(adf[pvar],bins=bb)
         # June2014: I had to add the .values now, yet this worked before?!:
@@ -4006,7 +4018,9 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,fig=None,clearf
         # Adam (2014, sprawl project) wanted to smooth layers over a subrange of the x axis. But then we have to plot ourselves, rather than using hist(). I'm abandoning this for now.
         # These are all the same color. so
 
-        plt.hist(adf[pvar].values,bins=bb,bottom=sofar,edgecolor='none',color=adf.color.values[0])#,width=width)
+
+        # Following fails if len(adf.color)==1   [2017-03]
+        plt.hist(adf[pvar].values,bins=bb,bottom=sofar,edgecolor='none',color=adf.color.values[0] if len(adf.color)>1 else np.array([adf.color.values[0]]))#,width=width)
         sofar+=a1
     ylabel('Number')# of streets (edges)')
     xlabel(pvar)

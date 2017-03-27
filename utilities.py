@@ -907,9 +907,9 @@ def str2pathname(ss):
         ['_','-'],
         [r'$>$','gt'],
         ]
-    todrop="""?"':.,/()’ """ #'
+    todrop = u"""?"':.,/()’ """ #'
     for asub in subs:
-        ss=ss.replace(asub[0],asub[1])
+        ss = ss.replace(asub[0],asub[1])
     ss=''.join([sss for sss in ss if sss not in todrop])
     return(ss)
 
