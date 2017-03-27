@@ -3927,7 +3927,7 @@ def scaledHist(rawData,bins=None,maxval=1.0,histtype=None,weights=None,color=Non
     weights=weights/max(a*1.0/maxval)
     return(ax.hist(rawData,bins=bins,histtype=histtype,weights=weights,color=color,label=label,**kwargs))
 
-def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,fig=None,clearfig=False,width=None,cvarRange=None,cmap='jet',Ncolors=256):#,saveas=None): 
+def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,ax = None, fig=None,clearfig=False,width=None,cvarRange=None,cmap='jet',Ncolors=256):#,saveas=None): 
     #pvardesc='Nearby fraction of dead-ends'
     """
     Works so far only on dataframes.
@@ -3947,13 +3947,21 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,fig=None,clearf
     This function is really slow when cvar is continuous. Should discretize it!! [Fixed!]
     This code still refers to "years" etc: names should be generalized?
 
+
 2014July: trying to add rolling mean option for smoothing!
 
     """
-    if fig is not None:
-        figure(fig)
-    if clearfig:
-        clf()
+    assert ax is None or fig is None
+    assert ax is None or clearfig is False
+    
+    if ax is None:
+        if fig is not None:
+            fig = figure(fig)
+        else:
+            fig=plt.gcf()
+        if clearfig:
+            clf()
+        ax = add_subplot(111)
     dfn=adf
     if not len(dfn):
         print('Skipping a histogram with no data...')
@@ -4005,6 +4013,7 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,fig=None,clearf
         return(layerDepth[Nbox-1:],bins[Nbox-1:])
         
     sofar=0
+    print('  About to gropuby')
     for yy,adf in dfn.groupby('cvar1'):#allyears:
         # 201703: neg 1e-17 color vales break this:
         adf.color=adf.color.map(lambda ff: np.maximum(ff,0*ff))
@@ -4020,12 +4029,12 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,fig=None,clearf
 
 
         # Following fails if len(adf.color)==1   [2017-03]
-        plt.hist(adf[pvar].values,bins=bb,bottom=sofar,edgecolor='none',color=adf.color.values[0] if len(adf.color)>1 else np.array([adf.color.values[0]]))#,width=width)
+        ax.hist(adf[pvar].values,bins=bb, bottom=sofar,edgecolor='none',color=adf.color.values[0] if len(adf.color)>1 else np.array([adf.color.values[0]]))#,width=width)
         sofar+=a1
     ylabel('Number')# of streets (edges)')
     xlabel(pvar)
-    ax=plt.gca()
     from cpblUtilities.color import addColorbarNonImage
+    print('  About to addcolourbar')    
     cbax=addColorbarNonImage(data2color=colors,ylabel=cvar.replace('_',' '))#'YEAR')   # min(allyears),max(allyears)
     plt.axes(ax)
     return(ax,cbax,colorsf)
