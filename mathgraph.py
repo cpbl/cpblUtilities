@@ -2357,6 +2357,8 @@ def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels
         plt.clf()
     if ax is None:
         ax=plt.gca()
+    else:
+        plt.sca(ax)
 
     xx=x if not isinstance(x,str) else df[x].values 
     yy=y if not isinstance(y,str) else df[y].values 
@@ -2389,11 +2391,11 @@ color is interpreted as a color to give to all markers at once.
 Thus, use c=z rather than facecolor=z in below.
 """
 
-    sc=ax.scatter(xx,yy, s=markersize, c=z, marker=marker, cmap=cmap, norm=None,   vmin=vmin, vmax=vmax, alpha=None, linewidths=None,      verts=None)#, **kwargs)
+    sc=ax.scatter(xx,yy, s=markersize, c=z, marker=marker, cmap=cmap, norm=None,   vmin=vmin, vmax=vmax, alpha=None, linewidths=None,      verts=None, edgecolor='none')#, **kwargs)
     # 2015 Nov: colors are not working. I am getting something quasirandom when passing a 2-D array of colours as c... Debug this?
     
-    if isinstance(x,str):  xlabel(x)
-    if isinstance(y,str):  ylabel(y)
+    if isinstance(x,str):  ax.set_xlabel(x)
+    if isinstance(y,str):  ax.set_ylabel(y)
 
 
         
@@ -3962,6 +3964,9 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,ax = None, fig=
         if clearfig:
             clf()
         ax = fig.add_subplot(111)
+    else:
+        plt.sca(ax)
+            
     dfn=adf
     if not len(dfn):
         print('Skipping a histogram with no data...')
