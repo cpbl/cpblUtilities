@@ -728,7 +728,7 @@ def saveAllFiguresToPDF(filename, figs=None, dpi=200):# : a trick to save all op
 ##############################################################################
 ##############################################################################
 #
-def savefigall(fn,transparent=True,ifany=None,fig=None,skipIfExists=False,pauseForMissing=True,onlyPNG=False,jpeg=False,jpeghi=False,svg=False,pdf=True,bw=False,FitCanvasToDrawing=False,eps=False,tikz=False,rv=None,facecolor='None',dpi=1000, overwrite=True):
+def savefigall(fn, transparent=True, ifany=None, fig=None, skipIfExists=False, pauseForMissing=True, onlyPNG=False, jpeg=False, jpeghi=False, svg=False, pdf=True, bw=False, FitCanvasToDrawing=False, eps=False, tikz=False, rv=None, widthheight=None, facecolor='None', dpi=1000,  overwrite=True):
     ##########################################################################
     ##########################################################################
     """
@@ -785,6 +785,8 @@ June 2013: I still think use of facecolor and transparent in savefig is horribly
 
 dpi:  Resolution used for png format only.
 
+widthheight: This is a tuple. Given in inches (sigh...). See plt.figure.get_figwidth() etc. NOT IMPLEMENTED YET!!!!!!!
+
 Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pdf and png work okay.
 """
     #transparent=True # Huh? 2013 June: commenting this out.
@@ -807,6 +809,7 @@ Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pd
         figure(fig.number)
     else:
         figure(fig)
+        
     if 0: # I need to use frozen() or deepcopy() to avoid rv and bw from messing up future modified versions of a plot!  But this crashes:
         fig=deepcopy(fig)
     if rv in [True]:
