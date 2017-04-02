@@ -3932,7 +3932,7 @@ def scaledHist(rawData,bins=None,maxval=1.0,histtype=None,weights=None,color=Non
     weights=weights/max(a*1.0/maxval)
     return(ax.hist(rawData,bins=bins,histtype=histtype,weights=weights,color=color,label=label,**kwargs))
 
-def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,ax = None, fig=None,clearfig=False,width=None,cvarRange=None,cmap='jet',Ncolors=256):#,saveas=None): 
+def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,ax = None, fig=None,clearfig=False,width=None,cvarRange=None,cmap='jet',Ncolors=256, show_color_bar = True):#,saveas=None): 
     #pvardesc='Nearby fraction of dead-ends'
     """
     Works so far only on dataframes.
@@ -3958,6 +3958,7 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,ax = None, fig=
     """
     assert ax is None or fig is None
     assert ax is None or clearfig is False
+    MAX_LEVELS = Ncolors # No sure whether these should be distinct.
     
     if ax is None:
         if fig is not None:
@@ -3992,26 +3993,11 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,ax = None, fig=
 
     aa,bb=np.histogram(dfn[pvar],bins=bins)
     #allyears=sorted(dfn.cvar1.unique())
-    if  len(dfn.cvar1.unique()) > 300:
-        print('     discretizing data...'),
-        # This is too many levels, ie too many histograms stacked on top of each other!! Let's discretize this variable.  Pandas has qcut() function to do this, now. (I can't just use the colour scheme, since it's continuous)
-        dfn['color']=dfn.cvar1.map(lambda ff:colors[ff])#.map(mpl.colors.rgb2hex)
-        # Discretize data to means within each colour:
-        dfn['cvar2']=dfn.cvar1
-        assert 'color' in dfn
-        def fun(ff):
-            ff['cvar1']=ff['cvar1'].dropna().mean()
-            assert 'color' in ff
-            return(ff)
-        dfn3 = dfn.groupby('color').apply(fun)#.reset_index()#lambda x: x.mean())
-        assert 'color' in dfn3
-        dfn=dfn3
-        print('     done')
-
-        #allyears=sorted(dfn.cvar1.unique())
-    else:
-        dfn['color']=dfn.cvar1.map(colorsf)#.map(mpl.colors.rgb2hex)
-    
+    if  len(dfn.cvar1.unique()) > MAX_LEVELS:
+        print('     discretizing "{}" data ...'.format(cvar)) # This is too many levels, ie too many histograms stacked on top of each other. Use Pandas' quantile-cut to replace cvar1 with the mean of each of its quantiles:
+        dfn['tmpqcut'] = pd.qcut(dfn.cvar1, MAX_LEVELS, labels=  False)
+        dfn['cvar1'] = pd.qcut(dfn.cvar1, MAX_LEVELS, labels=  dfn.groupby('tmpqcut')['cvar1'].mean() ).astype(float)
+    dfn['color']=dfn.cvar1.map(colorsf)#.map(mpl.colors.rgb2hex)
 
     def customSmoothing(layerDepth,bins):
         Nbox=3
@@ -4022,8 +4008,7 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,ax = None, fig=
 
     import time
     sofar=0
-    print('  About to groupby')
-    print(len(dfn.groupby('cvar1')))
+    print('  About to groupby {}'.format(len(dfn.groupby('cvar1'))))
     for yy,adf in dfn.groupby('cvar1'):#allyears:
         # 201703: neg 1e-17 color vales break this. And updating adf.color rather than making a temp variable causes some strange bug which grinds Python to a halt after many of these.[201703]
         tmpcolor = adf.color.map(lambda ff: np.maximum(ff,0*ff))
@@ -4035,8 +4020,11 @@ def colouredHistByVar(adf,pvar='nearbyDEADEND',cvar=None,bins=40,ax = None, fig=
     ylabel('Number')# of streets (edges)')
     xlabel(pvar)
     from cpblUtilities.color import addColorbarNonImage
-    print('  About to addcolourbar')    
-    cbax=addColorbarNonImage(data2color=colors,ylabel=cvar.replace('_',' '))#'YEAR')   # min(allyears),max(allyears)
+    if show_color_bar:
+        print('  About to addcolourbar')    
+        cbax=addColorbarNonImage(data2color=colors,ylabel=cvar.replace('_',' '))#'YEAR')   # min(allyears),max(allyears)
+    else:
+        cbax = None
     plt.axes(ax)
     return(ax,cbax,colorsf)
     countyname=dfn.county.unique()[0] if len(dfn.county.unique())==1 else 'Entire USA'
