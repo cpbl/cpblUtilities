@@ -728,11 +728,12 @@ def saveAllFiguresToPDF(filename, figs=None, dpi=200):# : a trick to save all op
 ##############################################################################
 ##############################################################################
 #
-def savefigall(fn,transparent=True,ifany=None,fig=None,skipIfExists=False,pauseForMissing=True,onlyPNG=False,jpeg=False,jpeghi=False,svg=False,pdf=True,bw=False,FitCanvasToDrawing=False,eps=False,tikz=False,rv=None,facecolor='None',dpi=1000, overwrite=True):
+def savefigall(fn, transparent=True, ifany=None, fig=None, skipIfExists=False, pauseForMissing=True, onlyPNG=False, jpeg=False, jpeghi=False,svg=False, pdf=True, bw=False, FitCanvasToDrawing=False, eps=False, tikz=False, rv=None, facecolor='None', dpi=1000,  overwrite=True,   wh_inches=None):
     ##########################################################################
     ##########################################################################
     """
     Like savefig, but implements important (transparent, facecolor) tweaks to ensure we can crop to bounding box, and it saves in multiple formats. 
+    After many years, the bounding box cropping has started working suddenly in 2017.
 
     Note that savefig() overwrites the figure's facecolor. So should always use this rather than built-in savefig(); or else always do something like
            savefig('figname.png', facecolor=fig.get_facecolor(), transparent=True)
@@ -753,7 +754,7 @@ Sept 2010: skipIfExists is a way to skip saving if the file already exists (ie t
     
 Sept 2010: Returns written (or existing) file stems.
 
-April 2011: what?! this has evolved to have dissimilar options from my latex class's saveAndIncludeFig() !
+April 2011: oops: this has evolved to have dissimilar options from my latex class's saveAndIncludeFig() !
       # saveAndIncludeFig(self,figname=None,caption=None,texwidth=None,title=None,onlyPNG=False,rcparams=None,transparent=False):
       # Okay. April 2011: I've hopefully implemented things so can use latex.saveAnd... with the above options.
 
@@ -786,6 +787,8 @@ June 2013: I still think use of facecolor and transparent in savefig is horribly
 dpi:  Resolution used for png format only.
 
 Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pdf and png work okay.
+
+wh_inches: width and height of output in inches[sic!]
 """
     #transparent=True # Huh? 2013 June: commenting this out.
     bbox_inches="tight"
@@ -795,10 +798,10 @@ Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pd
         raw_input('acknowlege:')
     (root,tail)=os.path.split(fn)
     if bw:
-        savefigall(fn,transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv,facecolor=facecolor, )
+        savefigall(fn,transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv,facecolor=facecolor, wh_inches = wh_inches)
         if 1: # ahhhh... issues jan 2012. kludge it off:
             figureToGrayscale() 
-        savefigall(fn+'-bw',transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv,facecolor=facecolor)
+        savefigall(fn+'-bw',transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv,facecolor=facecolor,  wh_inches = wh_inches)
         return(root+tail)
 
     if fig is None:
@@ -807,6 +810,9 @@ Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pd
         figure(fig.number)
     else:
         figure(fig)
+    if wh_inches is not None:
+        plt.gcf().set_figheight(wh_inches[1])
+        plt.gcf().set_figwidth(wh_inches[0])
     if 0: # I need to use frozen() or deepcopy() to avoid rv and bw from messing up future modified versions of a plot!  But this crashes:
         fig=deepcopy(fig)
     if rv in [True]:
