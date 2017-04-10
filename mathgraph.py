@@ -786,6 +786,8 @@ June 2013: I still think use of facecolor and transparent in savefig is horribly
 
 dpi:  Resolution used for png format only.
 
+widthheight: This is a tuple. Given in inches (sigh...). See plt.figure.get_figwidth() etc. NOT IMPLEMENTED YET!!!!!!!
+
 Apr 2015: Fails when text includes \textwon. This is apparently on svg, while pdf and png work okay.
 
 wh_inches: width and height of output in inches[sic!]
