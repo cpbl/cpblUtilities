@@ -728,7 +728,7 @@ def saveAllFiguresToPDF(filename, figs=None, dpi=200):# : a trick to save all op
 ##############################################################################
 ##############################################################################
 #
-def savefigall(fn, transparent=True, ifany=None, fig=None, skipIfExists=False, pauseForMissing=True, onlyPNG=False, jpeg=False, jpeghi=False,svg=False, pdf=True, bw=False, FitCanvasToDrawing=False, eps=False, tikz=False, rv=None, facecolor='None', dpi=1000,  overwrite=True,   wh_inches=None):
+def savefigall(fn, transparent=True, ifany=None, fig=None, skipIfExists=False, pauseForMissing=True, png = True, jpeg=False, jpeghi=False,svg=False, pdf=True, bw=False, FitCanvasToDrawing=False, eps=False, tikz=False, rv=None, facecolor='None', dpi=1000,  overwrite=True,   wh_inches=None):
     ##########################################################################
     ##########################################################################
     """
@@ -800,10 +800,10 @@ wh_inches: width and height of output in inches[sic!]
         raw_input('acknowlege:')
     (root,tail)=os.path.split(fn)
     if bw:
-        savefigall(fn,transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv,facecolor=facecolor, wh_inches = wh_inches)
+        savefigall(fn,transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,png=png,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv,facecolor=facecolor, wh_inches = wh_inches)
         if 1: # ahhhh... issues jan 2012. kludge it off:
             figureToGrayscale() 
-        savefigall(fn+'-bw',transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv,facecolor=facecolor,  wh_inches = wh_inches)
+        savefigall(fn+'-bw',transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,png=png,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv,facecolor=facecolor,  wh_inches = wh_inches)
         return(root+tail)
 
     if fig is None:
@@ -823,10 +823,10 @@ wh_inches: width and height of output in inches[sic!]
         assert not bw
         # 28 June 2013: trying set transparent=True
         savefigall(fn,transparent=True, #transparent,
-                   ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,rv=False,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,facecolor=facecolor)#facecolor)
+                   ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,png=png,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,rv=False,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,facecolor=facecolor)#facecolor)
         if facecolor is None:
             facecolor='k'
-        savefigall(fn+'-rv',transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,rv=True,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,facecolor=facecolor)
+        savefigall(fn+'-rv',transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,png=png,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,rv=True,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,facecolor=facecolor)
         return(root+tail)
 
     if not root:
@@ -867,14 +867,15 @@ wh_inches: width and height of output in inches[sic!]
             fig.savefig(name,facecolor=facecolor,dpi=dpi, bbox_inches=bbox_inches, pad_inches=pad_inches)
         
     print 'Saving graphics: '+root+tail+' (+ext)'
-    stupidOnlyUseGivenArguments(root+tail+'.png',transparent=transparent,facecolor=facecolor)
+    if png:
+        stupidOnlyUseGivenArguments(root+tail+'.png',transparent=transparent,facecolor=facecolor)
 
     if eps:
         try: # Damn. Feb 2012 postscript is crashing.
             plt.savefig(root+tail+'.eps',transparent=transparent,facecolor=facecolor, bbox_inches=bbox_inches, pad_inches=pad_inches)
         except:
             print('*****************\n\n\n\n\nFAILED TO PRODUCE AN EPS\n\n\n\n\n***********')
-    if pdf and not onlyPNG: # What?! I don't have to use stupidOnlyUseGivenArguments here? If I did it for PNG, everything's fine?
+    if pdf: # What?! I don't have to use stupidOnlyUseGivenArguments here? If I did it for PNG, everything's fine?
         plt.savefig(root+tail+'.pdf',transparent=transparent,facecolor=facecolor, bbox_inches=bbox_inches, pad_inches=pad_inches)
         if FitCanvasToDrawing:
             #from cpblUtilities import doSystem
@@ -906,7 +907,7 @@ inkscape -f %(fn)sTMPTMPTMP.svg -A %(fn)s-autotrimmed.pdf
     return(root+tail+FitCanvasToDrawing*'-autotrimmed')
     if rv:
         assert not bw
-        savefigall(fn,transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,onlyPNG=onlyPNG,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv)
+        savefigall(fn,transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,png=png,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,rv=rv)
 
 
 def xTicksLogIncome_deprecated_USE_xTicksIncome(nticks=7,natlog=False,tenlog=False,kticks=None):
@@ -6497,10 +6498,19 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
 
     items could be an iterator itself, but that is not implemented yet. It must be a list at the moment.
 
-    To do:
-     - last page erow should be the last item if the page is not filled. (?)
+    Oh, weird: In some cases, the final axis will be plotted twice (due to the final yield), although only once before the graphics is saved. This is ugly. How to do it so that this generator can clean up and save graphics after the final data yield??
 
+    To do:
+     - "last" value may be wrong on final page if final page is not full
+     - "bottom" value may be wrong on final page if final page is not full
+     - Rewrite so "items" can be a groupby object or other iterable.
+     - Should have some preset portrait/landscape option for wh_inches??
     """
+    from .utilities import str2pathname,mergePDFs
+    if str2pathname(filename,check=True, includes_path = True):
+        print(' WARNING:  Modifying filename to clean out certain characters')
+        filename = str2pathname(filename,includes_path = True) # Proceed anyway.
+        print(' ---> '+filename)
     nItems = len(items)
     if wh_inches is None:
         wh_inches = [8.75,7] # for full-page figures
@@ -6522,7 +6532,7 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
         savefigall(pagefilename,  wh_inches=wh_inches, rv=False, png = False)
     mergePDFs(pagefiles, filename+'ALL.pdf')
     #for ff in pagefiles: os.remove(ff)
-    yield None # This allows a final "next" by the caller to finish the final saving.
+    yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(nrows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
 
         
 if 0:

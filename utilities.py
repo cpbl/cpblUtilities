@@ -902,12 +902,18 @@ CAUTION: The method below will FAIL on a list of lists of dicts. It will treat d
         return([xx for xx in flatten(listoflists)])
 
 
-def str2pathname(ss):
+def str2pathname(ss, includes_path = False, check=False):
+    """ Remove some characters from a string, for safety (or simplicity) on POSIX systems.. 
+    If passed with "check=True", it will simply check whether the string needs fixing.
+    If passed with "includes_path", it will allow forward slashes but otherwise behave the same.
+    """
+    if check:
+        return not ss == str2pathname(ss, includes_path = includes_path, check=False)
     subs=[
         ['_','-'],
         [r'$>$','gt'],
         ]
-    todrop = u"""?"':.,/()’ """ #'
+    todrop = u"""?"':.,()’ """+(not includes_path)*'/' #'
     for asub in subs:
         ss = ss.replace(asub[0],asub[1])
     ss=''.join([sss for sss in ss if sss not in todrop])

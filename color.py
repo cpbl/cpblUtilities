@@ -48,6 +48,8 @@ def getIndexedColormap(cmap_name,N):
     So is this most useful for a small discrete, or categorical, set???
 
     2014Feb: if a list is given, instead of N, then a dict is returned, which is a lookup from the elements of the list N to colors.
+
+2017: Shouldn't the colours be returned as hex strings instead of arrays, by default? That's easier to deal with. 
     """
     import numpy as np
     if N.__class__ in [list, np.ndarray, tuple]:
