@@ -6487,6 +6487,43 @@ def human_format(x,sigfigs=2):
 
 
 
+def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inches = None):
+    """
+    If you want to have a series of subplots that goes more than one page, you could use this to generate figs and axes.
+    You specify the number of things (e.g. countries) you need to plot, how many (rows and columns) to plot per page, and the filename stem for the pages (which will ultimately be a single multi-page PDF).
+    In addition, you can specify some other stuff about the layout (or should this be a function pointer?)
+    Then this iterator will return series of item, fig and axis values for each item in the list (e.g of countries), as well as whether each axis is on the right/left/bottom of the page.
+    When you have finished with all the items, call multipage_plot_iterator.next() one more time to finish up the graphics creation and cleanup.
+
+    items could be an iterator itself, but that is not implemented yet. It must be a list at the moment.
+
+    To do:
+     - last page erow should be the last item if the page is not filled.
+
+    """
+    nItems = len(items)
+    if wh_inches is None:
+        wh_inches = [8.75,7] # for full-page figures
+    ncols = 4 if ncols is None else ncols
+    nrows = 3 if nrows is None else nrows
+    rowNums = [(ii*nrows*ncols, min(nItems,(ii+1)*nrows*ncols)) for ii in range(int(np.ceil(nItems/nrows/ncols)))]
+    figureFontSetup(uniform=9)
+    plt.close('all')     
+    pagefiles=[]
+    for ipage, (srow, erow) in enumerate(rowNums):
+        fig, axs = plt.subplots(nrows,ncols, figsize=wh_inches[::-1])
+        axs = np.concatenate(axs)
+        for iItem,anitem in enumerate(items[srow:erow]):
+            ax = axs[iItem]
+            yield(dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(nrows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow , ipage =ipage))
+
+        pagefilename = filename+'page%02d'%ipage
+        pagefiles += [pagefilename+'.pdf']
+        savefigall(pagefilename,  wh_inches=wh_inches, rv=False, png = False)
+    mergePDFs(pagefiles, filename+'ALL.pdf')
+    #for ff in pagefiles: os.remove(ff)
+    yield None # This allows a final "next" by the caller to finish the final saving.
+
         
 if 0:
     localPolynomialRegression(None,None,None,True)

@@ -1560,6 +1560,25 @@ def merge_dictionaries(default,update, verboseSource=False, allow_new_keys=True)
     return result
 
 
+def mergePDFs(listOfFns, outFn):
+    """ merges all the PDFs in listOfFns, saves them to outFn and deletes orginals"""
+    try:  # marmite
+        import PyPDF2
+        merger = PyPDF2.PdfFileMerger()
+        for fn in listOfFns: 
+            merger.append(fn)
+            os.remove(fn)
+        merger.write(outFn)
+        print('(pypdf) Wrote '+outFn)
+    except:  # apollo or cpblx230:
+        cmd = 'pdftk ' + ' '.join(listOfFns) + ' cat output ' + outFn
+        os.system(cmd)
+        for fn in listOfFns: os.remove(fn)
+        print('(pdftk) Wrote '+outFn)
+        
+    return
+
+
 if 0:
     try: # Where is this needed? Should import it only where needed.        
         from parallel import *
