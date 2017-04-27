@@ -2340,18 +2340,19 @@ def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels
         markersize=df[markersize].values
     if 0 and labels is None and df.index not in [None,[]] and len(df)<20: # Only default to labelling if there are few
         labels=[str(LL) for LL in df.index]
-    elif labels is not None and labels.__class__  is str:
+    elif labels is not None and labels.__class__  in [str,unicode]:
         labels=df[labels].values
     #plot(df[x].values,df[y].values,'.')
     #return()
     import scipy
     if z is None:
         z='b'
-    elif isinstance(z,str) and z in df       and hasattr(df[z].values[0],'ndim'): # List of colormap index values, ie scalars in [0,1]
+    elif isinstance(z,basestring) and z in df       and hasattr(df[z].values[0],'ndim'): # List of colormap index values, ie scalars in [0,1]
+        print('WARNING!!! cpblScatter. I think this is wrong. This array could be data values, rather than rgb. True? Check')
         z=df[z].values
         z=np.array(list(z)) # Turn it into a 2D array to make plt.scatter happy.
-    elif isinstance(z,str) and z in df:
-        z=df[z].values # What is this case? 
+    elif isinstance(z,basestring) and z in df:
+        z=df[z].values # What is this case?
     elif isinstance(z,int):
         pass
     #z=np.ones(len(df))*z
@@ -2369,8 +2370,8 @@ def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels
     else:
         plt.sca(ax)
 
-    xx=x if not isinstance(x,str) else df[x].values 
-    yy=y if not isinstance(y,str) else df[y].values 
+    xx=x if not isinstance(x,basestring) else df[x].values 
+    yy=y if not isinstance(y,basestring) else df[y].values 
 
     # #################################### ERROR BARS
     xse,yse=None,None#df[x].values*np.nan,df[x].values*np.nan
