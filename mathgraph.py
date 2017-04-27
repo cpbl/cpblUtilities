@@ -15,7 +15,7 @@ try:
     import rpy2.robjects as robjects 
 except:
     print('   ((cpblUtils: rpy2 not available on this machine))')
-import os
+import os,sys
 import re
 from copy import deepcopy
 
@@ -6494,38 +6494,50 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
     You specify the list of data items which you will use to plot in each axis, how many (rows and columns) to plot per page, and the filename stem for the pages (which will ultimately be a single multi-page PDF).
     In addition, you can specify some other stuff about the layout.
     Then this iterator will return series of item, fig and axis values for each item in the list (e.g data for one country per axis), as well as whether each axis is on the right/left/bottom of the page.
-    When you have finished with all the items, call multipage_plot_iterator.next() one more time to finish up the graphics creation and cleanup.
+
+    In order to be able to finish up by concatenating the PDFs, etc, one extra "yield" will be made. This simply duplicates the final axis/plot. Therefore, do not use your own counters in loops over this generator. Instead, build any counters into the
+    "items" data structure.
 
     items could be an iterator itself, but that is not implemented yet. It must be a list at the moment.
 
-    Oh, weird: In some cases, the final axis will be plotted twice (due to the final yield), although only once before the graphics is saved. This is ugly. How to do it so that this generator can clean up and save graphics after the final data yield??
-
     To do:
-     - "last" value may be wrong on final page if final page is not full
-     - "bottom" value may be wrong on final page if final page is not full
+     - check that this also works nicely for ncols==nrows==1
      - Rewrite so "items" can be a groupby object or other iterable.
-     - Should have some preset portrait/landscape option for wh_inches??
     """
     from .utilities import str2pathname,mergePDFs
     if str2pathname(filename,check=True, includes_path = True):
-        print(' WARNING:  Modifying filename to clean out certain characters')
+        print(' WARNING ({}):  Modifying filename to clean out certain characters'.format(sys._getframe().f_code.co_name))
+        fn0 = filename
         filename = str2pathname(filename,includes_path = True) # Proceed anyway.
-        print(' ---> '+filename)
+        print('   FROM {} \n    --> {}'.format(fn0,filename))
     nItems = len(items)
     if wh_inches is None:
         wh_inches = [8.75,7] # for full-page figures
+    elif wh_inches == "landscape":
+        wh_inches = [8.75,7] # for full-page figures
+    elif wh_inches == "portrait":
+        wh_inches = [7,8.75] # for full-page figures
     ncols = 4 if ncols is None else ncols
     nrows = 3 if nrows is None else nrows
     rowNums = [(ii*nrows*ncols, min(nItems,(ii+1)*nrows*ncols)) for ii in range(int(np.ceil(nItems/nrows/ncols)))]
+    nPages = len(rowNums)
     figureFontSetup(uniform=9)
-    plt.close('all')     
     pagefiles=[]
     for ipage, (srow, erow) in enumerate(rowNums):
+        if ipage%10 == 0:
+            plt.close('all')     
         fig, axs = plt.subplots(nrows,ncols, figsize=wh_inches[::-1])
-        axs = np.concatenate(axs)
+        try:
+            axs = np.concatenate(axs)
+        except TypeError as err:
+            axs=[axs]
+        # If we don't need them all, erase some:
+        for idelAx in arange(erow-srow,len(axs)):
+            axs[idelAx].set_visible(False)
         for iItem,anitem in enumerate(items[srow:erow]):
             ax = axs[iItem]
-            yield(dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(nrows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow , ipage =ipage))
+            yield(dict(data = anitem, ax = ax, fig = fig, bottom = iItem > erow-srow-ncols-1, #iItem>=(nrows-1)*ncols ,
+                       left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow , ipage =ipage))
 
         pagefilename = filename+'page%02d'%ipage
         pagefiles += [pagefilename+'.pdf']
