@@ -6532,9 +6532,10 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
             axs = np.concatenate(axs)
         except TypeError as err:
             axs=[axs]
-        # If we don't need them all, erase some:
+        # If we don't need them all, erase some. This allows for us to call layout_tight() later, though so far it doesn't drop the whitespace.
         for idelAx in arange(erow-srow,len(axs)):
-            axs[idelAx].set_visible(False)
+            fig.delaxes(axs[idelAx])
+            #axs[idelAx].set_visible(False) # This is not the same as deleting them
         for iItem,anitem in enumerate(items[srow:erow]):
             ax = axs[iItem]
             yield(dict(data = anitem, ax = ax, fig = fig, bottom = iItem > erow-srow-ncols-1, #iItem>=(nrows-1)*ncols ,
