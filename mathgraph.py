@@ -6539,14 +6539,14 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
         for iItem,anitem in enumerate(items[srow:erow]):
             ax = axs[iItem]
             yield(dict(data = anitem, ax = ax, fig = fig, bottom = iItem > erow-srow-ncols-1, #iItem>=(nrows-1)*ncols ,
-                       left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow , ipage =ipage))
+                       left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow-1 , ipage =ipage))
 
         pagefilename = filename+'page%02d'%ipage
         pagefiles += [pagefilename+'.pdf']
         savefigall(pagefilename,  wh_inches=wh_inches, rv=False, png = False)
     mergePDFs(pagefiles, filename+'ALL.pdf')
     #for ff in pagefiles: os.remove(ff)
-    yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(nrows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
+    yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(nrows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow-1 , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
 
         
 if 0:
