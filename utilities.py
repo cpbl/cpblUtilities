@@ -1577,11 +1577,13 @@ def mergePDFs(listOfFns, outFn):
         merger.write(outFn)
         print('(pypdf) Wrote '+outFn)
     except:  # apollo or cpblx230:
-        cmd = 'pdftk ' + ' '.join(listOfFns) + ' cat output ' + outFn
-        os.system(cmd)
-        for fn in listOfFns: os.remove(fn)
-        print('(pdftk) Wrote '+outFn)
-        
+        try:
+            cmd = 'pdftk ' + ' '.join(listOfFns) + ' cat output ' + outFn
+            os.system(cmd)
+            for fn in listOfFns: os.remove(fn)
+            print('(pdftk) Wrote '+outFn)
+        except:
+            print('Could not merge PDFs %s. pdftk not available. You might want to merge manually.' %   listOfFns)      
     return
 
 
