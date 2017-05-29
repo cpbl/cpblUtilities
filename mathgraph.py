@@ -2348,7 +2348,7 @@ def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels
     if z is None:
         z='b'
     elif isinstance(z,basestring) and z in df       and hasattr(df[z].values[0],'ndim'): # List of colormap index values, ie scalars in [0,1]
-        print('WARNING!!! cpblScatter. I think this is wrong. This array could be data values, rather than rgb. True? Check')
+        #print('WARNING (cpblScatter): I think this is wrong. This array could be data values, rather than rgb. True? Check')
         z=df[z].values
         z=np.array(list(z)) # Turn it into a 2D array to make plt.scatter happy.
     elif isinstance(z,basestring) and z in df:
