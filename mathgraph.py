@@ -24,7 +24,7 @@ import numpy as np
 import matplotlib as mpl # Not yet used, may 2010
 # WHAT!? matplotlib.pyplot is not the same as pylab?
 #import matplotlib.pyplot as plt
-import pylab as plt
+import matplotlib.pyplot as plt
 import pandas as pd
 #from pylab import *
 # Why not define these lobally? June 2010
@@ -6488,6 +6488,39 @@ def human_format(x,sigfigs=2):
     
 
 
+def test_bug3_for_multipage_plot_iterator():
+    import numpy as np
+    import matplotlib.pyplot as plt
+    def prep_figure():
+        plt.close('all')
+        fig, axs = plt.subplots(4,3, figsize=(11,8.5))
+        axs=np.concatenate(axs)
+        for ii in range(5):
+            axs[ii].plot([1,2,3],[-10,-1,-10])
+            axs[ii].set_ylabel('ylabel')
+            axs[ii].set_xlabel('xlabel')
+        return fig,axs
+
+    fig,axs=prep_figure()
+    plt.tight_layout()
+    plt.show()
+    plt.savefig('tmp.pdf', )
+
+    # Try deleting extra axes
+    fig,axs=prep_figure()
+    for ii in range(5,12):
+        fig.delaxes(axs[ii])
+    plt.tight_layout()
+    plt.draw()
+    plt.savefig('tmpd.pdf', )
+
+    # Try hiding  extra axes
+    fig,axs=prep_figure()
+    for ii in range(5,12):
+        axs[ii].set_visible(False)
+    plt.tight_layout()
+    plt.draw()
+    plt.savefig('tmph.pdf', )
 
 def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inches = None):
     """
@@ -6520,33 +6553,47 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
         wh_inches = [7,8.75] # for full-page figures
     ncols = 4 if ncols is None else ncols
     nrows = 3 if nrows is None else nrows
-    rowNums = [(ii*nrows*ncols, min(nItems,(ii+1)*nrows*ncols)) for ii in range(int(np.ceil(nItems/nrows/ncols)))]
-    nPages = len(rowNums)
+    splotNums = [(ii*nrows*ncols, min(nItems,(ii+1)*nrows*ncols)) for ii in range(int(np.ceil(nItems/nrows/ncols)))]
+    nPages = len(splotNums)
     figureFontSetup(uniform=9)
     pagefiles=[]
-    for ipage, (srow, erow) in enumerate(rowNums):
+    for ipage, (ssplot, esplot) in enumerate(splotNums):
         if ipage%10 == 0:
-            plt.close('all')     
-        fig, axs = plt.subplots(nrows,ncols, figsize=wh_inches[::-1])
-        try:
-            axs = np.concatenate(axs)
+            plt.close('all')
+        # If it's the last page, possibly adjust figure height:
+        if 0:
+            actualRows = int(np.ceil((esplot-ssplot-1)*1.0/ncols)) # less than nrows when the page isn't full
+            print wh_inches
+            wh_inches[1] =         wh_inches[1] * actualRows/nrows
+            print wh_inches
+        else:
+            actualRows=nrows
+
+        fig, axs = plt.subplots(actualRows,ncols, figsize=wh_inches[::-1])
+        try: # Normally, there is more than one axis:
+            axs = list(np.concatenate(axs))
         except TypeError as err:
             axs=[axs]
         # If we don't need them all, erase some. This allows for us to call layout_tight() later, though so far it doesn't drop the whitespace.
-        for idelAx in arange(erow-srow,len(axs)):
-            fig.delaxes(axs[idelAx])
+        for idelAx in arange(esplot-ssplot,len(axs)):
+            axs[idelAx].plot(1,1)
+            #fig.delaxes(axs[idelAx])
             #axs[idelAx].set_visible(False) # This is not the same as deleting them
-        for iItem,anitem in enumerate(items[srow:erow]):
+        for iItem,anitem in enumerate(items[ssplot:esplot]):
             ax = axs[iItem]
-            yield(dict(data = anitem, ax = ax, fig = fig, bottom = iItem > erow-srow-ncols-1, #iItem>=(nrows-1)*ncols ,
-                       left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow , ipage =ipage))
+            yield(dict(data = anitem, ax = ax, fig = fig, bottom = iItem > esplot-ssplot-ncols-1, #iItem>=(nrows-1)*ncols ,
+                       left = not (iItem)%ncols, first = iItem==0, last = iItem == esplot-ssplot , ipage =ipage))
 
+        plt.tight_layout()
+        for idelAx in arange(esplot-ssplot,len(axs)):
+            #fig.delaxes(axs[idelAx])
+            axs[idelAx].set_visible(False)
         pagefilename = filename+'page%02d'%ipage
         pagefiles += [pagefilename+'.pdf']
         savefigall(pagefilename,  wh_inches=wh_inches, rv=False, png = False)
     mergePDFs(pagefiles, filename+'ALL.pdf')
     #for ff in pagefiles: os.remove(ff)
-    yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(nrows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
+    yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(actualRows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == esplot-ssplot , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
 
         
 if 0:
