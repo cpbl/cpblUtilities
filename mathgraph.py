@@ -2348,7 +2348,7 @@ def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels
     if z is None:
         z='b'
     elif isinstance(z,basestring) and z in df       and hasattr(df[z].values[0],'ndim'): # List of colormap index values, ie scalars in [0,1]
-        print('WARNING!!! cpblScatter. I think this is wrong. This array could be data values, rather than rgb. True? Check')
+        #print('WARNING (cpblScatter): I think this is wrong. This array could be data values, rather than rgb. True? Check')
         z=df[z].values
         z=np.array(list(z)) # Turn it into a 2D array to make plt.scatter happy.
     elif isinstance(z,basestring) and z in df:
@@ -6581,8 +6581,13 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
             #axs[idelAx].set_visible(False) # This is not the same as deleting them
         for iItem,anitem in enumerate(items[ssplot:esplot]):
             ax = axs[iItem]
+
             yield(dict(data = anitem, ax = ax, fig = fig, bottom = iItem > esplot-ssplot-ncols-1, #iItem>=(nrows-1)*ncols ,
                        left = not (iItem)%ncols, first = iItem==0, last = iItem == esplot-ssplot , ipage =ipage))
+
+            #yield(dict(data = anitem, ax = ax, fig = fig, bottom = iItem > erow-srow-ncols-1, #iItem>=(nrows-1)*ncols ,
+            #           left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow-1 , ipage =ipage))
+
 
         plt.tight_layout()
         for idelAx in arange(esplot-ssplot,len(axs)):
@@ -6594,6 +6599,7 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
     mergePDFs(pagefiles, filename+'ALL.pdf')
     #for ff in pagefiles: os.remove(ff)
     yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(actualRows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == esplot-ssplot , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
+    #yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(nrows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow-1 , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
 
         
 if 0:
