@@ -89,7 +89,7 @@ To do: New parameter sigdigs only implemented for integers so far. And it needs 
         ss='0'
         if lowCutoffOOM in [True,'log'] and not aa==0:
             negexp=int(np.ceil(np.log10(aa)))
-            ss='-'*(ff<0)+ r'$<$10$^{%d}$'%negexp
+            ss='-'*bool(ff<0)+ r'$<$10$^{%d}$'%negexp
         elif isinstance(lowCutoffOOM,basestring):
             ss=lowCutoffOOM
     else:
@@ -122,7 +122,7 @@ To do: New parameter sigdigs only implemented for integers so far. And it needs 
         ff=round_to_n(ff,sigdigs)
         #if ff>10**sigdigs:
         #    ff=int(np.round(ff % (10**sigdigs)))* (10**sigdigs)
-        ss='$-$'*(ff<0)+str(abs(ff))
+        ss='$-$'*bool(ff<0)+str(abs(ff))
 
     return(conditionalWrapper[0]+ss+conditionalWrapper[1])
 

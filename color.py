@@ -329,6 +329,8 @@ def _colorAssignmentToColorbarmap(d2cDict,cmapname=None):
     WAIT! IS THIS ONLY USEFUL FOR PLOTTING COLORBARS? Is it used only by addcolorbarnonimage? If so, it should be inside there, no?
     WAIT! I need to use a cumsum of index, not the index of unique(): no? Do a harsher test of this than currently in demo...
     2014Dec: Without dealing with the above questions, I've rewritten this to make it more robust against repeated index values.
+
+    2017: deal with dk=0 degenerate case (one value): what to do for lookup3?
     """
     def strictly_increasing(L):
         return all(y-x>1e-16 for x, y in zip(L, L[1:]))
@@ -353,8 +355,12 @@ def _colorAssignmentToColorbarmap(d2cDict,cmapname=None):
     kmin=min(allkeys)
     kmax=max(allkeys)
     dk=kmax-kmin
-    # Put the values in order; and Scale the range to [0,1], using an integer index; 
-    lookup3=sorted([[int(1e6*(a-kmin)/dk), a]+list(b)  for a,b in d2cDict.items()])
+    # Put the values in order; and Scale the range to [0,1], using an integer index;
+    if dk>0:
+        lookup3=sorted([[int(1e6*(a-kmin)/dk), a]+list(b)  for a,b in d2cDict.items()])
+    else:
+        print('Barfing in cpblUtilities/color.py. Return stupid color for degenerate data:')
+        return(plt.get_cmap('jet'))
     # And use the integer index to get rid of duplicates, so as to ensure strictly increasing values:
     z2,ii=np.unique([L[0] for L in lookup3] , return_index=True)
     lookup=  [[a*1.0/1e6,b,c,d,e] for a,b,c,d,e in np.array(lookup3)[ii]]  # Recreate a dict with the subset of distinct values

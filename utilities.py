@@ -1240,7 +1240,10 @@ John
         # Use -cd option of latexmk, and assume that we want it compiled whereever the .tex file is, but in the local subfolder tmpTEX
         # -pvc should be optionalized here!
         # Insert " -commands " in the following for debuggin
-        cli=""" latexmk -silent  -cd -pdf %(fullpath)s --output-directory=tmpTEX %(pvc)s   && cp -a %(latexfolder)stmpTEX/%(texfn)s.pdf %(latexfolder)s%(texfn)s.pdf """%dict(auxdir=latexPath+'tmpTEX',fullpath=latexPath+fname, latexfolder=latexPath, pvc=' -pvc '*launchDaemon, texfn=fname)
+        pdfout='{latexfolder}tmpTEX/{texfn}.pdf '.format(auxdir=latexPath+'tmpTEX',fullpath=latexPath+fname, latexfolder=latexPath, pvc=' -pvc '*launchDaemon, texfn=fname)
+        cli=""" #rm --force {pdfout}
+        cd {latexfolder}
+        latexmk -silent  -cd -pdf {fullpath} --output-directory=tmpTEX {pvc}   && cp -a {pdfout} {latexfolder}{texfn}.pdf """.format(auxdir=latexPath+'tmpTEX',fullpath=latexPath+fname, latexfolder=latexPath, pvc=' -pvc '*launchDaemon, texfn=fname,pdfout=pdfout)
         print(cli)
         os.system(cli)
         # Only want to do following if success. How to tell?
