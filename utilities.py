@@ -1241,7 +1241,7 @@ John
         # -pvc should be optionalized here!
         # Insert " -commands " in the following for debuggin
         pdfout='{latexfolder}tmpTEX/{texfn}.pdf '.format(auxdir=latexPath+'tmpTEX',fullpath=latexPath+fname, latexfolder=latexPath, pvc=' -pvc '*launchDaemon, texfn=fname)
-        cli=""" #rm --force {pdfout}
+        cli="""
         cd {latexfolder}
         latexmk -silent  -cd -pdf {fullpath} --output-directory=tmpTEX {pvc}   && cp -a {pdfout} {latexfolder}{texfn}.pdf """.format(auxdir=latexPath+'tmpTEX',fullpath=latexPath+fname, latexfolder=latexPath, pvc=' -pvc '*launchDaemon, texfn=fname,pdfout=pdfout)
         print(cli)

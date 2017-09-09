@@ -4,7 +4,9 @@
 # Incorporated old cpblTables.py, ie interface for prducing tables to be used by cpblTables.tex.
 # Take a TSV/CSV file or (2014) a pandas DataFrame and generate a .tex include file that is used by my cpblTables.sty tools.
 """
- 2014 April: Provide tools for extracting a set of cells (location fixed) from an Excel sheet, too, doing some markup/formatting modifications, and outputting a CPBLtable for LaTeX.
+2014 April: Provide tools for extracting a set of cells (location
+ fixed) from an Excel sheet, too, doing some markup/formatting
+ modifications, and outputting a CPBLtable for LaTeX.
 
 Some possible work flows:
 
@@ -14,6 +16,7 @@ Some possible work flows:
 df=spreadsheetToTexDF(my XLS filename, sheet=sheet name, topleft=(x,y), bottomright=(x2,y2))
 #
 df.
+
 """
 import re
 import os
@@ -359,8 +362,42 @@ Implementaiton comments:  pandas has a to_latex(), and it offers to bold the fir
         return (callerTex.replace('PUT-TABLETEX-FILEPATH-HERE',outfile))
 
 
+def interleave_columns_as_rows(df):
+    """ Assume every second column of the data frame is a standard error value for the column to its left. Move these values so they are below the point estimates.
+    """
+    alts= df.iloc[:,1::2].copy()
+    alts.columns = df.columns[0::2]
+    newdf=df.iloc[:,0::2].copy()
+    newdf['__origOrd'] = range(len(newdf))
+    newdf['_sorting']=1
+    alts[ '_sorting']=2
+    alts['__origOrd'] = range(len(newdf))
+    anewdf = newdf.append(alts).sort_values(['__origOrd','_sorting'])
+    anewdf=anewdf[[cc for cc in anewdf if cc not in ['__origOrd','_sorting']]]
+    indd= anewdf.index.tolist()
+    # Now let's get rid of the row labels on every second line, so they're not duplicated:
+    for ii in range(1,len(indd),2):
+        indd[ii]=''
+    anewdf.index=indd
+    return(anewdf)
+
+def interleave_and_format_paired_columns_as_rows(odf, method='standard_errors'):
+    """ Assume every second column of the data frame is a standard error value for the column to its left. Format these Move these values so they are below the point estimates.
+    """
+    assert method== 'standard_errors'
+    df = odf.copy()
+    cols = df.columns
+    assert len(cols)%2 == 0
+    import pystata
+    for ii in range(0,len(cols),2):
+        pystata.formatPairedRow_DataFrame(df, cols[ii], cols[ii+1], prefix='tmppref')
+    df=df.iloc[:,len(cols):]
+    df.columns = df.columns.map(lambda ss: ss[7:])
+    print df
+    return interleave_columns_as_rows(df)
 
 
+    
 class cpblTableElements():
     def __init__(self,
                  body=None, firstPageHeader=None, otherPageHeader=None, ncols=None, nrows=None, footer=None, landscape=None, cformat=None, tableTitle=None, caption=None, label=None, tableName=None,tableType=None):
