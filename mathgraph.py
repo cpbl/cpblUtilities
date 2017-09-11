@@ -6601,6 +6601,21 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
     yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(actualRows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == esplot-ssplot , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
     #yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(nrows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow-1 , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
 
+def ensure_non_graphical_interface():
+    """
+    If running a long process under tmux, it's good not to have a graphical display set, otherwise the ipython process seems to die, rather than drop into the debugger, when a problem occurs.
+    """
+    if 'DISPLAY' in os.environ:
+        """
+        Should not be run if DISPLAY is set, or matplotlib backend is not set to Agg.
+        """
+        print('DISPLAY is '+os.environ['DISPLAY'])
+        if not skipConflictChecks:
+            raw_input("""Do NOT proceed unless you have started ipython without pylab, and used
+                import matplotlib as mpl
+                mpl.use('Agg')
+                import matplotlib.pyplot as plt
+                before running any osm code """)
         
 if 0:
     localPolynomialRegression(None,None,None,True)
