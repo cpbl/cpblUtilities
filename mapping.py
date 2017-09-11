@@ -188,17 +188,21 @@ The return value is the full svg text with colorbar added.
     # First, save svgtext to a file, if it is not one, and choose a (temporary) filename for the colorbar svg:
     # (Why can we use sg.fromfile no problem, but sg.fromtext causes Unicode trouble?)
     import tempfile
+    to_delete=[] # Collect list of temp files that must be deleted explicitly
     if '\n' not in svgtext_or_filename:
         insvgfn=svgtext_or_filename
     else:
         tmpfh,insvgfn=tempfile.mkstemp()
+        to_delete += [insvgfn]
         os.write(tmpfh, svgtext_or_filename)
         os.close(tmpfh) # see http://stackoverflow.com/questions/9944135/how-do-i-close-the-files-from-tempfile-mkstemp
     tmpfinalfh,outfilename=tempfile.mkstemp()
+    to_delete += [outfilename]
     os.close(tmpfinalfh) # see #153. Otherwise, we have a file descriptor leak. But this way we get the file name
 
     if colorbar_filename is None:
         tmpcbfh,CBfilename=tempfile.mkstemp()
+        to_delete += [CBfilename]
         os.close(tmpcbfh)
     else:
         CBfilename = colorbar_filename
@@ -334,7 +338,7 @@ The return value is the full svg text with colorbar added.
         with open(outfilename, 'r') as f:
             svgstr = f.read()
             
-    for fname in [insvgfn, outfilename]:
+    for fname in to_delete+[insvgfn, outfilename]: # list following + is redundant?
         if os.path.exists(fname):  os.remove(fname)
             
     return svgstr
