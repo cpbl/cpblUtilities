@@ -6601,7 +6601,7 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
     yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(actualRows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == esplot-ssplot , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
     #yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(nrows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow-1 , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
 
-def ensure_non_graphical_interface():
+def ensure_non_graphical_interface(do_not_stop=False):
     """
     If running a long process under tmux, it's good not to have a graphical display set, otherwise the ipython process seems to die, rather than drop into the debugger, when a problem occurs.
     """
@@ -6610,7 +6610,7 @@ def ensure_non_graphical_interface():
         Should not be run if DISPLAY is set, or matplotlib backend is not set to Agg.
         """
         print('DISPLAY is '+os.environ['DISPLAY'])
-        if not skipConflictChecks:
+        if not do_not_stop:
             raw_input("""Do NOT proceed unless you have started ipython without pylab, and used
                 import matplotlib as mpl
                 mpl.use('Agg')
