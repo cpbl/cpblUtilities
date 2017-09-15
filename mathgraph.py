@@ -6373,6 +6373,7 @@ def get_text_bounding_box(fig,ttt):
     #
     # This one is from: http://stackoverflow.com/questions/22667224/matplotlib-get-text-bounding-box-independent-of-backend
 
+    # 2017: It seems this is not working when there's a bbox around a text. Also, it seems like I could simply get each artist's "window_extent" which gives size and location.
     def find_renderer(fig):
         #From http://stackoverflow.com/questions/22667224/matplotlib-get-text-bounding-box-independent-of-backend
         if hasattr(fig.canvas, "get_renderer"):
@@ -6393,37 +6394,49 @@ def get_text_bounding_box(fig,ttt):
     renderer1 = find_renderer(fig)
     bboxes=[  att.get_window_extent(renderer1)   for att in ttt ]
     return(bboxes)
-def get_vertical_repulsion(bboxes):
-    #from matplotlib.patches import Rectangle
+def get_vertical_repulsion(bboxes, verbose=False, hvIndex=1, paddingFactor=0):
+    """
     hvIndex=1 # 1 is vertical; 0 is horizontal
+    """
     #rects=[[ Rectangle([bbox1.x0, bbox1.y0], bbox1.width, bbox1.height, color = [0,0,0], fill = False)] for bb1 in bboxes]
     shifts=[0]*len(bboxes)
+    if paddingFactor: # Fatten everything!
+        bboxes = [mpl.transforms.Bbox.from_bounds(x0-width*paddingFactor/2, y0-height*paddingFactor/2, width*(1+paddingFactor), height*(1+paddingFactor))  for x0,y0,width,height in [bb.bounds for bb in bboxes]]
     for ii1,bb1 in enumerate(bboxes):
         for ii2,bb2 in enumerate(bboxes):
+            print ii1,bb1
+            print ii2,bb2
             if ii1>=ii2: continue
             if bb1.overlaps(bb2):
+                if verbose: print('BBox{} overlaps BBox{}'.format(ii1,ii2))
                 onehigher=-1+2*(bb1.min[hvIndex] > bb2.min[hvIndex])
                 shifts[ii1]=onehigher
                 shifts[ii2]=-onehigher
     return(shifts)
 
-def resolve_overlaps_vertical(artists,fig=None,shiftResolution=.1, animate=False):
+def resolve_overlaps_vertical(artists,fig=None,shiftResolution=.1, animate=False, verbose=False, hvIndex=1, paddingFactor=0):
+    """
+    hvIndex=1 # ie vertical; 0=horizontal  * NOT IMPLEMENTED YET *
+
+Since this seems to fail for bbox texts, paddingFactor allows to add a buffer around each object!, ie fatten the bounding box in both dimensions. Factor 0.2 would end up with a width 1.2 times the original one.
+    """
     if fig is None:
         fig=plt.gcf()
     shifts=[1]
-    ShiftResolution=.2
-    hvIndex=1 # ie vertical; 0=horizontal
     while any(shifts):
         plt.draw()
-        #raw_input()
+        if verbose: raw_input()
         bboxes=get_text_bounding_box(fig,artists)
-        shifts=get_vertical_repulsion(bboxes)
-        #print shifts
-        #stext=[]
+        shifts=get_vertical_repulsion(bboxes, verbose=verbose, hvIndex=hvIndex, paddingFactor=paddingFactor)
+        if verbose:
+            print( '  Using resolution {}. Found {} objects, with following shifts: '.format(shiftResolution, len(artists), ))
+            for iii,aa in enumerate(artists):
+                print('     {}: {}'.format(aa,shifts[iii]))
+        #stext=[] #[plt.getp(aa,'text') for aa in artists]
         for iis,sh in enumerate(shifts):
-            #print stext[iis].get_window_extent()
-            artists[iis].set_y(artists[iis].get_position()[hvIndex]+sh*ShiftResolution)
-            #print stext[iis].get_window_extent()
+            #if verbose: print stext[iis].get_window_extent()
+            artists[iis].set_y(artists[iis].get_position()[hvIndex]+sh*shiftResolution)
+            #if verbose: print stext[iis].get_window_extent()
             if animate:
                 plt.show(), plt.draw()
 
