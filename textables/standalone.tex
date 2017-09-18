@@ -5,6 +5,8 @@
 \documentclass{article}
 \usepackage[table]{xcolor}
 \usepackage{relsize}
+\usepackage{longtable} % Only needed for longtables
+\usepackage{afterpage} % Only needed for longtables
 \begin{document}
 \newcommand{\ctNtabCols}{}
 \newcommand{\ctFirstHeader}{}
@@ -24,6 +26,11 @@
 \newcommand{\sltcheadername}[1]{#1}
 \newcommand{\cpblbottomrule}{}
 \newcommand{\cpbltoprule}{}
+
+\newcommand{\longTableFooter}{} % Only needed for longtables
+\newcommand{\longtableContinueFooter}{}  % Only needed for longtables
+
+
 \newcommand{\showSEs}[2]{#1} % To show SEs
     \newcommand{\coefse}[1]{{\smaller\smaller (#1)}}
 
@@ -76,7 +83,7 @@
 %%%  \renewcommand{\ntabcols}{#5}
 %%\usetinytablefont 
 \end{longtable}
-\ctResetDefinitionsClosing
+%\ctResetDefinitionsClosing
 }% afterpage
 
 
