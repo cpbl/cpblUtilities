@@ -967,7 +967,7 @@ def ods2tsv(filepath,outpath=None,replaceZerosWithBlanks=False):
     
 
 def dataframeWithLaTeXToTable(df,outfile,tableTitle=None,caption=None,label=None,footer=None,tableName=None,landscape=None, masterLatexFile=None,boldHeaders=False, boldFirstColumn=False,columnWidths=None,formatCodes='lc',hlines=False):#   ncols=None,nrows=None,, alignment="c"):
-    """ Note that pandas already has a latex output function built in. If it deals with multiindices, etc, it may be better to edit it rather than to start over. However, my cpblTableC function expects it to be broken up into cells still.
+    """ Note that pandas already has a latex output function built in. If it deals with multiindices, etc, it may be better to edit it rather than to start over. [See issue #5 for columns]. However, my cpblTableC function expects it to be broken up into cells still.
 
 This function takes a dataframe whos entries have already been converted to LaTeX strings (where needed)!.
 So not much is left to do before passing to cpblTableStyc.
@@ -1004,9 +1004,17 @@ hlines: if True, put horizontal lines on every line.
     cformat='|'+'|'.join(cformat)+'|'
     if not boldHeaders and not boldFirstColumn and not columnWidths:
         cformat=None
-    
+
+    if type(df.columns)==pd.MultiIndex:
+        columnheaders=[]
+        for icr in range(len(df.columns.values[0])):
+            columnheaders+=[(boldHeaders*'\\rowstyle{\\bfseries}%\n') + ' & '.join(df.columns.values[ii][icr] for ii in range(len(df.columns.values)))+'\\\\ \n'    ]
+        # SEe findAdjacentRepeats in pystata_core to replace repeats with centered multicolumn
+        firstPageHeader = '\\hline\n'+ '\n'.join( columnheaders) + ' \\hline\\hline\n '
+    else:
+        firstPageHeader = '\\hline\n'+(boldHeaders*'\\rowstyle{\\bfseries}%\n') + ' & '.join(df.columns.values)+'\\\\ \n\\hline\\hline\n'
     includeTex,callerTex=cpblTableStyC(cpblTableElements(
-            body=('\\\\ '+hlines*'\\hline'+' \n').join(['&'.join(RR)  for RR in df.as_matrix() ]) +'\\\\ \n\\cline{1-\\ctNtabCols}\n ',firstPageHeader='\\hline\n'+(boldHeaders*'\\rowstyle{\\bfseries}%\n') + ' & '.join(df.columns.values)+'\\\\ \n\\hline\\hline\n',otherPageHeader=None,tableTitle=tableTitle,caption=caption,label=label,footer=footer,tableName=tableName,landscape=landscape,cformat=cformat,),
+            body=('\\\\ '+hlines*'\\hline'+' \n').join(['&'.join(RR)  for RR in df.as_matrix() ]) +'\\\\ \n\\cline{1-\\ctNtabCols}\n ',firstPageHeader=firstPageHeader, otherPageHeader=None,tableTitle=tableTitle,caption=caption,label=label,footer=footer,tableName=tableName,landscape=landscape,cformat=cformat,),
                                        filepath=outfile,  masterLatexFile=masterLatexFile)
     #ncols=ncols,nrows=nrows,
     print(includeTex)

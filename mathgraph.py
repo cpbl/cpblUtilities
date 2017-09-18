@@ -6404,8 +6404,6 @@ def get_vertical_repulsion(bboxes, verbose=False, hvIndex=1, paddingFactor=0):
         bboxes = [mpl.transforms.Bbox.from_bounds(x0-width*paddingFactor/2, y0-height*paddingFactor/2, width*(1+paddingFactor), height*(1+paddingFactor))  for x0,y0,width,height in [bb.bounds for bb in bboxes]]
     for ii1,bb1 in enumerate(bboxes):
         for ii2,bb2 in enumerate(bboxes):
-            print ii1,bb1
-            print ii2,bb2
             if ii1>=ii2: continue
             if bb1.overlaps(bb2):
                 if verbose: print('BBox{} overlaps BBox{}'.format(ii1,ii2))
