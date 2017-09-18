@@ -964,7 +964,33 @@ def ods2tsv(filepath,outpath=None,replaceZerosWithBlanks=False):
         """
 #Test:
 #ods2tsv(os.path.expanduser('~/tmp/schedule.ods')) #example
-    
+
+
+def single_to_multicolumn_fixer(onerow, fmt=None):
+    """ Take a list of elements in one row of a LaTeX table, and find repeated values. Replace them with a multicolumn entry to span those cells.
+(See also findAdjacentRepeats in pystata?)
+    """
+    if fmt is None: fmt='|c|'
+    _lastval, _ncols = None,0
+    outs=[]
+    for ii,cc in enumerate(onerow+[None]):
+        if cc == _lastval or _ncols==0:
+            _ncols+=1
+            _lastval = cc
+        elif _ncols== 1:
+            outs+=[_lastval]
+            _lastval,_ncols = cc,1
+        elif _ncols > 1:
+            outs+=[r'\multicolumn{'+str(_ncols)+'}{'+fmt+'}{'+str(_lastval)+'}']
+            _lastval, _ncols = cc, 1
+        else:
+            1/0
+    return outs
+
+def _test_single_to_multicolumn_fixer():
+    assert single_to_multicolumn_fixer([1,2,3]) == [1,2,3]
+    assert single_to_multicolumn_fixer([1,2,3,3,3,4,5,6]) == [1, 2, '\\multicolumn{4}{|c|}{3}', 4, 5, 6]
+
 
 def dataframeWithLaTeXToTable(df,outfile,tableTitle=None,caption=None,label=None,footer=None,tableName=None,landscape=None, masterLatexFile=None,boldHeaders=False, boldFirstColumn=False,columnWidths=None,formatCodes='lc',hlines=False):#   ncols=None,nrows=None,, alignment="c"):
     """ Note that pandas already has a latex output function built in. If it deals with multiindices, etc, it may be better to edit it rather than to start over. [See issue #5 for columns]. However, my cpblTableC function expects it to be broken up into cells still.
@@ -1005,11 +1031,15 @@ hlines: if True, put horizontal lines on every line.
     if not boldHeaders and not boldFirstColumn and not columnWidths:
         cformat=None
 
+        
     if type(df.columns)==pd.MultiIndex:
         columnheaders=[]
         for icr in range(len(df.columns.values[0])):
-            columnheaders+=[(boldHeaders*'\\rowstyle{\\bfseries}%\n') + ' & '.join(df.columns.values[ii][icr] for ii in range(len(df.columns.values)))+'\\\\ \n'    ]
-        # SEe findAdjacentRepeats in pystata_core to replace repeats with centered multicolumn
+            print [df.columns.values[ii][icr] for ii in range(len(df.columns.values))]
+            onerow = single_to_multicolumn_fixer([df.columns.values[ii][icr] for ii in range(len(df.columns.values))],
+                                                 fmt = cformat)
+            columnheaders+=[ (boldHeaders*'\\rowstyle{\\bfseries}%\n') + ' & '.join(onerow )+'\\\\ \n'    ]
+        print columnheaders
         firstPageHeader = '\\hline\n'+ '\n'.join( columnheaders) + ' \\hline\\hline\n '
     else:
         firstPageHeader = '\\hline\n'+(boldHeaders*'\\rowstyle{\\bfseries}%\n') + ' & '.join(df.columns.values)+'\\\\ \n\\hline\\hline\n'
