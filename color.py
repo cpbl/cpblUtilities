@@ -28,7 +28,7 @@ Therefore, two tools are fundamental to this effort:
 
  (2) A tool to build a colorbar next to any plot axis in which you've made use of colours (scatter plot, etc). The colorbar shows data values (scaled linearly) and their corresponding colours (which are not in general "linearly" arranged in terms of the underlying color scheme). This tool is addColorbarNonImage()
 
-What about the more straightforward "linear" use of colormaps? The latter function (addColorbarNonImage()) deals also with these. For generating those mappings, however, ie to get a lookup function that goes from data values to colours, or from indexed things (e.g. string names!) to colours, use getIndexedColormap().
+What about the more straightforward "linear" use of colormaps? The latter function (addColorbarNonImage()) deals also with these. For generating those mappings, however, ie to get a lookup function that goes from data values to colours, or from indexed things (e.g. string names) to colours, use getIndexedColormap().
 
 n.b. Others have used similar language (nonlinear colormap) and wanted the same thing. (e.g. http://protracted-matter.blogspot.ie/2012/08/nonlinear-colormap-in-matplotlib.html). But they generally fiddle with values in one axis. I want to set up the mapping and use it for various sets of data.
 
@@ -276,13 +276,14 @@ def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
         cdict['alpha'].append((si, a, a))
 
     newcmap = matplotlib.colors.LinearSegmentedColormap(name, cdict)
-    plt.register_cmap(cmap=newcmap)
+    mpl.cm.register_cmap(cmap=newcmap)
 
     return newcmap
 
 def shiftedColorMap_example():
     """ just to show usage of above"""
-    biased_data = np.random.random_integers(low=-15, high=5, size=(37,37))
+    #biased_data = np.random.random_integers(low=-15, high=5, size=(37,37))
+    biased_data = np.random.randint(low=-15, high=5, size=(37,37))
 
     orig_cmap = matplotlib.cm.coolwarm
     shifted_cmap = shiftedColorMap(orig_cmap, midpoint=0.75, name='shifted')
@@ -372,7 +373,7 @@ def _colorAssignmentToColorbarmap(d2cDict,cmapname=None):
     rgb=[rr,gg,bb]
     cdict=dict([ [cc,        np.array([ii,rgb[jj],rgb[jj]]).T]        for jj,cc in enumerate(['red','green','blue'])])
 
-    plt.register_cmap(name=cmapname, data=cdict)
+    mpl.cm.register_cmap(name=cmapname, data=cdict)
     return(plt.get_cmap(cmapname))
 
 
@@ -405,7 +406,7 @@ def _colorAssignmentToColorbarmap(d2cDict,cmapname=None):
         for kk in cdict:
             assert strictly_increasing([a for a,b,c in cdict[kk]])
 
-    plt.register_cmap(name=cmapname, data=cdict)
+    mpl.cm.register_cmap(name=cmapname, data=cdict)
 
     return(plt.get_cmap(cmapname))
 
@@ -542,7 +543,7 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
         else:
             raise('Cannot make d2c dict... Stuck')
         cmapD=  _colorAssignmentToColorbarmap(d2cDict,cmapname=cmapName )
-        plt.register_cmap(cmap=cmapD)
+        mpl.cm.register_cmap(cmap=cmapD)
 
     cmap=cmapD
         
@@ -722,11 +723,12 @@ def cpblColorDemos():
     # One can always look inside a colormap object by first *registering it*, and then accessing it by name (in this case, a temporary one)
     # Actually, let's ovewrite the name:
     #mycmap.name= 'test_cmap'
-    plt.register_cmap(cmap=mycmap)
+    mpl.cm.register_cmap(cmap=mycmap)
     # Check that mpl now knows it:
     mycmap.name in sorted( plt.colormaps() )
     # We can recover the details of a cm with:
-    print(plt.cm.datad[mycmap.name])
+    if 0: print(plt.cm.datad[mycmap.name]) # This fails 201709, though mpl.cm.get_cmap(mycmap.name) gets the object.
+    
 
     subplot(141)
     hist(mydata,bins=50)
@@ -744,7 +746,7 @@ def cpblColorDemos():
     # For some reason, that also shrinks the bar and moves it up, with a bug in the border line for it:
     hist(mydata,bins=50)
     hcb3=addColorbarNonImage(data=mydata,cmap=mycmap)#,useaxis=ax)
-    hcb3.set_ylim(0, ( 5-min(mydata)) /   (max(mydata)-min(mydata)))
+    if 0: hcb3.set_ylim(0, ( 5-min(mydata)) /   (max(mydata)-min(mydata))) # this fails 201709
 
     subplot(144)
     
@@ -753,7 +755,7 @@ def cpblColorDemos():
     # I think it will be inside addcolorbarnonimage, take the final colormap, create a cdict from it?! and edit the cdict (laborious!) to have the colormap end at the appropriate place. Hard.
 
     plt.show()
-    foiuwer
+
 
     plt.imshow(Z, interpolation='nearest', cmap='_tmp-755')
     plt.colorbar()
@@ -800,6 +802,26 @@ def cpblColorDemos():
 
 
 #################### CAUTION: linearColormapLookup and assignColormapEvenly are not yet sanctioned to be in this file. Ascertain whether it can be obseleted.
+
+def colorDemos2017():
+
+    # Consider node and edge degree. Our fake data set consists of one value of each possible value:
+    z = [1,2,2.5,3,3.5,4]
+    mydata2colors = assignSplitColormapEvenly(z , splitdataat = 3, RGBpoints = [[1,0,0],[.5,0,.5],[0,0,1]]
+,)
+    #I can now color data  with this function:
+    y = np.random.normal(3, 1, 100)
+    plt.figure(1001), plt.clf()
+    for ii,ay in enumerate(y):
+        plt.plot(ii,ay ,'o', color = mydata2colors(ay))
+    plt.show()
+    raw_input()
+    #addColorbarNonImage(mydata2colors,useaxis=None,ylabel='Degree')
+
+    #addColorbarNonimage(data=data, data2color= d2c_interp1)
+    addColorbarNonImage(datarange=[1,4], data2color=mydata2colors)
+    plt.draw()
+    raw_input()
 
 def assignColormapEvenly(cmap,zs,asDict=False,missing=[1,1,1]):
     from cpblUtilities.color import assignSegmentedColormapEvenly
@@ -857,5 +879,7 @@ def linearColormapLookup(cmap,zs,extendedLimits=None):#,returnformat='function')
 if __name__ == '__main__':
     import pylab as plt
     import matplotlib as mpl
+    colorDemos2017()
+    notthis
     cpblColorDemos()
 #    demoCPBLcolormapFunctions()    
