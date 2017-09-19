@@ -449,7 +449,7 @@ def addColorbarNonimage(data=None,datarange=None,data2color=None,cmap=None,useax
     Sorry_USE_NEW_FORMAT_NEW_NAME
     MUST_not_pass_anything_without_explicit_keyword_in_new_format
 #def addColorbarNonimage(mindata,maxdata=None,useaxis=None,ylabel=None,cmap=None,colorbarfilename=None,location=None):
-def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None, **narg):
+def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None, **argin):
     """
     It adds a colorbar on the side to show a third dimension to a plot.
 
@@ -484,7 +484,7 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
         addColorbarNonimage(data=data, data2color= d2c_interp1)
         addColorbarNonimage(datarange=[mind,maxd], data2color=d2c_interp1)
 
-
+    Extra arguments to this function are passed on to ColorbarBase
 """
 
     import matplotlib as mpl
@@ -549,7 +549,7 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
         
     # Now, I believe the following is good, although maybe not if there are numerous duplicates in case when a lookup is passed (?)
     cnorm = mpl.colors.Normalize(vmin=mindata,vmax=maxdata)
-    cb1 = mpl.colorbar.ColorbarBase(mpl.colorbar.make_axes(useaxis,pad=0,location=location)[0], cmap=cmap,norm=cnorm,orientation='horizontal' if location in ['top','bottom'] else 'vertical', **arg)
+    cb1 = mpl.colorbar.ColorbarBase(mpl.colorbar.make_axes(useaxis,pad=0,location=location)[0], cmap=cmap,norm=cnorm,orientation='horizontal' if location in ['top','bottom'] else 'vertical', **argin)
     if ticks is not None: cb1.set_ticks(ticks)
     cbax=plt.gca()
     
