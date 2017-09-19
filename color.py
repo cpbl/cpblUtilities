@@ -449,7 +449,7 @@ def addColorbarNonimage(data=None,datarange=None,data2color=None,cmap=None,useax
     Sorry_USE_NEW_FORMAT_NEW_NAME
     MUST_not_pass_anything_without_explicit_keyword_in_new_format
 #def addColorbarNonimage(mindata,maxdata=None,useaxis=None,ylabel=None,cmap=None,colorbarfilename=None,location=None):
-def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None, **argin):
+def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None, preserve_axis_position=True, **argin):
     """
     It adds a colorbar on the side to show a third dimension to a plot.
 
@@ -505,6 +505,8 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
             return(min(data2color.keys()),max(data2color.keys()))
 
     if useaxis is None: useaxis=plt.gca()
+    parent_axis_position = useaxis.get_position()
+    parent_axis_xlim = useaxis.get_xlim()
     assert data is None or data.__class__ in [list, np.ndarray]
     assert datarange is None or isinstance(datarange,(list, np.ndarray))
     # We need information on the range of data:
@@ -556,6 +558,20 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
 
     if ylabel is not None:
         cbax.set_ylabel(ylabel)
+
+    # Now restore the original geometry of the parent axis, and its xlims, which matplotlib chose to screw up.
+    if preserve_axis_position:
+        # Assuming it's a vertical colorbar on the right (CAUTION!! it's not always), just restore x2:
+        revised_parent_position = useaxis.get_position()
+        dx = parent_axis_position.x0 - revised_parent_position.x0
+        useaxis.set_position(parent_axis_position)
+        plt.draw()
+        cbax_position = cbax.get_position()
+        cbax_position.x0 = cbax_position.x0 + parent_axis_position.x1 - revised_parent_position.x1
+        cbax_position.x1 = cbax_position.x1 + parent_axis_position.x1 - revised_parent_position.x1
+        cbax.set_position(cbax_position)
+    assert useaxis.get_xlim() == parent_axis_xlim  # I don't think we need to mess with this.
+    plt.sca(cbax)
     return(cb1)#cbax)
 
     """ OLD COMMENTS BELOW ARE TRASH.nov2014
