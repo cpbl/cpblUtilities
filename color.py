@@ -564,6 +564,7 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
         # Assuming it's a vertical colorbar on the right (CAUTION!! it's not always), just restore x2:
         revised_parent_position = useaxis.get_position()
         dx = parent_axis_position.x1 - revised_parent_position.x1
+        debug =False
         if debug: assert dx
         if debug: print cbax.get_position()
         useaxis.set_position(parent_axis_position)
