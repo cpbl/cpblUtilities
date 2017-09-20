@@ -563,13 +563,18 @@ def addColorbarNonImage(data2color=None,data=None,datarange=None,cmap=None,useax
     if preserve_axis_position:
         # Assuming it's a vertical colorbar on the right (CAUTION!! it's not always), just restore x2:
         revised_parent_position = useaxis.get_position()
-        dx = parent_axis_position.x0 - revised_parent_position.x0
+        dx = parent_axis_position.x1 - revised_parent_position.x1
+        if debug: assert dx
+        if debug: print cbax.get_position()
         useaxis.set_position(parent_axis_position)
-        plt.draw()
+        if debug: print cbax.get_position()
+        plt.draw() # needed to change/update cbax position?!
+        if debug: print cbax.get_position()
         cbax_position = cbax.get_position()
-        cbax_position.x0 = cbax_position.x0 + parent_axis_position.x1 - revised_parent_position.x1
-        cbax_position.x1 = cbax_position.x1 + parent_axis_position.x1 - revised_parent_position.x1
+        cbax_position.x1 = cbax_position.x1 + dx
+        cbax_position.x0 = cbax_position.x0 + dx
         cbax.set_position(cbax_position)
+        if debug: print cbax.get_position()
     assert useaxis.get_xlim() == parent_axis_xlim  # I don't think we need to mess with this.
     plt.sca(cbax)
     return(cb1)#cbax)
