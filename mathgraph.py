@@ -5368,6 +5368,20 @@ def set_backgroundcolor(ax, color):
          lh.legendPatch.set_facecolor(color)
 
 
+def weighted_cov(x, y, w):
+    """Weighted Covariance"""
+    return np.sum(w * (x - np.average(x,weights=w)) * (y - np.average(y,weights=w))) / np.sum(w)
+def weighted_corr(x, y, w):
+    """Weighted Correlation"""
+    return weighted_cov(x, y, w) / np.sqrt(weighted_cov(x, x, w) * weighted_cov(y, y, w))
+def weightedPearsonCoefficient(x, y, w):
+    assert len(x) == len(y)
+    assert len(x) == len(w)
+    assert len(x) > 0
+    assert not pd.isnull(x).any()
+    assert not pd.isnull(y).any()
+    assert not pd.isnull(w).any()
+    return weighted_corr(x,y,w)
 
 
 def weightedMeanSE(arrin, weights_in, inputmean=None, calcerr=True, sdev=False):
