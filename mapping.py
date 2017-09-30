@@ -162,9 +162,9 @@ colorize_svg=colorize_svg_by_class_or_id
 #See  colorize_country_svg(twolettercodes_to_data=None, outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
 # in bin/osm/analysis.py for an implementation which makes use of the tools below and can be generalized to recreate the colorize_svg() below.
 
-def addColorbar_to_svg(svgtext_or_filename,data2color=None, scratchpath=None, colorbarlimits=None, colorbar_ylabel=None, colorbar_aspectratio=6, colorbar_filename=None,
+def addColorbar_to_svg(svgtext_or_filename,data2color=None, scratchpath=None, colorbarlimits=None, colorbar_ylabel=None, colorbar_aspectratio=6, ticks=None,colorbar_filename=None,
                        # Following set of parameters describes location of colorbar. These used to be
-                       colorbar_location=None,):
+                       frameon=True,colorbar_location=None,):
     """
 colorbar_filename: If you want to get access to the colorbar by itself, set this. Otherwise, a tempfile is used.
 
@@ -229,10 +229,11 @@ The return value is the full svg text with colorbar added.
     from cpblUtilities.color import addColorbarNonImage
     if 'fontsize' in colorbar_location: # This is measured in points.
         plt.rcParams.update({        'font.size': colorbar_location['fontsize'],})
-    hbax=addColorbarNonImage(data2color,ylabel=colorbar_ylabel) # data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None):
+    hbax=addColorbarNonImage(data2color,ylabel=colorbar_ylabel,ticks=ticks) # data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None):
     plt.setp(hax,'visible',False) # In fact, I think I've seen example where this hax was even in a different figure, already closed!
     hbax.ax.set_aspect(colorbar_aspectratio)
-    plt.savefig(CBfilename+'.svg', bbox_inches='tight', pad_inches=0.1) 
+    plt.gcf().frameon=frameon
+    plt.savefig(CBfilename+'.svg', bbox_inches='tight', pad_inches=0.1,frameon=frameon) 
     #plt.savefig(CBfilename+'.png', bbox_inches='tight', pad_inches=0.1) # for testing
     # Or, I can just grab it directly!  So above saving is no longer needed, except that I want one colorbar created at some point for each standard variable...
     from svgutils.transform import from_mpl
