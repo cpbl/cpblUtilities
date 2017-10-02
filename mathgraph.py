@@ -5374,13 +5374,15 @@ def weighted_cov(x, y, w):
 def weighted_corr(x, y, w):
     """Weighted Correlation"""
     return weighted_cov(x, y, w) / np.sqrt(weighted_cov(x, x, w) * weighted_cov(y, y, w))
-def weightedPearsonCoefficient(x, y, w):
+def weightedPearsonCoefficient(x, y, w=None):
+    if w in [None,1, 1.0]:
+        return np.corrcoef(x,y)[0][1]
     assert len(x) == len(y)
-    assert len(x) == len(w)
+    assert len(x) == len(w) 
     assert len(x) > 0
     assert not pd.isnull(x).any()
     assert not pd.isnull(y).any()
-    assert not pd.isnull(w).any()
+    assert  not pd.isnull(w).any()
     return weighted_corr(x,y,w)
 
 
