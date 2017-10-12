@@ -466,18 +466,19 @@ sep2012:    Agh. what about stuff drawn in bg colour, eg to over? I want to swti
         if colour in ['k',(0,0,0),(0,0,0,0),]:
             o.set_color('w')
     def checkFaceEdgeColour(oo):
-        colour=oo.get_edgecolor()
-        if hasattr(colour, 'shape'): # Is mpl.array!
-            if colour.shape in [(1,4)]:
-                if sum(colour[0][0:3])==0:
-                    # Leave alpha as is; set black to white:
-                    colour[0][0:3]=[1,1,1]
-        elif len(colour) in [3,4]:
-            colour=list(colour)
-            if colour in ['k',(0,0,0),(0,0,0,0),]:
-                o.set_edgecolor('w')
-        else:
-            ffffooijoweiruiuiuuoiuiu
+        if hasattr(oo,'get_edgecolor'):
+            colour=oo.get_edgecolor()
+            if hasattr(colour, 'shape'): # Is mpl.array!
+                if colour.shape in [(1,4)]:
+                    if sum(colour[0][0:3])==0:
+                        # Leave alpha as is; set black to white:
+                        colour[0][0:3]=[1,1,1]
+            elif len(colour) in [3,4]:
+                colour=list(colour)
+                if colour in ['k',(0,0,0),(0,0,0,0),]:
+                    o.set_edgecolor('w')
+            else:
+                ffffooijoweiruiuiuuoiuiu
         colour=oo.get_facecolor()
         if hasattr(colour, 'shape'): # Is mpl.array!
             if colour.shape in [(1,4)]:
@@ -517,7 +518,7 @@ sep2012:    Agh. what about stuff drawn in bg colour, eg to over? I want to swti
             checkFaceEdgeColour(o)
 
     # what about figure itself? See also  facecolor of savefig...
-    if fig.get_facecolor()[0]==.75:
+    if fig.get_facecolor()[0] in [.75, 1.0]: # Not sure why not just always set it to 'k'.? (201710cpbl)
         fig.set_facecolor('k')
     elif fig.get_facecolor() not in [(0.0, 0.0, 0.0, 1.0)]:
         print('deal with this')
@@ -1028,7 +1029,7 @@ def yTicksIncome(nticks=7,natlog=False,tenlog=False,kticks=None,dollarsign=True,
     )
 
 
-def xticksExponentiate(base10=False):
+def xyticksExponentiate(base10=False, x=True, y=False):
     """
     The x-values are log or log10, but I want the labels to show the unlogged values
     N.B. Only shows integer values.
@@ -1040,9 +1041,12 @@ def xticksExponentiate(base10=False):
             return(r'10$^{%s}$'%int(vv)  )
         return('') # Hide all non-integer values!?
 
-    if base10:
+    if base10 and x:
         gca().xaxis.set_major_formatter( mpl.ticker.FuncFormatter(pow2base10))
+    if base10 and y:
+        gca().yaxis.set_major_formatter( mpl.ticker.FuncFormatter(pow2base10))
 
+        
 ##############################################################################
 ##############################################################################
 #
@@ -5465,8 +5469,8 @@ def weightedMeanSE_pandas(df,varNames,weightVar='weight'):
         varNames=[varNames]
     varPrefix=''
     for mv in varNames:
-        X,W=finiteValues(df[mv].values,df[weightVar].values)
-        mu,se=weightedMeanSE(X,W) # Gives same as Stata!
+        df2=df[np.isfinite(df[[mv,weightVar]]).all(axis=1)]
+        mu,se=weightedMeanSE(df2[mv], df2[weightVar]) # Gives same as Stata!
         # Values need to be vectors(lists) for the conversion to DataFrame, it seems.
         outs.update({varPrefix+mv: mu,   varPrefix+'se_'+mv: se})
     return(pd.Series(outs)) # Return this as a Series; this avoids adding a new index in groupby().apply
@@ -6450,7 +6454,7 @@ Since this seems to fail for bbox texts, paddingFactor allows to add a buffer ar
         #stext=[] #[plt.getp(aa,'text') for aa in artists]
         for iis,sh in enumerate(shifts):
             #if verbose: print stext[iis].get_window_extent()
-            artists[iis].set_y(artists[iis].get_position()[hvIndex]+sh*shiftResolution)
+            artists[iis].set_y(float(artists[iis].get_position()[hvIndex])+sh*shiftResolution)
             #if verbose: print stext[iis].get_window_extent()
             if animate:
                 plt.show(), plt.draw()

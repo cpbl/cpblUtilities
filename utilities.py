@@ -1024,7 +1024,7 @@ def dsetset(adict,keys,avalue):
     ############################################################################################
     ############################################################################################
     """
-    July 2011: making the converse of dgetget... but I think rather more efficient!
+    July 2011: making the converse of dgetget... but I think rather more efficient.
     This sets the value of a nested dict, ensuring that the sublevels exist.
     adict must exist and be a dict, of course.
     """
@@ -1042,20 +1042,24 @@ def dgetget(adict,keys,defaultvalue,*args):
     ############################################################################################
     ############################################################################################
     """
-    July 2011: rewriting degetget, using recursion, and conforming only to the newer format in which a  list of the keys is passed.
-    Much more efficient than the old version which took nargs!
+    There are two calling formats. The 2011 format is 
+
+       dgetget( mdict, [<list of keys>], default_value)
+
+    while the older format is 
+
+       dgetget( mdict, key1, key2, ...., keyN, default_value)
+
+    The first is preferred, and the second/older version is simply translated into the first, which uses recursion to calculate the result.
+
     adict must exist and be a dict, of course.
 
-    *args is vestigial, for backwards compatibility. It should not be used.
     """
-    # Backwards compatibility: Ancient dgetgetold(adict, key1, key2, key3=None,key4=None,key5=None,key6=None,keyn=None):
+    # Backwards compatibility: Ancient dgetget(adict, key1, key2, key3=None,key4=None,key5=None,key6=None,keyn=None):
     if not isinstance(keys,list):
         keylist=[keys,defaultvalue]+list(args)
-        #keylist=keylist[:min([ii  for ii in range(len(keylist)) if keylist[ii] is None])]
         keylist, defaultvalue= keylist[:-1] ,keylist[-1]
         return( dgetget(adict,keylist,defaultvalue))
-    #  
-        return( dgetgetOLD(adict,keys,defaultvalue,key3=key3,key4=key4,key5=key5,key6=key6,keyn=keyn))
 
     # New, recursive algorithm, which takes a list of keys as second argument:
     if keys[0] not in adict:
@@ -1063,13 +1067,6 @@ def dgetget(adict,keys,defaultvalue,*args):
     if len(keys)==1:
         return(adict[keys[0]])
     return(dgetget(adict[keys[0]],keys[1:],defaultvalue))
-dgetgetOLD=dgetget
-
-
-
-
-
-
 
         
 ################################################################################################
