@@ -6433,14 +6433,18 @@ def get_vertical_repulsion(bboxes, verbose=False, hvIndex=1, paddingFactor=0):
                 shifts[ii2]=-onehigher
     return(shifts)
 
-def resolve_overlaps_vertical(artists,fig=None,shiftResolution=.1, animate=False, verbose=False, hvIndex=1, paddingFactor=0):
+def resolve_overlaps(artists, ax=None,shiftResolution=None, animate=False, verbose=False, hvIndex=1, paddingFactor=0):
     """
     hvIndex=1 # ie vertical; 0=horizontal  * NOT IMPLEMENTED YET *
 
 Since this seems to fail for bbox texts, paddingFactor allows to add a buffer around each object!, ie fatten the bounding box in both dimensions. Factor 0.2 would end up with a width 1.2 times the original one.
     """
-    if fig is None:
-        fig=plt.gcf()
+    if ax is None:
+        ax=plt.gca()
+    fig = ax.figure
+    if shiftResolution is None:
+        lff={0:ax.get_xlim, 1: ax.get_ylim}[hvIndex]
+        shiftResolution = (max(lff())-min(lff()) )/400 #abs(  (ax.get_xlim()[1]-ax.get_xlim()[0])/400) # .1
     shifts=[1]
     while any(shifts):
         plt.draw()

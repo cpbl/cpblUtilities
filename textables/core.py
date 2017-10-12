@@ -393,7 +393,7 @@ def interleave_and_format_paired_columns_as_rows(odf, method='standard_errors'):
         pystata.formatPairedRow_DataFrame(df, cols[ii], cols[ii+1], prefix='tmppref')
     df=df.iloc[:,len(cols):]
     df.columns = df.columns.map(lambda ss: ss[7:])
-    print df
+    if 0:print df
     return interleave_columns_as_rows(df)
 
 
@@ -1035,11 +1035,11 @@ hlines: if True, put horizontal lines on every line.
     if type(df.columns)==pd.MultiIndex:
         columnheaders=[]
         for icr in range(len(df.columns.values[0])):
-            print [df.columns.values[ii][icr] for ii in range(len(df.columns.values))]
+            if 0: print [df.columns.values[ii][icr] for ii in range(len(df.columns.values))]
             onerow = single_to_multicolumn_fixer([df.columns.values[ii][icr] for ii in range(len(df.columns.values))],
                                                  fmt = cformat)
             columnheaders+=[ (boldHeaders*'\\rowstyle{\\bfseries}%\n') + ' & '.join(onerow )+'\\\\ \n'    ]
-        print columnheaders
+        if 0: print columnheaders
         firstPageHeader = '\\hline\n'+ '\n'.join( columnheaders) + ' \\hline\\hline\n '
     else:
         firstPageHeader = '\\hline\n'+(boldHeaders*'\\rowstyle{\\bfseries}%\n') + ' & '.join(df.columns.values)+'\\\\ \n\\hline\\hline\n'
@@ -1047,9 +1047,10 @@ hlines: if True, put horizontal lines on every line.
             body=('\\\\ '+hlines*'\\hline'+' \n').join(['&'.join(RR)  for RR in df.as_matrix() ]) +'\\\\ \n\\cline{1-\\ctNtabCols}\n ',firstPageHeader=firstPageHeader, otherPageHeader=None,tableTitle=tableTitle,caption=caption,label=label,footer=footer,tableName=tableName,landscape=landscape,cformat=cformat,),
                                        filepath=outfile,  masterLatexFile=masterLatexFile)
     #ncols=ncols,nrows=nrows,
-    print(includeTex)
+    if 0: print(includeTex)
     with open(outfile,'wt',encoding='utf-8') as f:
         f.write(includeTex)
+    print(' Wrote '+includeTex)
     if boldHeaders: print(r"""
 \usepackage{array}
 \newcolumntype{+}{>{\global\let\currentrowstyle\relax}}
