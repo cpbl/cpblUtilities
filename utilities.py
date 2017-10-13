@@ -1056,7 +1056,7 @@ def dgetget(adict,keys,defaultvalue,*args):
 
     """
     # Backwards compatibility: Ancient dgetget(adict, key1, key2, key3=None,key4=None,key5=None,key6=None,keyn=None):
-    if not isinstance(keys,list):
+    if not hasattr(keys, '__iter__'): #isinstance(keys,list):
         keylist=[keys,defaultvalue]+list(args)
         keylist, defaultvalue= keylist[:-1] ,keylist[-1]
         return( dgetget(adict,keylist,defaultvalue))

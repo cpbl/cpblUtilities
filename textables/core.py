@@ -215,7 +215,6 @@ Decide on and document combined decimals / sigdigs behaviour.
 
         formatDFforLaTeX(df,row=None,sigdigs=sigdigs,colour=None,leadingZeros=leadingZeros)
         self.df=df
-        print df
         return # init() just return None
 
     def emboldenRow(self,row):
