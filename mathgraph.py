@@ -6436,7 +6436,7 @@ def get_vertical_repulsion(bboxes, verbose=False, hvIndex=1, paddingFactor=0):
 
 def resolve_overlaps(artists, ax=None,shiftResolution=None, animate=False, verbose=False, hvIndex=1, paddingFactor=0):
     """
-    hvIndex=1 # ie vertical; 0=horizontal  * NOT IMPLEMENTED YET *
+    hvIndex=1 # ie vertical; 0=horizontal  * DONE, NOT TESTED YET *
 
 Since this seems to fail for bbox texts, paddingFactor allows to add a buffer around each object!, ie fatten the bounding box in both dimensions. Factor 0.2 would end up with a width 1.2 times the original one.
 
@@ -6463,7 +6463,8 @@ The axis of interest could be reversed (decreasing). In this case, shiftResoluti
         #stext=[] #[plt.getp(aa,'text') for aa in artists]
         for iis,sh in enumerate(shifts):
             #if verbose: print stext[iis].get_window_extent()
-            artists[iis].set_y(float(artists[iis].get_position()[hvIndex])+sh*shiftResolution)
+            set_function= {0:artists[iis].set_x, 1: artists[iis].set_y}[hvIndex]
+            set_function(float(artists[iis].get_position()[hvIndex])+sh*shiftResolution)
             #if verbose: print stext[iis].get_window_extent()
             if animate:
                 plt.show(), plt.draw()
