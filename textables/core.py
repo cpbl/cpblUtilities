@@ -1049,7 +1049,7 @@ hlines: if True, put horizontal lines on every line.
     if 0: print(includeTex)
     with open(outfile,'wt',encoding='utf-8') as f:
         f.write(includeTex)
-    print(' Wrote '+includeTex)
+    #print(' Wrote '+includeTex)
     if boldHeaders: print(r"""
 \usepackage{array}
 \newcolumntype{+}{>{\global\let\currentrowstyle\relax}}

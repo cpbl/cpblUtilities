@@ -6418,6 +6418,7 @@ def get_text_bounding_box(fig,ttt):
 def get_vertical_repulsion(bboxes, verbose=False, hvIndex=1, paddingFactor=0):
     """
     hvIndex=1 # 1 is vertical; 0 is horizontal
+    This returns...
     """
     #rects=[[ Rectangle([bbox1.x0, bbox1.y0], bbox1.width, bbox1.height, color = [0,0,0], fill = False)] for bb1 in bboxes]
     shifts=[0]*len(bboxes)
@@ -6438,13 +6439,17 @@ def resolve_overlaps(artists, ax=None,shiftResolution=None, animate=False, verbo
     hvIndex=1 # ie vertical; 0=horizontal  * NOT IMPLEMENTED YET *
 
 Since this seems to fail for bbox texts, paddingFactor allows to add a buffer around each object!, ie fatten the bounding box in both dimensions. Factor 0.2 would end up with a width 1.2 times the original one.
+
+The axis of interest could be reversed (decreasing). In this case, shiftResolution must be negative. (If None, it is set automatically to be so)
     """
     if ax is None:
         ax=plt.gca()
+    # Axis may be inverted
     fig = ax.figure
+    lff={0:ax.get_xlim, 1: ax.get_ylim}[hvIndex]
     if shiftResolution is None:
-        lff={0:ax.get_xlim, 1: ax.get_ylim}[hvIndex]
-        shiftResolution = (max(lff())-min(lff()) )/400 #abs(  (ax.get_xlim()[1]-ax.get_xlim()[0])/400) # .1
+        shiftResolution = (lff()[1]-lff()[0] )/400 #N.B. This is negative for decreasing-scale axes.
+    assert np.sign(lff()[1]-lff()[0]) == np.sign(shiftResolution)
     shifts=[1]
     while any(shifts):
         plt.draw()
