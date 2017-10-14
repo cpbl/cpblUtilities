@@ -1566,26 +1566,41 @@ def merge_dictionaries(default,update, verboseSource=False, allow_new_keys=True)
     return result
 
 
-def mergePDFs(listOfFns, outFn):
+def mergePDFs(listOfFns, outFn, allow_not_exist=True, delete_originals = True):
     """ merges all the PDFs in listOfFns, saves them to outFn and deletes orginals"""
+    if allow_not_exist:
+        missing = [ff  for ff in listOfFns if not os.path.exists(ff)    ]
+        if missing:
+            print(' CAUTION: Following do not exist, so  being excluded from a merged PDF file:\n         '+'\n         '.join(missing) + '\n')
+        listOfFns = list ( set(listOfFns) - set(missing) )
+    if len(listOfFns)==0:
+        print('   --- No existing PDFs to merge -- ')
+        return
+    
     try:  # marmite
         import PyPDF2
         merger = PyPDF2.PdfFileMerger()
         for fn in listOfFns: 
             merger.append(fn)
-            os.remove(fn)
+            if delete_originals:
+                for fn in listOfFns: os.remove(fn)
         merger.write(outFn)
         print('(pypdf) Wrote '+outFn)
     except:  # apollo or cpblx230:
         try:
             cmd = 'pdftk ' + ' '.join(listOfFns) + ' cat output ' + outFn
             os.system(cmd)
-            for fn in listOfFns: os.remove(fn)
+            if delete_originals:
+                for fn in listOfFns: os.remove(fn)
             print('(pdftk) Wrote '+outFn)
         except:
             print('Could not merge PDFs %s. pdftk not available. You might want to merge manually.' %   listOfFns)      
     return
 
+def merge_pdfs_if_exist(infiles, outfile):
+    osc = 'pdftk '+' '.join([ff for ff in infiles if ff not in missing])+ ' cat output {}'.format(outfile)
+    os.system(osc)
+    print('   SYSTEMCALL: '+osc+'\n')
 
 if 0:
     try: # Where is this needed? Should import it only where needed.        
