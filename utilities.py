@@ -1568,33 +1568,33 @@ def merge_dictionaries(default,update, verboseSource=False, allow_new_keys=True)
 
 def mergePDFs(listOfFns, outFn, allow_not_exist=True, delete_originals = True):
     """ merges all the PDFs in listOfFns, saves them to outFn and deletes orginals"""
+    missing = [ff  for ff in listOfFns if not os.path.exists(ff)    ]
+    if missing:
+        print(' CAUTION: Following do not exist'+allow_not_exist*', so  being excluded from a merged PDF file'+':\n         '+'\n         '.join(missing) + '\n')
     if allow_not_exist:
-        missing = [ff  for ff in listOfFns if not os.path.exists(ff)    ]
-        if missing:
-            print(' CAUTION: Following do not exist, so  being excluded from a merged PDF file:\n         '+'\n         '.join(missing) + '\n')
         listOfFns = list ( set(listOfFns) - set(missing) )
     if len(listOfFns)==0:
         print('   --- No existing PDFs to merge -- ')
         return
-    
-    try:  # marmite
+    try:  # marmite  # Sorry: There's a bug in line 69 of PyPDF2/utils.py, so I'm un-defaulting this.
+        try:
+            cmd = 'pdftk ' + ' '.join(listOfFns) + ' cat output ' + outFn
+            if delete_originals:
+                for fn in listOfFns: cmd+= ' && rm {} '.format(fn)
+            os.system(cmd)
+            print('(pdftk) Wrote '+outFn)
+        except:
+            print('Could not merge PDFs %s. pdftk not available. You might want to merge manually.' %   listOfFns)      
+    except:  # apollo or cpblx230:
+        print('Failing pdftk ... trying pypdf2')
         import PyPDF2
         merger = PyPDF2.PdfFileMerger()
         for fn in listOfFns: 
             merger.append(fn)
-            if delete_originals:
-                for fn in listOfFns: os.remove(fn)
         merger.write(outFn)
         print('(pypdf) Wrote '+outFn)
-    except:  # apollo or cpblx230:
-        try:
-            cmd = 'pdftk ' + ' '.join(listOfFns) + ' cat output ' + outFn
-            os.system(cmd)
-            if delete_originals:
-                for fn in listOfFns: os.remove(fn)
-            print('(pdftk) Wrote '+outFn)
-        except:
-            print('Could not merge PDFs %s. pdftk not available. You might want to merge manually.' %   listOfFns)      
+        if delete_originals:
+            for fn in listOfFns: os.remove(fn)
     return
 
 def merge_pdfs_if_exist(infiles, outfile):
