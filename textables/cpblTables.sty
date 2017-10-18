@@ -714,6 +714,7 @@
 
 
 \input{cpblTables-Csimple.sty}
+\input{cpblTables-CBeamer.sty}
 
 
 %================== \cpblTableCWide ============================
@@ -864,102 +865,6 @@
 }
 
 
-%================== \cpblTableCBeamerSimple ============================
-\newcommand{\cpblTableCBeamerSimple}[7]{
-  \renewcommand{\ifLongTable}[1]{}
-  \renewcommand{\ifNotLongTable}{\cpblEcho}
-  \renewcommand{\longTableFooter}{}
-%%  %\renewcommand{\ctNtabCols}{JUNKME}
-\begin{frame}{#3}
-\begin{center}
-\ctResetDefinitions\input{#7}
-\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
-\setlength\tabcolsep{1pt}
-\begin{tabular}{#1}
-\ctFirstHeader
-\ctBody
-\cpblbottomrule 
-\end{tabular} 
-\\ #6
-%%\end{table}
-\end{center}
-\end{frame}
-\ctResetDefinitionsClosing
-}
-
-
-%================== \cpblTableCABeamerSimple ============================
-\newcommand{\cpblTableCABeamerSimple}[7]{
-  \renewcommand{\ifLongTable}[1]{}
-  \renewcommand{\ifNotLongTable}{\cpblEcho}
-  \renewcommand{\longTableFooter}{}
-%%  %\renewcommand{\ctNtabCols}{JUNKME}
-\begin{frame}{#3}
-\begin{center}
-\ctResetDefinitions\input{#7}
-\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
-\setlength\tabcolsep{1pt}
-\ctStartTabular
-\ctFirstHeader
-\ctBody
-\cpblbottomrule 
-\end{tabular}
-\\ #6
-%%\end{table}
-\end{center}
-\end{frame}
-\ctResetDefinitionsClosing
-}
-
-
-%================== \cpblTableCABeamerTall ============================
-\newcommand{\cpblTableCABeamerTall}[7]{
-  \renewcommand{\ifLongTable}[1]{}
-  \renewcommand{\ifNotLongTable}{\cpblEcho}
-  \renewcommand{\longTableFooter}{}
-%%  %\renewcommand{\ctNtabCols}{JUNKME}
-\begin{frame}[plain]{#3}  % Oct 2011: added [plain] option here to get rid of top/bottom borders
-\begin{center}
-\ctResetDefinitions\input{#7}
-\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
-\setlength\tabcolsep{1pt}
-\resizebox{!}{\beamertextheight}{ %%42mm}{ %%was:42mm Beamer pres's are 128x96mm.
-\ctStartTabular
-\ctFirstHeader
-\ctBody
-\cpblbottomrule 
-\end{tabular} }
-\\ #6
-%%\end{table}
-\end{center}
-\end{frame}
-\ctResetDefinitionsClosing
-}
-
-
-%================== \cpblTableCABeamerWide ============================
-\newcommand{\cpblTableCABeamerWide}[7]{
-  \renewcommand{\ifLongTable}[1]{}
-  \renewcommand{\ifNotLongTable}{\cpblEcho}
-  \renewcommand{\longTableFooter}{}
-%%  %\renewcommand{\ctNtabCols}{JUNKME}
-\begin{frame}{#3}
-\begin{center}
-\ctResetDefinitions\input{#7}
-\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
-\setlength\tabcolsep{1pt}
-\resizebox{\textwidth}{!}{
-\ctStartTabular
-\ctFirstHeader
-\ctBody
-\cpblbottomrule 
-\end{tabular} }
-\\ #6
-%%\end{table}
-\end{center}
-\end{frame}
-\ctResetDefinitionsClosing
-}
 
 
 
@@ -979,81 +884,6 @@
 
 
 
-
-
-%================== \cpblTableCBeamerWide ============================
-\newcommand{\cpblTableCBeamerWide}[7]{
-  \renewcommand{\ifLongTable}[1]{}
-  \renewcommand{\ifNotLongTable}{\cpblEcho}
-  \renewcommand{\longTableFooter}{}
-  %\renewcommand{\ctNtabCols}{JUNKME}
-%%\begin{center}
-\begin{frame}{#3}
-\ctResetDefinitions\input{#7}
-\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
-\resizebox{\textwidth}{!}{
-\setlength\tabcolsep{1pt}
-\begin{tabular}{#1}
-\ctFirstHeader
-\ctBody
-\cpblbottomrule 
-\end{tabular} }
-\\ #6
-%%\end{center}
-%%\end{table}
-\end{frame}
-\ctResetDefinitionsClosing
-}
-
-
-%================== \cpblTableCBeamerTall ============================
-\newcommand{\cpblTableCBeamerTall}[7]{
-  \renewcommand{\ifLongTable}[1]{}
-  \renewcommand{\ifNotLongTable}{\cpblEcho}
-  \renewcommand{\longTableFooter}{}
-  %\renewcommand{\ctNtabCols}{JUNKME}
-\begin{frame}[plain]{#3}  % Oct 2011: added [plain] option here to get rid of top/bottom borders
-\begin{center}%\centering
-\ctResetDefinitions\input{#7}
-\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
-\resizebox{!}{\beamertextheight}{ %%42mm}{ %%was:42mm Beamer pres's are 128x96mm.
-%\setlength\tabcolsep{1pt}
-\begin{tabular}{#1}
-\ctFirstHeader
-\ctBody
-\cpblbottomrule 
-\end{tabular} }
-\\ #6
-%%\end{table}
-\end{center}
-\end{frame}
-\ctResetDefinitionsClosing
-}
-
-
-%================== \cpblTableCBeamerHeight ============================
-\newcommand{\cpblTableCBeamerHeight}[8]{
-  \renewcommand{\ifLongTable}[1]{}
-  \renewcommand{\ifNotLongTable}{\cpblEcho}
-  \renewcommand{\longTableFooter}{}
-  %\renewcommand{\ctNtabCols}{JUNKME}
-\begin{frame}{#3}
-\begin{center}%\centering
-\ctResetDefinitions\input{#7}
-\ifcpblTableUseTransposed\cpblTablesSwitchTransposed\fi
-\resizebox{!}{#8}{ %%42mm}{ %%was:42mm Beamer pres's are 128x96mm.
-\setlength\tabcolsep{1pt}
-\begin{tabular}{#1}
-\ctFirstHeader
-\ctBody
-\cpblbottomrule 
-\end{tabular} }
-\\ #6
-%%\end{table}
-\end{center}
-\end{frame}
-\ctResetDefinitionsClosing
-}
 
 
 %================== \cpblTableCSideways ============================

@@ -1572,7 +1572,7 @@ def mergePDFs(listOfFns, outFn, allow_not_exist=True, delete_originals = True):
     if missing:
         print(' CAUTION: Following do not exist'+allow_not_exist*', so  being excluded from a merged PDF file'+':\n         '+'\n         '.join(missing) + '\n')
     if allow_not_exist:
-        listOfFns = list ( set(listOfFns) - set(missing) )
+        listOfFns = [ff for ff in  listOfFns if ff not in missing] # Preserve order
     if len(listOfFns)==0:
         print('   --- No existing PDFs to merge -- ')
         return
