@@ -59,6 +59,38 @@ def getIndexedColormap(cmap_name,N):
     cmap = cm.get_cmap(cmap_name, N) 
     return cmap(np.arange(N))[:,:-1] 
 
+def discrete_colors(n_categories=None, display=False):
+    colourdict = {
+        28: ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',]+ ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',]+['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',]+ ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',], # This is just "7", repeated four times!!
+        14: ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',]+ ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',], # This is just "7", repeated twice!
+        
+        12: ['#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928'],
+        # Following (10) is taken from "12" case, but dropping two light colours (#'#fdbf6f', and especially #'#ffff99',],#
+        10: ['#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c', '#ff7f00','#cab2d6','#6a3d9a', '#b15928'],
+                  7: ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',],
+                  5: ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e'],
+                  }
+    if display:
+        import matplotlib.pyplot as plt
+        plt.figure(69)
+        for kk,vv in colourdict.items():
+            for ii,cc in enumerate(vv):
+                plt.plot(ii,kk, 's', color = cc, markersize=20)
+        plt.gca().set_yticks(colourdict.keys())
+        plt.title('discrete_colors(n_categories) in osmTools.py')
+        plt.show()
+        return
+    if n_categories is None: return colourdict
+    if n_categories in colourdict:
+        return colourdict[n_categories]
+    assert n_categories < max(colourdict.keys())
+    next_highest = min ( [kk for kk in colourdict.keys() if kk>n_categories] )
+    return colourdict[next_highest][:n_categories]
+    """ From PLOS ONE:
+    # colors for charts (not including black)
+    # based on http://colorbrewer2.org, 5 classes, print friendly
+    c5s = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00'] 
+        """
 
 def assignSplitColormapEvenly(zdata,splitdataat=0.0, RGBpoints=None): # An application of  assignSegmentedColormapEvenly(), with just two regions.
     if RGBpoints is None:
