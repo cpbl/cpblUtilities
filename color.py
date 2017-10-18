@@ -59,7 +59,7 @@ def getIndexedColormap(cmap_name,N):
     cmap = cm.get_cmap(cmap_name, N) 
     return cmap(np.arange(N))[:,:-1] 
 
-def discrete_colors(n_categories=None, display=False):
+def unordered_discrete_colors(n_categories=None, display=False):
     colourdict = {
         28: ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',]+ ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',]+['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',]+ ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',], # This is just "7", repeated four times!!
         14: ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',]+ ['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d',], # This is just "7", repeated twice!
