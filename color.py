@@ -931,6 +931,19 @@ def linearColormapLookup(cmap,zs,extendedLimits=None):#,returnformat='function')
     elif returnformat in ['pandas']:
         return(pd.Series(dict([[zz,lookupfunc(zz)] for zz in zs])))
 
+cifar_colors={
+'green':[.6588,.70588,0],#{168,180,0}
+'cyan':[0,0.70196,0.7451],#{0,179,190}
+'pink':[0.5098,0,0.31765],#{130,0,81} 
+'grey':[0.40392,0.36078,0.32549],#{103,92,83}
+'darkgreen':np.array([91,143,34])/255.,
+'lightblue':np.array([161,222,233])/255.,
+'yellow':np.array([236,227,84])/255.,
+'palekhaki':np.array([181,163,0])/255.,
+'black':[0,0,0],
+}
+
+    
 if __name__ == '__main__':
     import pylab as plt
     import matplotlib as mpl

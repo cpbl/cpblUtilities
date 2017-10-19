@@ -31,19 +31,8 @@ import pandas as pd
 from pylab import figure,plot,ylim,xlim,setp,clf,array,isnan,nan,find,text,isfinite,xlabel,ylabel,title,arange,subplot,gca
 NaN=nan
 import scipy as sci
+from .color import cifar_colors
 
-
-cifar={
-'green':[.6588,.70588,0],#{168,180,0}
-'cyan':[0,0.70196,0.7451],#{0,179,190}
-'pink':[0.5098,0,0.31765],#{130,0,81} 
-'grey':[0.40392,0.36078,0.32549],#{103,92,83}
-'darkgreen':array([91,143,34])/255.,
-'lightblue':array([161,222,233])/255.,
-'yellow':array([236,227,84])/255.,
-'palekhaki':array([181,163,0])/255.,
-'black':[0,0,0],
-}
 """
 Solutions for bounding box / whitespace in output figures:
             plt.subplots_adjust(left  = 0.05,right=1-tiny,bottom=0.1,top=1-tiny) # BRILLIANT!!! USE subplot_tool() to find values!
@@ -164,7 +153,7 @@ def overplotLinFit(x,y,format=None,color=None,xscalelog=False):
     if format==None:
         format='k--'
     if color==None:
-        color=cifar['grey']
+        color=cifar_colors['grey']
     from pylab import plot,array,xlim,any
 
     if all(isnan(x)):
@@ -1286,12 +1275,12 @@ width: same option as taken by bar() function
 
 
     if not barColour and grouped:
-        barColour=[cifar['green'],cifar['cyan'],cifar['pink'],cifar['grey'],'r','b','g','k','c','m',cifar['green'],cifar['cyan'],cifar['pink'],cifar['grey'],'r','b','g','k','c','m',cifar['green'],cifar['cyan'],cifar['pink'],cifar['grey'],'r','b','g','k','c','m',cifar['green'],cifar['cyan'],cifar['pink'],cifar['grey'],'r','b','g','k','c','m']
+        barColour=[cifar_colors['green'],cifar_colors['cyan'],cifar_colors['pink'],cifar_colors['grey'],'r','b','g','k','c','m',cifar_colors['green'],cifar_colors['cyan'],cifar_colors['pink'],cifar_colors['grey'],'r','b','g','k','c','m',cifar_colors['green'],cifar_colors['cyan'],cifar_colors['pink'],cifar_colors['grey'],'r','b','g','k','c','m',cifar_colors['green'],cifar_colors['cyan'],cifar_colors['pink'],cifar_colors['grey'],'r','b','g','k','c','m']
 
     if not barColour:
         barColour={}
     if isinstance(barColour,dict):
-        barColourList=[barColour.get(xx,cifar['cyan']) for xx in labels]
+        barColourList=[barColour.get(xx,cifar_colors['cyan']) for xx in labels]
     elif isinstance(barColour,list):
         barColourList=barColour
     else:
@@ -1332,7 +1321,7 @@ width: same option as taken by bar() function
     if 1: # April 2010!!!!!!!!!!!!!! THIS IS NOT FINISHED YET!!!
         # And choose colour for the text labels:
         if labelColour==None:
-            labelColour=[['k'],[cifar['pink']]][int(simplevector)]
+            labelColour=[['k'],[cifar_colors['pink']]][int(simplevector)]
         elif isinstance(labelColour,str):
             labelColour=labelColour*len(labels)
             #lcolour=labelColour
@@ -1351,7 +1340,7 @@ width: same option as taken by bar() function
 
         if horiz==True:
             if 0: # April 2010: do not do them all at once?? so tht I can animate...
-                rects=plt.barh(ind,y,color=barColourList,height=width,xerr=yerr,ecolor=cifar['grey'])#,width=width)
+                rects=plt.barh(ind,y,color=barColourList,height=width,xerr=yerr,ecolor=cifar_colors['grey'])#,width=width)
 
             rects=plt.barh(ind,y,color=barColourList,height=width)
             xlrect=plt.xlim()
@@ -1360,11 +1349,11 @@ width: same option as taken by bar() function
                 erb=[[]]*len(y)
             else:
                 for ii in range(len(yerr)):
-                    erb+=[plt.errorbar(y[ii],ind[ii]+yloffset, xerr=yerr[ii],ecolor=cifar['grey'],fmt=None)[1:]]
+                    erb+=[plt.errorbar(y[ii],ind[ii]+yloffset, xerr=yerr[ii],ecolor=cifar_colors['grey'],fmt=None)[1:]]
             plt.xlim(xlrect)
             plot([0,0],plt.ylim(),'k-')
 
-            #,xerr=yerr,ecolor=cifar['grey'])#,width=width)
+            #,xerr=yerr,ecolor=cifar_colors['grey'])#,width=width)
             """
 plt.bar(pos,val, align='center')
 erb = plt.errorbar(pos, val, yerr=[np.zeros(len(yerr)), yerr], fmt=None)
@@ -1378,7 +1367,7 @@ plt.show()
 
 
         else:
-            rects=plt.bar(ind,y,color=barColourList,width=width,yerr=yerr,ecolor=cifar['grey'])#,width=width) cifar['cyan']
+            rects=plt.bar(ind,y,color=barColourList,width=width,yerr=yerr,ecolor=cifar_colors['grey'])#,width=width) cifar_colors['cyan']
 
     if not simplevector:
 
@@ -1390,9 +1379,9 @@ plt.show()
         rects=[]
         for iy in range(nInGroup):
             if yerr:
-                rects+=[ plt.barh(ind+(nInGroup-1-iy)*width, y[:,iy], height=width,color=barColourList[iy],xerr=yerr[:,iy],ecolor=cifar['grey'])]
+                rects+=[ plt.barh(ind+(nInGroup-1-iy)*width, y[:,iy], height=width,color=barColourList[iy],xerr=yerr[:,iy],ecolor=cifar_colors['grey'])]
             else:
-                rects+=[ plt.barh(ind+(nInGroup-1-iy)*width, y[:,iy], height=width,color=barColourList[iy],ecolor=cifar['grey'])]
+                rects+=[ plt.barh(ind+(nInGroup-1-iy)*width, y[:,iy], height=width,color=barColourList[iy],ecolor=cifar_colors['grey'])]
 
     if horiz:
         plt.gca().set_yticklabels([])
@@ -1537,7 +1526,7 @@ plt.show()
             htext[ii]=text(xlim()[0],ind[ii]+width/2,' '+labels[ii],verticalalignment='center',horizontalalignment='left',size=tsize1,color=labelColour[ii])
     if labelLoc=='eitherSideOfZero':
         for ii in range(len(ind)):
-            htext[ii]=text(0.0,ind[ii]+width/2,' '+labels[ii],verticalalignment='center',horizontalalignment='left'*(y[ii]<=0)+'right'*(y[ii]>0),size=tsize1,color=cifar['pink'])
+            htext[ii]=text(0.0,ind[ii]+width/2,' '+labels[ii],verticalalignment='center',horizontalalignment='left'*(y[ii]<=0)+'right'*(y[ii]>0),size=tsize1,color=cifar_colors['pink'])
 
     if labelLoc in ['fromLeft','atLeftAxis']:
         for ii in range(len(ind)):
@@ -2879,9 +2868,9 @@ Sep 2010:  This used to capitalise axis labels in the byregion mode.  I'm taking
 
 
         hDbyRegion,hLbyRegion,fitsByRegion,bigMarkersByRegion={},{},{},{}
-        """'cifar['cyan']'# 'CIFARdarkgreen' 'cifar['green']'# 'cifar['grey']' 'CIFARlightblue' 'CIFARpalekhaki' 'cifar['pink']'# 'CIFARyellow'
+        """'cifar_colors['cyan']'# 'CIFARdarkgreen' 'cifar_colors['green']'# 'cifar['grey']' 'CIFARlightblue' 'CIFARpalekhaki' 'cifar_colors['pink']'# 'CIFARyellow'
         """
-        rcolors=['r','b','g','k','m','c','y']+[cifar[kk] for kk in cifar]+['r','b','g','k','m','c','y']+[cifar[kk] for kk in cifar]+['r','b','g','k','m','c','y']+[cifar[kk] for kk in cifar]+['r','b','g','k','m','c','y']+[cifar[kk] for kk in cifar]
+        rcolors=['r','b','g','k','m','c','y']+[cifar_colors[kk] for kk in cifar_colors]+['r','b','g','k','m','c','y']+[cifar_colors[kk] for kk in cifar_colors]+['r','b','g','k','m','c','y']+[cifar_colors[kk] for kk in cifar_colors]+['r','b','g','k','m','c','y']+[cifar_colors[kk] for kk in cifar_colors]
 
         if regionOrder:
             regs=regionOrder
@@ -3090,7 +3079,7 @@ Sep 2010:  This used to capitalise axis labels in the byregion mode.  I'm taking
 
 
 ##         hDbyRegion,hLbyRegion,fitsByRegion={},{},{}
-##         rcolors=['r','b','g','k','m','c','y']+[cifar[kk] for kk in cifar]
+##         rcolors=['r','b','g','k','m','c','y']+[cifar_colors[kk] for kk in cifar_colors]
 ##         ncolor=0
 ##         x=array(x)
 ##         y=array(y)
