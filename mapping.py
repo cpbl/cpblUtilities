@@ -17,7 +17,7 @@ Also nice, when you do want to plot, is Basemap. I use this when I want to color
 Some references:
 
 - http://commons.wikimedia.org/wiki/Category:Blank_SVG_maps_of_the_world
-- polipoly: someone made a nice few tools for working with US geo codes of various kinds.
+xxxxxxxxxxxxxxxxxx- polipoly: someone made a nice few tools for working with US geo codes of various kinds.
 
 
 2015 April: New approach. Just insert some CSS at the beginning; this is useful for SVG blank maps which doen't specify style separately/redundantly in each path.
@@ -66,12 +66,15 @@ import pylab as plt
 def _demo_colorize_svg():
     import re
     import random
-    blanksvgfile='/home/cpbl/bin/GIS/AlexSchultz/countriesCPBL.svg'
+    blanksvgfile='/home/cpbl/bin/GIS/countriesCPBLnoAntarctica.svg'
+    CF = None # dict(cbarpar = dict(expandx= 1, movebartox= 60,movebartoy= 680,scalebar= 1.75),        path_style="""1;stroke:#ffffff;stroke-width:0.99986994;stroke-miterlimit:3.97446823;stroke-dasharray:none;stroke-opacity:1;fill:""",        groupsare= 'g',        )
+
+    #blanksvgfile= '/home/cpbl/osm/input/svgmaps/BlankMap-World6-noAntarctica_ISO3.svg'#   'BlankMap-World6-noAntarctica_ISO3.svg'
     ff=open(blanksvgfile,'r','utf8').read()
     cc=np.unique(re.findall('id="(..)"',ff,re.DOTALL))
     regions2datavalues=pd.Series(dict([[ac,random.random()] for ac in cc]))
-    colorize_svg(regions2datavalues,blanksvgfile,outfilename='__tmp_svgcol_tmp.svg',cmap=None,addcolorbar=True,ylabel=None,colorbarlimits=None)
-
+    colorize_svg(regions2datavalues,blanksvgfile,outfilename='__tmp_svgcol_tmp.svg',addcolorbar=True,customfeatures=CF)#,ylabel=None,colorbarlimits=None)
+    os.system('firefox {fn} &'.format(fn='__tmp_svgcol_tmp.svg'))
     blanksvgfile='/home/projects/sprawl2/okai/input/svgmaps/'*0+'USA_Counties_with_FIPS_and_names.svg' # Need to make a copy of this and put it in bin/GIS!
     #os.system('google-chrome '+blanksvgfile+'&')
     cc=np.unique(re.findall('id="(.....)"',open(blanksvgfile,'r').read(),re.DOTALL))
@@ -140,8 +143,11 @@ The other/older approoach is to substitute a style inside each path or path grou
  */\n .ZZZ   {}
 """+'\n'.join([' %s%s   {  fill:       %s;   }'%('.' if CSSselector in ['class'] else '#', cc,hh) for cc,hh in hexlookup.to_dict().items()])+'\n'  # How to avoid bad/nan regions here? Seems fine, but may not be robust.
 
-    assert '/*COLOURINGREGIONS*/' in svgraw
-    outsvg=svgraw.replace('/*COLOURINGREGIONS*/',colortables)
+
+    ssi = ['/* INSERT HERE COUNTRY COLOURS */','/*COLOURINGREGIONS*/']
+    ssi = ssi[0] if ssi[0] in svgraw else ssi[1] if ssi[1] in svgraw else None
+    assert ssi
+    outsvg=svgraw.replace(ssi,colortables)
     if 0 and outfilename is not None: # This is only for debugging; turn it off later.
         with open(outfilename.replace('.svg','-withoutCB.svg'),'w') as fout:
             fout.write(outsvg)
@@ -352,7 +358,7 @@ def colors_for_filling_svg(geo2data_or_color=None, data2color=None,
     If data are also given, then a second item is returned as well. This is a data2color lookup used for making a colorbar.
     """
     if demo:
-        notYet
+        _demo_colorize_svg()
         return
     import codecs # Never use built-in open anymore
     if colorbarlimits is None:
@@ -444,10 +450,10 @@ def _defaultCustomFeatures_colorize_svg(ablanksvgfile=None):
         path_style = """font-size:12px;fill-rule:nonzero;stroke:#FFFFFF;stroke-opacity:1;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:butt;marker-start:none;stroke-linejoin:bevel;fill:""",
         )
 
-    elif os.path.split(ablanksvgfile)[1] in ['countriesCPBL.svg']:
+    elif os.path.split(ablanksvgfile)[1] in ['countriesCPBL.svg', 'countriesCPBLnoAntarctica.svg']:
         print('   I recognized countriesCPBL.svg ...')
-        CF=dict(cbarpar=dict(expandx=1, movebartox=540,movebartoy=80,scalebar=0.75),
-        path_style="""1;stroke:#ffffff;stroke-width:0.99986994;stroke-miterlimit:3.97446823;stroke-dasharray:none;stroke-opacity:1;fill:""",
+        CF=dict(cbarpar=dict(expandx=1, movebartox= 60,movebartoy= 680,scalebar= 1.75),
+path_style="""1;stroke:#ffffff;stroke-width:0.99986994;stroke-miterlimit:3.97446823;stroke-dasharray:none;stroke-opacity:1;fill:""",
         groupsare='g',
         )
     elif os.path.split(ablanksvgfile)[1] in ['BlankMap-World6-noAntarctica_ISO3.svg','BlankMap-World6-noAntarctica.svg']:
