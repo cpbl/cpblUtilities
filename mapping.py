@@ -113,8 +113,8 @@ def try_to_choose_color_style_location(svgt):
         return(svgt)
 
 # Following function is also called colorize_svg
-def colorize_svg_by_class_or_id(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
-                                demo=False,scratchpath=None,customfeatures=None,colorbarlimits=None,testingRaiseSVGs=False, hideElementsWithoutData=False,CSSselector=None, colorbar_filename=None):
+def colorize_svg_by_class_or_id(geo2data_or_color=None,  blanksvgfile=None, outfilename=None, data2color=None, addcolorbar=None, cbylabel=None, 
+                                demo=False, scratchpath=None, customfeatures=None, colorbarlimits=None, testingRaiseSVGs=False,  hideElementsWithoutData=False, CSSselector=None,  colorbar_filename=None, makePNG=False, makePDF=False):
     """cpbl:2015: better method: It simply inserts a section of CSS color styles by region (class or id)
     Returns the actual svg text (but also saves it if outfilename is provided).
 
@@ -171,6 +171,16 @@ The other/older approoach is to substitute a style inside each path or path grou
         with open(outfilename,'w') as fout:
             fout.write(finalsvg)
             print('     Wrote '+outfilename)
+        if makePDF:
+            pdfFn = outfilename.replace('.svg','.pdf')
+            os.system('rsvg-convert -f pdf -o {} {}'.format(pdfFn,outfilename))
+            print('Wrote %s' % pdfFn)
+        if makePNG:
+            pngFn = outfilename.replace('.svg','.png')
+            os.system('svgexport %s %s' % (outfilename, pngFn))
+            os.system('optipng %s' % pngFn)
+            print('Wrote %s' % pngFn)
+            
     #stoppy# here to fiddle with customfeatures :)
     return(finalsvg)
 colorize_svg=colorize_svg_by_class_or_id
@@ -385,7 +395,7 @@ def colors_for_filling_svg(geo2data_or_color=None, data2color=None,
 
     egvalue=geo2data_or_color.values[0]
 
-    geo2dataWerePassed = check_if_numeric(egvalue)
+    geo2dataWerePassed = check_if_numeric(egvalue) # Not a scalar number
     if geo2dataWerePassed:
         geo2data=geo2data_or_color
         assert len(geo2data) == len(geo2data.index.unique()) # No duplicate data to colour entries
@@ -462,7 +472,7 @@ def _defaultCustomFeatures_colorize_svg(ablanksvgfile=None):
 
     elif os.path.split(ablanksvgfile)[1] in ['countriesCPBL.svg', 'countriesCPBLnoAntarctica.svg']:
         print('   I recognized countriesCPBL.svg ...')
-        CF=dict(cbarpar=dict(expandx=1, movebartox= 60,movebartoy= 680,scalebar= 1.75),
+        CF=dict(cbarpar=dict(expandx=1, movebartox= 60,movebartoy= 680,scalebar= 1.75,fontsize=28),
 path_style="""1;stroke:#ffffff;stroke-width:0.99986994;stroke-miterlimit:3.97446823;stroke-dasharray:none;stroke-opacity:1;fill:""",
         groupsare='g',
         )
@@ -479,8 +489,8 @@ path_style="""1;stroke:#ffffff;stroke-width:0.99986994;stroke-miterlimit:3.97446
     return(CF)
 
     
-def colorize_svg_by_id(geo2data_or_color=None, blanksvgfile=None,outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
-                       demo=False,scratchpath=None,customfeatures=None,colorbarlimits=None,testingRaiseSVGs=False, hideElementsWithoutData=False,colorbar_filename=None):
+def colorize_svg_by_id(geo2data_or_color=None,  blanksvgfile=None, outfilename=None, data2color=None, addcolorbar=None, cbylabel=None, 
+                       demo=False, scratchpath=None, customfeatures=None, colorbarlimits=None, testingRaiseSVGs=False,  hideElementsWithoutData=False, colorbar_filename=None, makePNG=False):
 
     if demo:
         _demo_colorize_svg()
@@ -578,6 +588,12 @@ def colorize_svg_by_id(geo2data_or_color=None, blanksvgfile=None,outfilename=Non
             f.write(finalsvg)
         if testingRaiseSVGs:
             os.system('google-chrome '+outfilename)
+        if makePNG:
+            pngFn = outfilename.replace('.svg','.png')
+            os.system('svgexport %s %s' % (outfilename, pngFn))
+            os.system('optipng %s' % pngFn)
+            print('Wrote %s' % pngFn)
+            
     return(finalsvg)
             
 
