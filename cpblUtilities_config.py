@@ -31,6 +31,7 @@ UTILS_config_file_structure={
         'tex',
         'scratch',
         'bin',
+        'svgmaptemplates',
         ],
     'defaults': [
         ('rdc',bool),

@@ -66,7 +66,9 @@ import pylab as plt
 def _demo_colorize_svg():
     import re
     import random
-    blanksvgfile='/home/cpbl/bin/GIS/countriesCPBLnoAntarctica.svg'
+    blanksvgfile= cpbl.paths['svgmaptemplates'] + 'countriesCPBLnoAntarctica.svg'
+    if not os.path.exists(blanksvgfile):
+        raise Exception("You need to copy config_template.cfg to config.cfg and edit the svgmaptemplates folder to somewhere holding the following file: "+ blanksvgfile)
     CF = None # dict(cbarpar = dict(expandx= 1, movebartox= 60,movebartoy= 680,scalebar= 1.75),        path_style="""1;stroke:#ffffff;stroke-width:0.99986994;stroke-miterlimit:3.97446823;stroke-dasharray:none;stroke-opacity:1;fill:""",        groupsare= 'g',        )
 
     #blanksvgfile= '/home/cpbl/osm/input/svgmaps/BlankMap-World6-noAntarctica_ISO3.svg'#   'BlankMap-World6-noAntarctica_ISO3.svg'
@@ -75,11 +77,20 @@ def _demo_colorize_svg():
     regions2datavalues=pd.Series(dict([[ac,random.random()] for ac in cc]))
     colorize_svg(regions2datavalues,blanksvgfile,outfilename='__tmp_svgcol_tmp.svg',addcolorbar=True,customfeatures=CF)#,ylabel=None,colorbarlimits=None)
     os.system('firefox {fn} &'.format(fn='__tmp_svgcol_tmp.svg'))
-    blanksvgfile='/home/projects/sprawl2/okai/input/svgmaps/'*0+'USA_Counties_with_FIPS_and_names.svg' # Need to make a copy of this and put it in bin/GIS!
+
+    return # Below needs fixing yet. I'm not sure I ever got it working. Need to remember CSS.
+    
+    blanksvgfile= cpbl.paths['svgmaptemplates']+'USA_Counties_with_FIPS_and_names.svg'
+    if not os.path.exists(blanksvgfile):
+        raise Exception("You need to copy config_template.cfg to config.cfg and edit the svgmaptemplates folder to somewhere holding the following file: "+ blanksvgfile)
     #os.system('google-chrome '+blanksvgfile+'&')
     cc=np.unique(re.findall('id="(.....)"',open(blanksvgfile,'r').read(),re.DOTALL))
 
     regions2datavalues=pd.Series(dict([[ac,3*random.random()-1] for ac in cc]))
+    colorize_svg(regions2datavalues, blanksvgfile, outfilename='__tmp_svgcol_USA.svg', addcolorbar=True,)#,ylabel=None,colorbarlimits=None)
+    os.system('firefox {fn} &'.format(fn='__tmp_svgcol_USA.svg'))
+
+    return
     colorize_svg(regions2datavalues,blanksvgfile,outfilename='tmptmp2.svg',cmap=None,addcolorbar=True,ylabel=None,colorbarlimits=None)
 
 
@@ -144,9 +155,8 @@ The other/older approoach is to substitute a style inside each path or path grou
 """+'\n'.join([' %s%s   {  fill:       %s;   }'%('.' if CSSselector in ['class'] else '#', cc,hh) for cc,hh in hexlookup.to_dict().items()])+'\n'  # How to avoid bad/nan regions here? Seems fine, but may not be robust.
 
 
-    ssi = ['/* INSERT HERE COUNTRY COLOURS */','/*COLOURINGREGIONS*/']
-    ssi = ssi[0] if ssi[0] in svgraw else ssi[1] if ssi[1] in svgraw else None
-    assert ssi
+    ssi = '/* INSERT HERE COLOUR SETTINGS */'
+    assert ssi in svgraw
     outsvg=svgraw.replace(ssi,colortables)
     if 0 and outfilename is not None: # This is only for debugging; turn it off later.
         with open(outfilename.replace('.svg','-withoutCB.svg'),'w') as fout:
@@ -447,8 +457,8 @@ def _defaultCustomFeatures_colorize_svg(ablanksvgfile=None):
     elif os.path.split(ablanksvgfile)[1] in ['USA_Counties_with_FIPS_and_names.svg',]:
         CF=dict(cbarpar=dict(expandx=1.2, movebartox=540,movebartoy=80,scalebar=0.75),
         groupsare='path',
-        path_style = """font-size:12px;fill-rule:nonzero;stroke:#FFFFFF;stroke-opacity:1;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:butt;marker-start:none;stroke-linejoin:bevel;fill:""",
-        )
+        path_style ="""     style="font-size:12px;fill:#d0d0d0;fill-rule:nonzero;stroke:#000000;stroke-opacity:1;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:butt;marker-start:none;stroke-linejoin:bevel;fill:"""                    )
+        # """font-size:12px;fill-rule:nonzero;stroke:#FFFFFF;stroke-opacity:1;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:butt;marker-start:none;stroke-linejoin:bevel;fill:""",
 
     elif os.path.split(ablanksvgfile)[1] in ['countriesCPBL.svg', 'countriesCPBLnoAntarctica.svg']:
         print('   I recognized countriesCPBL.svg ...')
