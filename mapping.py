@@ -175,6 +175,7 @@ The other/older approoach is to substitute a style inside each path or path grou
             pdfFn = outfilename.replace('.svg','.pdf')
             os.system('rsvg-convert -f pdf -o {} {}'.format(pdfFn,outfilename))
             print('Wrote %s' % pdfFn)
+            os.system('pdfcrop {fn} {fn} &'.format(fn=pdfFn))
         if makePNG:
             pngFn = outfilename.replace('.svg','.png')
             os.system('svgexport %s %s' % (outfilename, pngFn))
