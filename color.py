@@ -381,6 +381,10 @@ def _colorAssignmentToColorbarmap(d2cDict,cmapname=None):
     """
     if cmapname is None: cmapname='tmpcm'
 
+    if len(d2cDict)==1:
+        thekey=d2cDict.keys()[0]
+        d2cDict[thekey*1.00001] = d2cDict[thekey]
+    
     allkeys=d2cDict.keys()
     # Drop inifinite values? or explain here why they arise.
     assert all( np.isfinite(allkeys) )
@@ -392,6 +396,7 @@ def _colorAssignmentToColorbarmap(d2cDict,cmapname=None):
     if dk>0:
         lookup3=sorted([[int(1e6*(a-kmin)/dk), a]+list(b)  for a,b in d2cDict.items()])
     else:
+        nooooooo
         print('Barfing in cpblUtilities/color.py. Return stupid color for degenerate data:')
         return(plt.get_cmap('jet'))
     # And use the integer index to get rid of duplicates, so as to ensure strictly increasing values:
@@ -401,45 +406,10 @@ def _colorAssignmentToColorbarmap(d2cDict,cmapname=None):
     assert strictly_increasing([a for a,b,c,d,e in lookup]) # By construction!
 
     ii,zz,rr,gg,bb=zip(*lookup)
-    cccs=['red','green','blue']
     rgb=[rr,gg,bb]
     cdict=dict([ [cc,        np.array([ii,rgb[jj],rgb[jj]]).T]        for jj,cc in enumerate(['red','green','blue'])])
 
     mpl.cm.register_cmap(name=cmapname, data=cdict)
-    return(plt.get_cmap(cmapname))
-
-
-    goiu
-    # Careful. unique doesn't work well on floating point arithmetic. So start by rounding all the z values (to 5 decimal places):
-    lookup3=[[a]+list(b)  for a,b in d2cDict.items()]
-    z2,ii= np.unique(np.round([L[0] for L in lookup3],decimals=5)   , return_index=True)
-    lookup=  dict([[a,[b,c,d]] for a,b,c,d in np.array(lookup3)[ii]])  # Recreate a dict with the subset of distinct values
-
-    # lookup should give an RGB 3-tuple for any data value given to it.   Ensure data are floats, not ints:
-    zs=1.0 * np.array(  sorted(np.unique(       np.asarray(lookup.keys())[np.isfinite(lookup.keys())]    ))  )
-
-    izs=np.arange(len(zs))*1.0/len(zs)
-    izs[-1]=1.0
-
-    # We want the index to be in cardinal values
-    izs=zs -min(zs)
-    izs=izs/max(izs)
-
-    cdict={'red':[],'green':[],'blue':[]}
-    cccs=['red','green','blue']
-    for ii,zz in enumerate(zs):
-        for ic,cc in enumerate(cccs):
-            cdict[cc].append([izs[ii],lookup[zz][ic],lookup[zz][ic]])
-
-    if 1:     # Check validity of cdict. This section is only for debuggin:
-
-        def strictly_increasing(L):
-            return all(x<y for x, y in zip(L, L[1:]))
-        for kk in cdict:
-            assert strictly_increasing([a for a,b,c in cdict[kk]])
-
-    mpl.cm.register_cmap(name=cmapname, data=cdict)
-
     return(plt.get_cmap(cmapname))
 
 def addColorbarNonImage_vDraft(customcmap):
