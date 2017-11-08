@@ -381,10 +381,14 @@ def _colorAssignmentToColorbarmap(d2cDict,cmapname=None):
     """
     if cmapname is None: cmapname='tmpcm'
 
-    if len(d2cDict)==1:
+    if len(d2cDict)==1: # Kludge horribly
         thekey=d2cDict.keys()[0]
-        d2cDict[thekey*1.00001] = d2cDict[thekey]
-    
+        if thekey:
+            d2cDict[thekey*1.00001] = d2cDict[thekey]
+        else: # Sole value is zero!?! Kludge even more
+            d2cDict[-1e-6] = d2cDict[thekey]
+            d2cDict[+1e-6] = d2cDict[thekey]
+            
     allkeys=d2cDict.keys()
     # Drop inifinite values? or explain here why they arise.
     assert all( np.isfinite(allkeys) )

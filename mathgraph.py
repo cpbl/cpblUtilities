@@ -6476,7 +6476,7 @@ def remove_underscores_from_figure(fig=None):
         
 def round_to_n_sigfigs(x,n):
     """ Return a float (?) rounded to n significant digits.
- Formatting/displaying the result should be done separately, e.g. with %g or using chooseSFormat
+ Formatting/displaying the result should be done separately, e.g. with %g or using chooseSFormat or, see format_n_sigfigs
     """
     if pd.isnull(x): return(x)
     if x==0: return(0)
