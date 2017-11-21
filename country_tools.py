@@ -26,6 +26,41 @@ class country_tools():
                                   'rename':{}}}
 
         return
+    @staticmethod
+    def country2ISOLookup():
+        """
+        Returns dict of dicts
+        cname2ISO is country name to ISO alpha 3 lookup
+        ISO2cname is the reverse
+        ISO2shortName is a consistent dict of short names (they might not be officials)
+            which also strip out non-ASCII128 characters (sorry, Cote d'Ivoire...)
+
+        This could easily be adapted to return WB codes as well
+        """
+        import pandas as pd
+        lookup = pd.read_table(paths['otherinput']+'CountryData/countrycodes.tsv', dtype={'ISO3digit':'str'})
+        cname2ISO = lookup.set_index('countryname').ISOalpha3.to_dict()
+
+        ISO2cname = lookup.set_index('ISOalpha3').countryname.to_dict()
+        ISO2cname['ALL'] = 'World'
+        ISOalpha2ISOdigit = lookup.set_index('ISOalpha3').ISO3digit.to_dict()
+        ISOdigit2ISOalpha = lookup.set_index('ISO3digit').ISOalpha3.to_dict()
+
+        lookup = pd.read_table(paths['otherinput']+'CountryData/shortNames.tsv', dtype={'ISO3digit':'str'})
+        ISOalpha2shortName = lookup.set_index('ISOalpha3').shortName.to_dict()
+        ISOalpha2shortName['ALL'] = 'World'
+
+        # Add in some alternate names manually (different variants of country name)
+        # these are only used in going TO iso from the country name
+        cname2ISO.update({'Russia': 'RUS', 'The Bahamas': 'BHS', 'United Republic of Tanzania': 'TZA', 'Ivory Coast': 'CIV', 
+                          'Republic of Serbia': 'SRB', 'Guinea Bissau': 'GNB', 'Iran': 'IRN', 'Democratic Republic of the Congo': 'COD',
+                          'Republic of Congo': 'COG', 'Syria': 'SYR', 'Venezuela': 'VEN', 'Bolivia': 'BOL', 'South Korea': 'KOR', 'Laos': 'LAO',
+                          'Brunei': 'BRN', 'East Timor': 'TLS', 'Vietnam': 'VNM',  'North Korea': 'PRK', 'Moldova': 'MDA', 'Vatican City': 'VAT',
+                          'Macedonia': 'MKD', 'United Kingdom': 'GBR', 'Tanzania':'TZA', 'Cape Verde':'CPV', 'Reunion':'REU', 'Falkland Islands':'FLK', 
+                          'Micronesia':'FSM', 'United States':'USA'})
+
+        return {'cname2ISO':cname2ISO, 'ISO2cname': ISO2cname, 'ISOalpha2ISOdigit': ISOalpha2ISOdigit, 'ISOdigit2ISOalpha': ISOdigit2ISOalpha, 'ISOalpha2shortName':ISOalpha2shortName }
+    
     def update_downloads(self):
         for kk,dd in self.useful_sites.items():
             if self.forceUpdate or not os.path.exists(dd['tmpfile']):

@@ -34,6 +34,7 @@ class pWrapper(): # Maybe if I enclose this in a class, the Garbage Collection w
         self.exitcode='dns' #"Did not start"
         self.is_alive='dns' # For internal use only. Present "running"
         self.queue= 0  # Uninitiated queue is 0. Complete/closed queue will be None
+        
     def get_func(self):
         return self.callfunc
     @staticmethod
@@ -100,6 +101,9 @@ class pWrapper(): # Maybe if I enclose this in a class, the Garbage Collection w
 def runFunctionsInParallel(*args, **kwargs):
     """ This is the main/only interface to class cRunFunctionsInParallel. See its documentation for arguments.
     """
+    if not args[0]:
+        return([])
+    
     return cRunFunctionsInParallel(*args, **kwargs).launch_jobs()
 
 ###########################################################################################
@@ -175,11 +179,11 @@ See the testParallel() method in this module
 
     def __init__(self,listOf_FuncAndArgLists, kwargs=None, names=None, parallel=None, offsetsSeconds=None, expectNonzeroExit=False, maxAtOnce=None, showFinished=20,):
 
-        if parallel is None or parallel is True: # Use parallel only when we have many processing cores (well, here, more than 8)
-            parallel= mp.cpu_count() >2
+        self.parallel= mp.cpu_count() >2  if parallel is None or parallel is True  else  parallel # Use parallel only when we have many processing cores (well, here, more than 8)
 
+    
         if not listOf_FuncAndArgLists:
-            return([]) # list of functions to run was empty.
+            return # list of functions to run was empty.
 
         if offsetsSeconds is None:
             offsetsSeconds=0
@@ -194,13 +198,7 @@ See the testParallel() method in this module
         kwargs=kwargs if kwargs else [faal[2] for faal in listOf_FuncAndArgLists]
 
         if len(listOf_FuncAndArgLists)==1:
-            parallel=False
-
-        if parallel is False:
-            print('++++++++++++++++++++++  DOING FUNCTIONS SEQUENTIALLY ---------------- (parallel=False in runFunctionsInParallel)')
-            returnVals=[fffargs[0](*(fffargs[1]),**(fffargs[2]))  for iffargs,fffargs in enumerate(listOf_FuncAndArgLists)]
-            assert expectNonzeroExit or not any(returnVals)
-            return(returnVals)
+            self.parallel=False
 
         if names is None:
             names=[None for fff in listOf_FuncAndArgLists]
@@ -218,6 +216,7 @@ See the testParallel() method in this module
         self.delays= list((  (np.arange(len(listOf_FuncAndArgLists))-1) * ( np.arange(len(listOf_FuncAndArgLists))< self.maxAtOnce  ) + 1 )* offsetsSeconds)
         self.offsetsSeconds = offsetsSeconds
         self.showFinished = showFinished
+        self.expectNonzeroExit=  expectNonzeroExit
         
         nice(10) # Add 10 to the niceness of this process (POSIX only)
 
@@ -233,6 +232,14 @@ See the testParallel() method in this module
         return self.launch_jobs()
 
     def launch_jobs(self):
+            
+        if self.parallel is False:
+            print('++++++++++++++++++++++  DOING FUNCTIONS SEQUENTIALLY ---------------- (parallel=False in runFunctionsInParallel)')
+            returnVals=[fffargs[0](*(fffargs[1]),**(fffargs[2]))  for iffargs,fffargs in enumerate(self.listOf_FuncAndArgLists)]
+            assert self.expectNonzeroExit or not any(returnVals)
+            return(returnVals)
+
+        
         """ Use pWrapper class to set up and launch jobs and their queues. Issue reports at decreasing frequency. """
         self.jobs = [pWrapper(funcArgs[0],funcArgs[1],funcArgs[2],self.delays[iii],self.names[iii]) for iii,funcArgs in enumerate(self.listOf_FuncAndArgLists)]
         # [Attempting to avoid running into system limits] Let's never create a loop variable which takes on the value of an element of the above list. Always instead dereference the list using an index.  So no local variables take on the value of a job. (In addition, the job class is supposed to clean itself up when a job is done running).
