@@ -32,6 +32,7 @@ from pylab import figure,plot,ylim,xlim,setp,clf,array,isnan,nan,find,text,isfin
 NaN=nan
 import scipy as sci
 from .color import cifar_colors
+from .figure_to_inverse_video import figureToInverseVideo, figureToGrayscale
 
 """
 Solutions for bounding box / whitespace in output figures:
@@ -425,199 +426,6 @@ def _obselete_use_savefigall_exportPythonFigToFormats(fileName):
         
         savefig(fileName+'.'+ff,format=ff,transparent=True)
 
-##############################################################################
-##############################################################################
-#
-def figureToInverseVideo(fig=None):
-    ##########################################################################
-    ##########################################################################
-    """
-2013 June: backgrounds of boxed text missing. (bbox). Cannot figure out how. 
-Added: setp(fff,'facecolor','k') No! Actually, use facecolor='k' option in savefig!
-Replaced a bunch of loops with a findobj!
-    
-    May 2012, ... I've finally made some progress on this. Set figure axis background color, foreground color, and save figure as transparent. Plus, check that black text, black lines .... and then also, harder! other black stuff like patches are dealt with.
-
-sep2012:    Agh. what about stuff drawn in bg colour, eg to over? I want to swtich that to the new bg colour! Not done. Wasneeded for PQ/liberal colour band in rdc/regressoinsQuebec.
-    """
-    if fig is None:
-        fig=plt.gcf()
-
-    for aaa in plt.findobj(fig,mpl.axes.Axes):
-        set_backgroundcolor(aaa,'black') # Not None?
-        set_foregroundcolor(aaa,'white')
-
-    def checkColour(oo):
-        colour=oo.get_color()
-        if hasattr(colour, 'shape'): # Is mpl.array!
-            assert len(colour) in [3,4]
-            colour=list(colour)
-        if colour in ['k',(0,0,0),(0,0,0,0),]:
-            o.set_color('w')
-    def checkFaceEdgeColour(oo):
-        if hasattr(oo,'get_edgecolor'):
-            colour=oo.get_edgecolor()
-            if hasattr(colour, 'shape'): # Is mpl.array!
-                if colour.shape in [(1,4)]:
-                    if sum(colour[0][0:3])==0:
-                        # Leave alpha as is; set black to white:
-                        colour[0][0:3]=[1,1,1]
-            elif len(colour) in [3,4]:
-                colour=list(colour)
-                if colour in ['k',(0,0,0),(0,0,0,0),]:
-                    o.set_edgecolor('w')
-            else:
-                ffffooijoweiruiuiuuoiuiu
-        colour=oo.get_facecolor()
-        if hasattr(colour, 'shape'): # Is mpl.array!
-            if colour.shape in [(1,4)]:
-                if sum(colour[0][0:3])==0:
-                    # Leave alpha as is; set black to white:
-                    colour[0][0:3]=[1,1,1]
-        elif len(colour) in [3,4]:
-            colour=list(colour)
-            if colour in ['k',(0,0,0),(0,0,0,0),]:
-                o.set_facecolor('w')
-            if colour in ['w']:#,(0,0,0),(0,0,0,0),]:
-                foiofofooffo
-                
-        else:
-            ffffooijoweiruiuiuuoiuiu
-            
-    for o in fig.findobj(mpl.lines.Line2D):
-        checkColour(o)
-    for o in fig.findobj(mpl.text.Text):
-        checkColour(o)
-
-
-    # match on arbitrary function 
-    def findfaces(x): 
-        return hasattr(x, 'set_facecolor') 
-
-    for o in fig.findobj(findfaces): 
-        checkFaceEdgeColour(o)
-
-    if 0: # Wow!! All these are obselete, given the above (new 2013 June)!?
-        for o in fig.findobj(mpl.patches.Patch):
-            checkFaceEdgeColour(o)
-        for o in fig.findobj(mpl.collections.PolyCollection):
-            checkFaceEdgeColour(o)
-
-        for o in fig.findobj(mpl.patches.Rectangle):
-            checkFaceEdgeColour(o)
-
-    # what about figure itself? See also  facecolor of savefig...
-    if fig.get_facecolor()[0] in [.75, 1.0]: # Not sure why not just always set it to 'k'.? (201710cpbl)
-        fig.set_facecolor('k')
-    elif fig.get_facecolor() not in [(0.0, 0.0, 0.0, 1.0)]:
-        print('deal with this')
-        print fig.get_facecolor()
-        deal_with_this
-
-
-        
-    return()
-
-##############################################################################
-##############################################################################
-#
-def figureToGrayscale(fig=None):
-    ##########################################################################
-    ##########################################################################
-    """
-    May 2012. Rewriting this from scratch, copied from figureToInverseVideo, after having some luck with the latter.
-    This is only just started, though.
-    """
-    if fig is None:
-        fig=plt.gcf()
-
-    if 1: # Note reall
-        for aaa in plt.findobj(fig,mpl.axes.Axes):
-            set_backgroundcolor(aaa,None) # Not None?
-            set_foregroundcolor(aaa,'black')
-
-    def meanColour(oo):
-        colour=oo.get_color()
-        if hasattr(colour, 'shape'): # Is mpl.array!
-            #iopoio
-            assert len(colour) in [3,4]
-            colour=list(colour)
-        if colour not in  ['w','white','k','black',(0,0,0),(0,0,0,0),(1,1,1),(1,1,1,1),]:
-            if isinstance(colour,str):
-                o.set_color('k')
-            #Not finished!!!!
-        #Not finished!!!!
-    def meanFaceEdgeColour(oo):
-        colour=oo.get_edgecolor()
-        if hasattr(colour, 'shape'): # Is mpl.array!
-            if colour.shape in [(1,4)]:
-                if sum(colour[0][0:3])==0:
-                    # Leave alpha as is; set black to white:
-                    colour[0][0:3]=[1,1,1]
-        elif len(colour) in [3,4]:
-            colour=list(colour)
-            if colour in ['k',(0,0,0),(0,0,0,0),]:
-                o.set_edgecolor('w')
-        else:
-            ffffooijoweiruiuiuuoiuiu
-        colour=oo.get_facecolor()
-        if hasattr(colour, 'shape'): # Is mpl.array!
-            if colour.shape in [(1,4)]:
-                if sum(colour[0][0:3])==0:
-                    # Leave alpha as is; set black to white:
-                    colour[0][0:3]=[1,1,1]
-        elif len(colour) in [3,4]:
-            colour=list(colour)
-            if colour in ['k',(0,0,0),(0,0,0,0),]:
-                o.set_facecolor('w')
-        else:
-            ffffooijoweiruiuiuuoiuiu
-            
-    for o in fig.findobj(mpl.lines.Line2D):
-        meanColour(o)
-    for o in fig.findobj(mpl.text.Text):
-        meanColour(o)
-    """
-    for o in fig.findobj(mpl.patches.Patch):
-        meanFaceEdgeColour(o)
-    for o in fig.findobj(mpl.collections.PolyCollection):
-        meanFaceEdgeColour(o)
-
-
-    for o in fig.findobj(mpl.patches.Rectangle):
-        meanFaceEdgeColour(o)
-        """
-    return()
-
-##############################################################################
-##############################################################################
-#
-def figureToGrayscaleOld(): # This is a disaster for envelopes, no!? it sets all colors t ogrey!!! needs fixing!  May 2012: delete this when y
-    ##########################################################################
-    ##########################################################################
-    fig=plt.gcf()
-
-    from pylab import mean
-    for o in fig.findobj(mpl.patches.Rectangle):
-        rgba=o.get_facecolor()
-        if not isinstance(rgba,str) and len(rgba)==4:
-            gg=mean(rgba[:-1])
-            o.set_facecolor([gg,gg,gg,rgba[-1]])
-
-    for o in fig.findobj(mpl.lines.Line2D):
-        o.set_color('k')
-
-    # Set all text to black:
-    for o in fig.findobj(mpl.text.Text):
-        o.set_color('k')
-
-
-    # Set all envelopes / patch polys to black (this seems to make them appropriately gray if alpha<1 !?)
-    setp(fig.findobj(mpl.collections.PolyCollection),'color','k')
-
-
-    return()
-
 
 def resizeSVG_or_PDF_with_inkscape(infile,outfile=None,use_xvfb=False):
     """
@@ -808,7 +616,7 @@ wh_inches: width and height of output in inches[sic!]
     if 0: # I need to use frozen() or deepcopy() to avoid rv and bw from messing up future modified versions of a plot!  But this crashes:
         fig=deepcopy(fig)
     if rv in [True]:
-        figureToInverseVideo(fig)
+        figureToInverseVideo(fig, debug=True)
     if rv in ['both',None]: # Do both.
         assert not bw
         # 28 June 2013: trying set transparent=True
@@ -5319,46 +5127,6 @@ def xTicksAreDates(years=False):
     return()
 
 
-def set_foregroundcolor(ax, color):
-     '''For the specified axes, sets the color of the frame, major ticks,                                                             
-         tick labels, axis labels, title and legend                                                                                   
-     '''
-     for tl in ax.get_xticklines() + ax.get_yticklines():
-         tl.set_color(color)
-     for spine in ax.spines:
-         ax.spines[spine].set_edgecolor(color)
-     for tick in ax.xaxis.get_major_ticks():
-         tick.label1.set_color(color)
-     for tick in ax.yaxis.get_major_ticks():
-         tick.label1.set_color(color)
-     ax.axes.xaxis.label.set_color(color)
-     ax.axes.yaxis.label.set_color(color)
-     ax.axes.xaxis.get_offset_text().set_color(color)
-     ax.axes.yaxis.get_offset_text().set_color(color)
-     ax.axes.title.set_color(color)
-     lh = ax.get_legend()
-     if lh != None:
-         lh.get_title().set_color(color)
-         lh.legendPatch.set_edgecolor('none')
-         labels = lh.get_texts()
-         for lab in labels:
-             lab.set_color(color)
-     for tl in ax.get_xticklabels():
-         tl.set_color(color)
-     for tl in ax.get_yticklabels():
-         tl.set_color(color)
-
-
-def set_backgroundcolor(ax, color):
-     '''Sets the background color of the current axes (and legend).                                                                   
-         Use 'None' (with quotes) for transparent. To get transparent                                                                 
-         background on saved figures, use:                                                                                            
-         pp.savefig("fig1.svg", transparent=True)                                                                                     
-     '''
-     ax.patch.set_facecolor(color)
-     lh = ax.get_legend()
-     if lh != None:
-         lh.legendPatch.set_facecolor(color)
 
 
 def weighted_cov(x, y, w):
