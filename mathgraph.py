@@ -616,7 +616,7 @@ wh_inches: width and height of output in inches[sic!]
     if 0: # I need to use frozen() or deepcopy() to avoid rv and bw from messing up future modified versions of a plot!  But this crashes:
         fig=deepcopy(fig)
     if rv in [True]:
-        figureToInverseVideo(fig, debug=True)
+        figureToInverseVideo(fig, debug=False)
     if rv in ['both',None]: # Do both.
         assert not bw
         # 28 June 2013: trying set transparent=True

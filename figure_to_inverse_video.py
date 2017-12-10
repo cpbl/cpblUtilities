@@ -1,8 +1,14 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+"""
+To do:
+ - this still fails on some figure frames (but not the example one, here)
+ - this still fails on annotation boxes
 
-def set_foregroundcolor(ax, color):
+"""
+
+def set_axis_foregroundcolor(ax, color):
      '''For the specified axes, sets the color of the frame, major ticks,                                                             
          tick labels, axis labels, title and legend                                                                                   
      '''
@@ -32,7 +38,7 @@ def set_foregroundcolor(ax, color):
          tl.set_color(color)
 
 
-def set_backgroundcolor(ax, color):
+def set_axis_backgroundcolor(ax, color='None'):
      '''Sets the background color of the current axes (and legend).                                                                   
          Use 'None' (with quotes) for transparent. To get transparent                                                                 
          background on saved figures, use:                                                                                            
@@ -64,13 +70,13 @@ debug = True will wait for confirmation at each step, in order to check what's h
     if fig is None:
         fig=plt.gcf()
     k2w = {'k':'w', (0,0,0):(1,1,1), (0,0,0,0):(1,1,1,0), (0,0,0,1):(1,1,1,1), (0.0,0.0,0.0,1):(1,1,1,1)} # Lookup for blacks to whites
-    def gray2gray(colour):
+    def obselete_gray2gray(colour):
         """ Invert the gray level for gray colours """
         if hasattr(colour, 'shape'): # Is mpl.array!
             assert len(colour) in [3,4]
             colour=list(colour)
             assert colour[0]<=1
-            if colour[0]==colour[1]==colour[2]:
+            if colour[0]==colour[1]==colour[2] and color[0] not in [0,1,0.0,1.0]:
                 colour[0]= 1-colour[0]
                 colour[1]= colour[0]
                 colour[2]= colour[0]
@@ -87,11 +93,19 @@ debug = True will wait for confirmation at each step, in order to check what's h
         """  The set_function may be the object's set_color or its set_facecolor, for instance. Thus, all three parameters must be set.
         """
         origc=colour
+        try:
+            if len(colour)==0: return
+        except:
+            foo
+            
+        while hasattr(colour, 'shape') and len(colour)==1:
+            colour = colour[0]
+        
         if hasattr(colour, 'shape') or isinstance(colour,tuple): # Is mpl.array or tuple
             assert len(colour) in [3,4]
             colour=list(colour)
         """ Invert the gray level for gray colours """
-        if len(colour) in [3,4]  and colour[0]==colour[1]==colour[2]:
+        if len(colour) in [3,4]  and colour[0]==colour[1]==colour[2] and colour[0] not in [0,1,0.0,1.0]:
             assert colour[0]<=1
             colour[0]= 1-colour[0]
             colour[1]= colour[0]
@@ -105,81 +119,18 @@ debug = True will wait for confirmation at each step, in order to check what's h
             if debug: print(' Found "black": {} --> {} in {}'.format(origc,k2w[tuple(colour)], oo.__class__.__name__))
             set_function(k2w[tuple(colour)])
             return
-        if debug: print(' Not changing color {} of {}'.format(colour, oo.__class__.__name__))
+        if debug: print('     Not changing color {} of {}'.format(colour, oo.__class__.__name__))
 
     def check_and_set_color(oo):
         if hasattr(oo,'get_color'):
             check_and_set_color_using_function(oo, oo.set_color, oo.get_color())
-            return
         if hasattr(oo,'get_edgecolor'):
             check_and_set_color_using_function(oo, oo.set_edgecolor, oo.get_edgecolor())
         if hasattr(oo,'get_facecolor'):
             check_and_set_color_using_function(oo, oo.set_facecolor, oo.get_facecolor())
-        
-    def OBSELETE_checkColour(oo):
-        colour=oo.get_color()
-        origc=colour
-        if hasattr(colour, 'shape'): # Is mpl.array!
-            assert len(colour) in [3,4]
-            colour=list(colour)
-        """ Invert the gray level for gray colours """
-        if len(colour) in [3,4]  and colour[0]==colour[2]==colour[3]:
-            assert colour[0]<=1
-            colour[0]= 1-colour[0]
-            colour[1]= colour[0]
-            colour[2]= colour[0]
-            oo.set_color(colour)
-            if debug: print(' Found gray: {} --> {}'.format(origc,colour))
-            return
-        # Deal here with hex grays (NOT DONE YET
-        #
-        if colour in k2w: # "black" to "white"
-            if debug: print(' Found "black": {} --> {}'.format(origc,k2w[colour]))
-            oo.set_color(k2w[colour])
-            return
-        if debug: print(' Not changing color {} of {}'.format(colour, oo.__class__.__name__))
-
-    def OBSELET_checkFaceEdgeColour(oo):
-        if hasattr(oo,'get_edgecolor'):
-            colour=oo.get_edgecolor()
-            if hasattr(colour, 'shape'): # Is mpl.array!
-                if colour.shape in [(1,4)]:
-                    if sum(colour[0][0:3])==0:
-                        # Leave alpha as is; set black to white:
-                        colour[0][0:3]=[1,1,1]
-            elif len(colour) in [3,4]:
-                colour=list(colour)
-                if colour in ['k',(0,0,0),(0,0,0,0),]:
-                    o.set_edgecolor('w')
-            else:
-                ffffooijoweiruiuiuuoiuiu
-        colour=oo.get_facecolor()
-        if hasattr(colour, 'shape'): # Is mpl.array!
-            if colour.shape in [(1,4)]:
-                if sum(colour[0][0:3])==0:
-                    # Leave alpha as is; set black to white:
-                    colour[0][0:3]=[1,1,1]
-        elif len(colour) in [3,4]:
-            colour=list(colour)
-            if colour in ['k',(0,0,0),(0,0,0,0),]:
-                o.set_facecolor('w')
-            if colour in ['w']:#,(0,0,0),(0,0,0,0),]:
-                foiofofooffo
-                
-        else:
-            ffffooijoweiruiuiuuoiuiu
 
             
-    for aaa in plt.findobj(fig,mpl.axes.Axes):
-        set_backgroundcolor(aaa,'black') # Not None?
-        cpause('Axes bgs')
-        set_foregroundcolor(aaa,'white')
-        cpause('Axes fgs')
 
-    for o in fig.findobj(lambda ooo: hasattr(ooo, 'set_facecolor') ):
-        check_and_set_color(o)
-        ###checkFaceEdgeColour(o)
-    cpause('All faces')
             
     for o in fig.findobj(mpl.lines.Line2D):
         check_and_set_color(o)
@@ -188,27 +139,33 @@ debug = True will wait for confirmation at each step, in order to check what's h
         check_and_set_color(o)
     cpause('text')        
 
+    """ If we do everything with a facecolor, we'll run into some problems
+    with conflicts with the axes objects.  So, instead, just do custom-listed shapes
+    Actually, htis is no longer the case. By putting the axes.Axes treatment at the end, there is no coflict with this catch-all"""
+    treat_shapes = (mpl.patches.Patch, mpl.collections.PolyCollection,mpl.patches.Rectangle)
+    found_shapes = [cc.__class__ for cc in fig.findobj(lambda ooo: hasattr(ooo, 'set_facecolor') )]
+    #exclude_shapes = (mpl.axes._subplots.AxesSubplot, mpl.figure.Figure, mpl.spines.Spine)
+    #mpl.patches.Circle, mpl.patches.Circle, mpl.spines.Spine, mpl.spines.Spine, mpl.spines.Spine, mpl.spines.Spine, mpl.patches.FancyBboxPatch, mpl.patches.Rectangle, 
+    for o in fig.findobj(lambda ooo: hasattr(ooo, 'set_facecolor') ):
+        check_and_set_color(o)
+    cpause('All faces')
 
-
-    if 0: # Wow!! All these are obselete, given the above (new 2013 June)!?
-        for o in fig.findobj(mpl.patches.Patch):
-            checkFaceEdgeColour(o)
-        for o in fig.findobj(mpl.collections.PolyCollection):
-            checkFaceEdgeColour(o)
-
-        for o in fig.findobj(mpl.patches.Rectangle):
-            checkFaceEdgeColour(o)
-
+    for aaa in plt.findobj(fig,mpl.axes.Axes):
+        set_axis_backgroundcolor(aaa,'black') # Not None?
+        cpause('Axes bgs')
+        set_axis_foregroundcolor(aaa,'white')
+        cpause('Axes fgs')
+            
     # what about figure itself? See also  facecolor of savefig...
-    if fig.get_facecolor()[0] in [.75, 1.0]: # Not sure why not just always set it to 'k'.? (201710cpbl)
-        fig.set_facecolor('k')
-    elif fig.get_facecolor() not in [(0.0, 0.0, 0.0, 1.0)]:
-        print('deal with this')
-        print fig.get_facecolor()
-        deal_with_this
+    fig.set_facecolor('k')
+    #if fig.get_facecolor()[0] in [.75, 1.0]: # Not sure why not just always set it to 'k'.? (201710cpbl)
+    #   fig.set_facecolor('k')
+    #elif fig.get_facecolor() not in [(0.0, 0.0, 0.0, 1.0)]:
+    #    print('deal with this')
+    #    print fig.get_facecolor()
+    #    deal_with_this
 
 
-        
     return()
 
 ##############################################################################
@@ -230,8 +187,8 @@ def figureToGrayscale(fig=None, debug=True):
 
     if 1: # Note reall
         for aaa in plt.findobj(fig,mpl.axes.Axes):
-            set_backgroundcolor(aaa,None) # Not None?
-            set_foregroundcolor(aaa,'black')
+            set_axis_backgroundcolor(aaa,None) # Not None?
+            set_axis_foregroundcolor(aaa,'black')
             cpause('anax')
     def meanColour(oo):
         colour=oo.get_color()
@@ -321,8 +278,12 @@ def figureToGrayscaleOld(): # This is a disaster for envelopes, no!? it sets all
 if __name__ == '__main__':
     """ Demo functionality """
     plt.close('all')
-    fig = plt.figure(117)
-    plt.plot((1,10),(1,10), 'r', label='red'), plt.plot((2,10),(1,10), 'b', label='blue'), plt.plot((4,10),(1,10), color = [.2,.2,.2], label='dark grey'), plt.plot((5,10),(1,10), color = [.8,.8,.8], label='light grey'), plt.plot((3,10),(1,10), 'k',label='main'),     plt.title('My title'),     plt.xlabel('foo'), plt.legend()
+    fig,axs = plt.subplots(1)
+    plt.plot((1,10),(1,10), 'r', label='red'), plt.plot((2,10),(1,10), 'b', label='blue'), plt.plot((4,10),(1,10), color = [.2,.2,.2], label='dark grey'), plt.plot((5,10),(1,10), color = [.8,.8,.8], label='light grey'), plt.plot((3,10),(1,10), 'k',label='black'),     plt.title('My title'),     plt.xlabel('foo'), plt.legend()
+    hhh =plt.Circle((4,4), 3, color= 'k')
+    axs.add_artist(hhh)
+    hhh =plt.Circle((6,6), 3, color= 'gray')
+    axs.add_artist(hhh)
     plt.show()
     figureToInverseVideo(fig, debug= True)
     

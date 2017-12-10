@@ -10,13 +10,13 @@ Background: Colormap functions in Matplotlib are confusingly many and a bit spre
 
 Here are some ways I might specify the color sequence in a colorbar (ie, what is usually called a colormap, but it's a mapping from [0,1] to colours, not from some arbitrary data).
 
- -  the name (string) of a built-in colormap
- -  something called a cdict (a dict), which seems the "right" way to efficiently code an arbitrary color sequence [To see one for a built-in colormap, just use plt.cm.datad['jet']. In each triplet, the first number (x) is an index for position in your colormap between 0 and 1; the second and third (y) are often the same value; they are  the amount of a certain primary color. When different, the 2nd is the limit value for y when x comes from below; the third is the limiting y value for x comes from above.
- -  a simple list/sequence of colours, which are assumed to be equally spaced along the color bar (ie [0,1] mapping)
+ CS1:  the name (string) of a built-in colormap
+ CS2:  something called a cdict (a dict), which seems the "right" way to efficiently code an arbitrary color sequence [To see one for a built-in colormap, just use plt.cm.datad['jet']. In each triplet, the first number (x) is an index for position in your colormap between 0 and 1; the second and third (y) are often the same value; they are  the amount of a certain primary color. When different, the 2nd is the limit value for y when x comes from below; the third is the limiting y value for x comes from above.
+ CS3:  a simple list/sequence of colours, which are assumed to be equally spaced along the color bar (ie [0,1] mapping)
 
-In general, I want to be able to construct color mappings between some *data values* and some colours, and I want to be able to render a colorbar for that mapping (but where I'm not using the image functions, which coordinate colorbars for you).
+In general, I want to be able to construct color mappings between some *data values* (not just [0,1]) and some colours, and I want to be able to render a colorbar with data-valued y-axis for that mapping (but where I'm not using the image functions, which coordinate colorbars for you).
 
-Moreover, I don't want to be constrained to linear scalings between data values and color indices. Therefore, I want to map the *indices* of data onto the *indices* of colors in a color scheme, so as to maximally make use of the available color variation.  Moreover, I want to have access to these mappings so that I can use the same mapping consistently over several plots.
+Moreover, I don't want to be constrained to linear scalings between data values and color indices ([0,1]). Ideally, I should  map the *indices* of sorted data onto the *indices* of colors in a color scheme, so as to maximally make use of the available color variation.  Moreover, I want to have access to these mappings so that I can use the same mapping consistently over several plots.
 
 Therefore, two tools are fundamental to this effort: 
 
@@ -163,17 +163,18 @@ I ought to have another option: discretizeColours, which would ensure that there
         loloRGBs=[ cdict_to_list_of_colors(cdict,N=256) for cdict in RGBpoints_or_cmaps]
     # You can specify just a list of RGB values: one per breakpoint
     elif isinstance(RGBpoints_or_cmaps,(list,np.ndarray)) and RGBpoints_or_cmaps[0][0].__class__ in [float,int,np.float64]:
-        assert len(RGBpoints_or_cmaps)==len(splitdataat)+2 
+        assert splitdataat in [[]] or len(RGBpoints_or_cmaps)==len(splitdataat)+2 
         # Reorganize this into a list of pairs of colours which bound the segments: ie duplicate each interior colour which forms a transition/split point:
         loloRGBs=[ np.array([RGBpoints_or_cmaps[ii],RGBpoints_or_cmaps[ii+1]])  for ii in range(len(RGBpoints_or_cmaps)-1) ]
     else:
         oh_oh_whatDidYouPassMe
-    return(_assignSegmentedColormapEvenly_bycolorsets(loloRGBs,zs,splitdataat=splitdataat, asDict=asDict,missing=missing, Nlevels=Nlevels   ))
+
+    return(_assignSegmentedColormapEvenly_bycolorsets(loloRGBs,zs,splitdataat, asDict=asDict,missing=missing, Nlevels=Nlevels   ))
 
 
-def _assignSegmentedColormapEvenly_bycolorsets(RGBpoints,zs,splitdataat=None,asDict=False,missing=[1,1,1], Nlevels=None):
+def _assignSegmentedColormapEvenly_bycolorsets(RGBlists,zs,splitdataat=None ,asDict=False,missing=[1,1,1], Nlevels=None):
     """
-    In this case, RGBpoints is a list of lists of RGB values. ie each element is a list of RGBs which if spaced equally describe a colormap.  In most cases, the final colour in one element will be the first colour of the next element.  This list of "colorsets" is different from the list of colors, where each color is itself a split point (see ..._bycolors() ).
+    In this case, RGBlists is a list of lists of RGB values. ie each element is a list of RGBs which if spaced equally describe a colormap.  In most cases, the final colour in one element will be the first colour of the next element.  This list of "colorsets" is different from the list of colors, where each color is itself a split point (see ..._bycolors() ).
     One can convert from the latter to the former just by doubling the borders...
     """
 
@@ -181,10 +182,19 @@ def _assignSegmentedColormapEvenly_bycolorsets(RGBpoints,zs,splitdataat=None,asD
     big=1e20 # Using np.inf as limiting x values screws up interp1d
 
     categorical=False
+
+    # If we have no data splits, then we do, first, a top-level allocation of zs (data points) across the RGB groups:
+    if splitdataat in [None, []]:
+        splitdataat = np.percentile(np.unique(zs),  np.linspace(0,100,len(RGBlists)+1))[1:-1]
+
+    
     assert splitdataat is not None #splitdataat= splitdataat if splitdataat is not None else []
     assert Nlevels is not None
     if splitdataat.__class__ in (int,float,np.float64): splitdataat=[splitdataat]
+
     splitdataat=[-big]+list(splitdataat)+[big]
+    nSplits=len(splitdataat)
+    assert  len(RGBlists)==nSplits -1 # Ah why was this -1
     if 0 and isinstance(zs,(list,np.ndarray)) and isinstance(zs[0],str):
         iCategories=range(len(zs))
         szs=range(len(zs))
@@ -197,8 +207,6 @@ def _assignSegmentedColormapEvenly_bycolorsets(RGBpoints,zs,splitdataat=None,asD
         dz=szs[-1]-szs[0] 
 
     ZZ=np.sort(np.unique(zs[np.isfinite(zs)]))
-    nSplits=len(splitdataat)
-    assert len(RGBpoints)==nSplits-1
     # Now, go through each split region. Build an interpreter from the ordinal *index* of the data to colors
 
     datagroups=[] # This should end up just being the original data
@@ -221,8 +229,8 @@ def _assignSegmentedColormapEvenly_bycolorsets(RGBpoints,zs,splitdataat=None,asD
         NN=len(szs256)
 
         # Interpolate given list of colours to create a list of colours the same length (NN) as these data:
-        iCol=np.linspace(0,len(RGBpoints[ii])-1,  NN)
-        colors256=interpolate.interp1d(range(len(RGBpoints[ii])),    np.array(RGBpoints[ii]) ,axis=0)(iCol)
+        iCol=np.linspace(0,len(RGBlists[ii])-1,  NN)
+        colors256=interpolate.interp1d(range(len(RGBlists[ii])),    np.array(RGBlists[ii]) ,axis=0)(iCol)
 
         # Store our 256 (or whatever)-long data and 256-long colours:
         datagroups+=[szs256]
@@ -784,8 +792,9 @@ def cpblColorDemos():
     # I think it will be inside addcolorbarnonimage, take the final colormap, create a cdict from it?! and edit the cdict (laborious!) to have the colormap end at the appropriate place. Hard.
 
     plt.show()
-
-
+    fooo
+    print(' It is broken below here.... To FIX!')
+    
     plt.imshow(Z, interpolation='nearest', cmap='_tmp-755')
     plt.colorbar()
     hcb=addColorbarNonimage(mydata,cmap=data2colorInterpFcn)
@@ -834,6 +843,7 @@ def cpblColorDemos():
 
 def colorDemos2017():
 
+        
     # Consider node and edge degree. Our fake data set consists of one value of each possible value:
     z = [1,2,2.5,3,3.5,4]
     mydata2colors = assignSplitColormapEvenly(z , splitdataat = 3, RGBpoints = [[1,0,0],[.5,0,.5],[0,0,1]]
@@ -851,6 +861,85 @@ def colorDemos2017():
     addColorbarNonImage(datarange=[1,4], data2color=mydata2colors)
     plt.draw()
     raw_input()
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    # Consider node and edge degree. Our fake data set consists of one value of each possible value:
+    z = [1,2,2.5,3,3.5,4]
+    mydata2colors = assignSegmentedColormapEvenly( [[1,0,0],[.5,0,.5],[0,0,1]],    z)
+    #I can now color data  with this function:
+    y = np.random.normal(3, 1, 100)
+    plt.figure(1002), plt.clf()
+    for ii,ay in enumerate(y):
+        plt.plot(ii,ay ,'o', color = mydata2colors(ay))
+    plt.show()
+    raw_input()
+    #addColorbarNonImage(mydata2colors,useaxis=None,ylabel='Degree')
+
+    #addColorbarNonimage(data=data, data2color= d2c_interp1)
+    addColorbarNonImage(datarange=[1,4], data2color=mydata2colors)
+    plt.draw()
+    raw_input()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    mydata1 = np.random.normal(3, 1, 100)    
+    cme = assignSplitColormapEvenly(mydata1, splitdataat=0.0, RGBpoints=None)
+
+    #An even simpler application (replacing my old function for this) is for data with a single colour scheme. This maps data optimally onto a blue-red gradient:
+
+    cme2 = assignSegmentedColormapEvenly([[0.0,0.0,1.0],[1.0,0.0,0.0]], mydata1)
+
+    #"missing" color feature not yet implemented
+
+    #Nlevels is the value that defaults to N_COL_PER_SEGMENT=256 # This is how detailed our colormaps will always be, except in multiple-segment ones, they'll have this many colours per segment.
+
+    #The function returns an interpolation function (mapping data to RGB color triplets) by default, or it can be asked to return a dict (asDict=True).
+
+    #So I might use the following to get actual color RGB values for each data point:
+    cc=  assignSegmentedColormapEvenly([[0.0,0.0,1.0],[1.0,0.0,0.0]], countries.RMSEs)
+    countries['color']=countries.RMSEs.map(cc)
+
+    fooo
+    
+    # Consider node and edge degree. Our fake data set consists of one observation of each possible value:
+    z = [1,2,2.5,3,3.5,4]
+    mydata2colors = assignSplitColormapEvenly(z , splitdataat = 3, RGBpoints = [[1,0,0],[.5,0,.5],[0,0,1]]
+,)
+    #I can now color data  with this function, mydata2colors:
+    y = np.random.normal(3, 1, 100)
+    plt.figure(1001), plt.clf()
+    for ii,ay in enumerate(y):
+        plt.plot(ii,ay ,'o', color = mydata2colors(ay))
+    plt.show()
+    raw_input()
+
+
+
+
 
 def assignColormapEvenly(cmap,zs,asDict=False,missing=[1,1,1]):
     from cpblUtilities.color import assignSegmentedColormapEvenly
@@ -925,3 +1014,4 @@ if __name__ == '__main__':
     notthis
     cpblColorDemos()
 #    demoCPBLcolormapFunctions()    
+
