@@ -172,24 +172,27 @@ I ought to have another option: discretizeColours, which would ensure that there
     return(_assignSegmentedColormapEvenly_bycolorsets(loloRGBs,zs,splitdataat, asDict=asDict,missing=missing, Nlevels=Nlevels   ))
 
 
-def _assignSegmentedColormapEvenly_bycolorsets(RGBlists,zs,splitdataat=None ,asDict=False,missing=[1,1,1], Nlevels=None):
+def _assignSegmentedColormapEvenly_bycolorsets(RGBlists,zs,splitdataat=None ,asDict=False,missing=[1,1,1], Nlevels=256):
     """
-    In this case, RGBlists is a list of lists of RGB values. ie each element is a list of RGBs which if spaced equally describe a colormap.  In most cases, the final colour in one element will be the first colour of the next element.  This list of "colorsets" is different from the list of colors, where each color is itself a split point (see ..._bycolors() ).
-    One can convert from the latter to the former just by doubling the borders...
+    This looks similar to assignSegmentedColormapEvenly but the first argument has a different interpretation. Rather than a list of color points (ie a list of RGB values), the RGBlists argument is a list of lists of RGB values. ie each element is a list of RGBs which if spaced equally describe a colormap.  In most cases, the final colour in one element will be the first colour of the next element.  
+
+    In the simplest case, each list of RGBs has only two values, the colors at the start and end of one colormap segment.  Thus, assignSegmentedColormapEvenly calls this function by simply duplicating the RGBpoints at each boundary.
+
     """
 
     import pylab
     big=1e20 # Using np.inf as limiting x values screws up interp1d
-
     categorical=False
 
+    if isinstance(zs,list): zs=np.array(zs)
+    
     # If we have no data splits, then we do, first, a top-level allocation of zs (data points) across the RGB groups:
     if splitdataat in [None, []]:
         splitdataat = np.percentile(np.unique(zs),  np.linspace(0,100,len(RGBlists)+1))[1:-1]
 
     
     assert splitdataat is not None #splitdataat= splitdataat if splitdataat is not None else []
-    assert Nlevels is not None
+    #assert Nlevels is not None
     if splitdataat.__class__ in (int,float,np.float64): splitdataat=[splitdataat]
 
     splitdataat=[-big]+list(splitdataat)+[big]
@@ -215,6 +218,7 @@ def _assignSegmentedColormapEvenly_bycolorsets(RGBlists,zs,splitdataat=None ,asD
     colorgroups=[]
     iito=0
     for ii,fromdata in enumerate(splitdataat[:-1]):
+        assert len(splitdataat)>2
         todata=splitdataat[ii+1]
         if fromdata==todata: 
             print('Empty segment! no data........ Check me...')
@@ -235,17 +239,19 @@ def _assignSegmentedColormapEvenly_bycolorsets(RGBlists,zs,splitdataat=None ,asD
         # Store our 256 (or whatever)-long data and 256-long colours:
         datagroups+=[szs256]
         colorgroups+=[colors256]
-
+    
     # Now build an interpreter from the actual data value to colours:
     allD,allC=np.concatenate( datagroups),  np.concatenate(colorgroups)
     # By default, extend the mapping to +/- infinity. (With algorithm above, this is also necessary to catch top value)
     #dataToC=interpolate.interp1d(np.concatenate([[-big],allD[1:-1],[big]]) ,allC, axis=0)
     dataToC=interpolate.interp1d(np.concatenate([[-big],allD,[big]]), np.concatenate([[allC[0]], allC,[allC[-1]]]), axis=0)
 
+    assert tuple(dataToC(zs[0])) # Should be a 3- or 4- vector ie RGB
+    
     if asDict is False:
         return(dataToC) # This is a function; give it a scalar or vector of data, and it gives you a color array.
     # Do we really want to allow calling by this method? Useful for categorical data, but that's not supported anymore/just now...
-    # 
+    #
 
     #NEXT: go back to colors. make pd.cut based on the 256 values I know. 
     z2cut = pd.cut(zs,allD)
@@ -889,23 +895,32 @@ def colorDemos2017(verbose=True):
     print(' Now using assignSegmentedColormapEvenly with country data and a 4-color sequence')
     pca1={'DZA': 2.74188420611434, 'AGO': 2.9100414294818102, 'EGY': 3.44477973494917, 'BGD': 5.66924080705747, 'QAT': 3.12223003045546, 'NAM': 2.9221728067594301, 'BGR': 4.7968638194676299, 'BOL': 1.3290540647681801, 'GHA': 4.7715033489813399, 'PAK': 3.4840360434117299, 'PAN': 6.6681991665617799, 'JOR': 4.0220098960765904, 'LBR': 7.6119950105537697, 'LBY': 4.9110970413075599, 'MYS': 6.0481837847454001, 'PRI': 9.1963023055131607, 'PRK': 5.7893368991070497, 'PSE': 5.7925371192684496, 'TZA': 4.6084438004321697, 'PRT': 3.7166759901572899, 'KHM': 3.7991626151124498, 'PRY': 1.9940065589935001, 'HKG': 7.1737301333863597, 'SAU': 2.9337232828030699, 'LBN': 6.4138232419075996, 'SVN': 5.2317615481173299, 'BFA': 1.7844329414155, 'CHE': 6.21324818546484, 'MRT': 0.414317849402773, 'CPV': 3.4981927922006801, 'HRV': 4.9765695044615503, 'CHL': 3.5067315812256701, 'CHN': 2.69290087825265, 'KNA': 4.3407163526244901, 'JAM': 6.4458820640233698, 'DJI': 2.8904049787980002, 'GIN': 5.3556736012772603, 'FIN': 6.8973186898956103, 'URY': 1.98182531427191, 'THA': 6.4678815276276396, 'SYC': 5.7792648253850603, 'NPL': 4.50970744952257, 'MAR': 2.08844348080263, 'YEM': 3.0482963311750999, 'PHL': 6.2127133708127404, 'ZAF': 4.0454176887987998, 'NIC': 4.46902002176867, 'GAB': 5.8443152258066204, 'VIR': 8.3311496890290204, 'SYR': 2.8205744931812302, 'MAC': 1.7020962545100999, 'LIE': 6.2521498525714803, 'MAF': 8.2922345849880603, 'MLT': 3.76889008386653, 'KAZ': 3.7936784067574698, 'TCA': 3.70807750281159, 'SUR': 4.5185838030819303, 'DMA': 7.3664565545964003, 'BEN': 3.1789790077009501, 'NGA': 3.3731243784433702, 'BEL': 4.8251327488272304, 'DEU': 5.0046551604401897, 'GUM': 7.0103572962706604, 'LKA': 5.8395497357124704, 'GBR': 7.0314023525237701, 'GUY': 3.7135694763921099, 'ITA': 4.0733801524734101, 'CMR': 4.7403348445110396, 'COM': 5.1125753755282304, 'HUN': 3.98265056544132, 'TKM': 2.49540244268242, 'TTO': 8.1868122429596397, 'NLD': 4.9738777418108899, 'TCD': 2.5963834092260201, 'GEO': 5.0878852127680902, 'ROU': 4.70626152845138, 'MNG': 3.9669457351275801, 'XKO': 6.66306109466435, 'BLZ': 1.4122076290843999, 'AFG': 3.8403077652254201, 'BDI': 3.09499890282106, 'BLR': 3.1966718474098998, 'LVA': 4.2816625989227797, 'GRC': 3.6755702792216498, 'MNE': 6.7826648366840496, 'LSO': 3.9932453960398102, 'GRL': 6.2187692998814299, 'ZWE': 3.37966817735512, 'MOZ': 2.3824857876563499, 'TJK': 3.9192613590553802, 'GRD': 10.093329855719499, 'HTI': 4.9483428433996002, 'BRB': 7.5194256393405903, 'LCA': 7.6111470713324296, 'IND': 4.2733391577264896, 'SSD': 1.7644881456824999, 'BTN': 5.3548154598168196, 'VCT': 10.015501231559901, 'VNM': 3.75590061937298, 'NOR': 8.2411560159538109, 'CZE': 4.9301405071646203, 'ATG': 3.9305120075914699, 'FJI': 8.1022013876160006, 'HND': 4.8395819783546798, 'MUS': 3.7776945882686901, 'DOM': 3.6666814973291699, 'LUX': 4.9353350214424303, 'ISR': 5.0054049566371104, 'SMR': 5.7168558032253003, 'PER': 1.4609832407499499, 'IDN': 5.6997773067597999, 'VUT': 6.2771064864866002, 'COD': 4.4294377770827298, 'COG': 4.9705190464612699, 'ISL': 6.5955393543619598, 'ETH': 3.1362575728371902, 'NER': 1.9242536011787901, 'COL': 3.5872485347829199, 'TLS': 6.5968070198682502, 'BWA': 2.27348607971145, 'MDA': 3.6667012433230801, 'STP': 7.8447320784093, 'MDG': 6.2931123247301803, 'ECU': 2.74573588490721, 'SEN': 1.8393658575554399, 'MDV': -0.34189192811646002, 'ASM': 10.641943170394899, 'SRB': 5.8787856565137497, 'AND': 10.5834506454046, 'FRA': 4.6201810703453496, 'LTU': 4.7199928269014304, 'UGA': 4.3242701650351902, 'ZMB': 3.5761669860400001, 'SWE': 6.5514132603463402, 'GTM': 6.5325379380464703, 'DNK': 8.9643440259449303, 'UKR': 4.91448846073102, 'AUS': 4.6679920661154304, 'AUT': 5.0085119172428003, 'VEN': 5.24625220784477, 'PLW': 6.0691589897756897, 'KEN': 3.3134501420471101, 'LAO': 3.8942929164577, 'WSM': 4.1963988130704903, 'TUR': 2.5186698254078901, 'ALB': 5.6832700675448704, 'OMN': 3.4611986606479999, 'MMR': 2.9175562955258001, 'BRN': 6.0999697087997902, 'TUN': 2.6629841755238699, 'RUS': 5.1474794003600799, 'RWA': 3.5080582157378699, 'MEX': 3.9494852195676402, 'BRA': 2.7009319688693698, 'CAN': 4.37267806164418, 'CUW': 5.2495082930132204, 'MKD': 6.3599368957701197, 'USA': 5.8074624797238501, 'TWN': 2.4771170568930101, 'AZE': 4.2474178902076902, 'GNB': 5.7055818301575503, 'SWZ': 5.46345911410355, 'TON': 5.6679262283123402, 'CIV': 4.8238024930114403, 'KOR': 2.6851876803556198, 'ERI': 2.1300379224491102, 'SVK': 5.6471329357266598, 'CRI': 5.4460272785105204, 'BIH': 5.7029905616206404, 'SGP': 2.1729255406586199, 'SOM': 1.7939308053676599, 'UZB': 3.8011728732891599, 'CAF': 3.4580524336252001, 'POL': 4.6806061718595204, 'KWT': 2.5167283017472601, 'GMB': 2.3849753121324699, 'TGO': 4.3415763463921504, 'CYM': 6.2318080822140098, 'EST': 4.6108648895348097, 'MWI': 4.1053387717564904, 'ESP': 2.6568250386961898, 'IRQ': 2.5395059565813298, 'SLV': 5.7133761410134101, 'MLI': 1.9064184075131401, 'CYP': 6.8788872940463603, 'IRL': 8.9395448930124104, 'IRN': 3.0827441943204801, 'SLE': 6.6380207084328902, 'IMN': 6.2577298079471699, 'BHS': 6.2080946728240596, 'SLB': 10.5755400235156, 'NZL': 6.5269945449770903, 'JPN': 1.9142683708407, 'KGZ': 3.2312576799288899, 'NCL': 5.8967401463523901, 'ARE': 3.03615587471737, 'ARG': 1.3927126655187201, 'SDN': 1.8495592630859901, 'BHR': 4.6568287257003602, 'ARM': 4.8560506650497901, 'PNG': 6.5852813231847902, 'CUB': 3.2956676097607902}
     z = pca1.values()
-    mydata2colors = assignSegmentedColormapEvenly( [[1,0,0], [1,1,0], [0,1,0], [0,0,1]], z)
-    plt.figure(1003), plt.clf()
-    for ii,kk in enumerate(pca1.keys()):
-        plt.plot(ii,pca1[kk] ,'o', color = mydata2colors(pca1[kk]))
-        plt.text(ii+1,pca1[kk] ,kk, color = mydata2colors(pca1[kk]))
-    plt.title('assignSegmentedColormapEvenly( [[1,0,0], [1,1,0], [0,1,0], [0,0,1]], z)')
+    def plotCountryDots(RGBpoints, ax=None):
+        mydata2colors = assignSegmentedColormapEvenly(RGBpoints,z)
+        if ax is None:
+            fig,axs = plt.subplots(1)
+            ax=axs[0]
+        for ii,kk in enumerate(pca1.keys()):
+            assert all([cc <=1 for cc in mydata2colors(pca1[kk]) ])
+            ax.plot(ii,pca1[kk] ,'o', color = mydata2colors(pca1[kk]))
+            ax.text(ii+1,pca1[kk] ,kk, color = mydata2colors(pca1[kk]))
+        ax.set_title('assignSegmentedColormapEvenly( {}, z)'.format(str(RGBpoints)))
+        if verbose:     raw_input()
+        addColorbarNonImage(datarange=[min(z),max(z)], data2color=mydata2colors, useaxis=ax)
+        if verbose:     raw_input()
+
+    fig,axs = plt.subplots(3)
+    plotCountryDots([[1,0,0], [1,1,0], [0,1,0], [0,0,1]],   ax=axs[0])
+    # If you don't like that, you can stretch it out, e.g. to enhance yellow. One way would be to specify the data values corresponding to the RGBpoint boundaries, are simply to add more boundaries and let the points be spread equally 
     plt.show()
-    if verbose:     raw_input()
-    #addColorbarNonImage(mydata2colors,useaxis=None,ylabel='Degree')
-
-    #addColorbarNonimage(data=data, data2color= d2c_interp1)
-    addColorbarNonImage(datarange=[min(z),max(z)], data2color=mydata2colors)
-    plt.draw()
-    if verbose:     raw_input()
-
-
-
+    plotCountryDots([[1,0,0], [.8,.5,0], [1,1,0], [0,1,0], [0,0,1]],   ax=axs[1])
+    plt.show()
+    print("""
+    #The following causes an error. I cannot figure out why!!
+    plotCountryDots([[1,0,0], [.8,.5,0], [1,1,0], [0,1,0], [0,.5,.5],[0,0,1]],   ax=axs[2])
+    plt.show()
+    """)
+    return
 
 
 
