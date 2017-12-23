@@ -3371,10 +3371,10 @@ def empiricalcdf(a, num_bins =  20):
     plt.plot(b)
     return(b)
 
-def empiricalcdf(data, method='Hazen'): # I THINK THIS NOT USED ANYWHERE. PYGREP AND TRASH IT.
+def empiricalcdf(data, method='Hazen'): 
 	    """Return the empirical cdf.
             [copied from scipi...]
-hih? trash
+
 
 	    Methods available:
 	        Hazen:       (i-0.5)/N
@@ -3385,6 +3385,12 @@ hih? trash
 	        California:  (i-1)/N
 	   
     Where i goes from 1 to N.
+
+Example:
+
+a = [2.1,2.2,.1,.12,.12,.14,.6,2,2,2,2,3,0.01]
+plot(a, empiricalcdf(a),'.')
+plot(sorted(a), empiricalcdf(sorted(a)))
 	    """
 	   
 	    i = np.argsort(np.argsort(data)) + 1.
