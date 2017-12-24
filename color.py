@@ -32,6 +32,8 @@ What about the more straightforward "linear" use of colormaps? The latter functi
 
 n.b. Others have used similar language (nonlinear colormap) and wanted the same thing. (e.g. http://protracted-matter.blogspot.ie/2012/08/nonlinear-colormap-in-matplotlib.html). But they generally fiddle with values in one axis. I want to set up the mapping and use it for various sets of data.
 
+Run this module (or colorDemos2017() method for usage guidance/examples.
+
 """
 def cdict_to_list_of_colors(cdict,N=256):
     # One has to give new colormaps names; here it is None
@@ -218,7 +220,7 @@ def _assignSegmentedColormapEvenly_bycolorsets(RGBlists,zs,splitdataat=None ,asD
     colorgroups=[]
     iito=0
     for ii,fromdata in enumerate(splitdataat[:-1]):
-        assert len(splitdataat)>2
+        assert len(splitdataat)>=2
         todata=splitdataat[ii+1]
         if fromdata==todata: 
             print('Empty segment! no data........ Check me...')
@@ -849,7 +851,7 @@ def cpblColorDemos():
 
 def colorDemos2017(verbose=True):
 
-        
+    
     # Consider node and edge degree. Our fake data set consists of one value of each possible value:
     z = [1,2,2.5,3,3.5,4]
     mydata2colors = assignSplitColormapEvenly(z , splitdataat = 3, RGBpoints = [[1,0,0],[.5,0,.5],[0,0,1]]
@@ -920,6 +922,20 @@ def colorDemos2017(verbose=True):
     plotCountryDots([[1,0,0], [.8,.5,0], [1,1,0], [0,1,0], [0,.5,.5],[0,0,1]],   ax=axs[2])
     plt.show()
     """)
+
+
+    if verbose:     raw_input()
+    # A simple use of even assignment:
+    z = pca1.values()
+    mydata2colors = assignSegmentedColormapEvenly('jet', z)
+    plt.figure(1022), plt.clf()
+    for ii,ay in enumerate(z):
+        plt.plot(ii,ay ,'o', color = mydata2colors(ay))
+    plt.title('assignSegmentedColormapEvenly("jet",    z)')
+    addColorbarNonImage(datarange=[min(z),max(z)], data2color=mydata2colors, useaxis= plt.gca())
+    plt.show()
+    if verbose:     raw_input()
+
     return
 
 
