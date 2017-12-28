@@ -114,7 +114,7 @@ def try_to_choose_color_style_location(svgt):
 
 # Following function is also called colorize_svg
 def colorize_svg_by_class_or_id(geo2data_or_color=None,  blanksvgfile=None, outfilename=None, data2color=None, addcolorbar=None, cbylabel=None, 
-                                demo=False, scratchpath=None, customfeatures=None, colorbarlimits=None, testingRaiseSVGs=False,  hideElementsWithoutData=False, CSSselector=None,  colorbar_filename=None, makePNG=False, makePDF=False):
+                                demo=False, scratchpath=None, customfeatures=None, colorbarlimits=None, colorbar_ticks_side=None, testingRaiseSVGs=False,  hideElementsWithoutData=False, CSSselector=None,  colorbar_filename=None, makePNG=False, makePDF=False):
     """cpbl:2015: better method: It simply inserts a section of CSS color styles by region (class or id)
     Returns the actual svg text (but also saves it if outfilename is provided).
 
@@ -164,7 +164,8 @@ The other/older approoach is to substitute a style inside each path or path grou
             print('               Wrote '+outfilename+' No colorbar yet')
     if addcolorbar:
         #colorbar_location= #            dict(expandx=4,  movebartox=100,movebartoy=600,scalebar=2))
-        finalsvg=addColorbar_to_svg(outsvg,data2color=d2c_cb, scratchpath=scratchpath, colorbarlimits=colorbarlimits, colorbar_ylabel=cbylabel,                                  colorbar_location=CF['cbarpar'], colorbar_filename=colorbar_filename)  # This is not refined
+        finalsvg=addColorbar_to_svg(outsvg,data2color=d2c_cb, scratchpath=scratchpath, colorbarlimits=colorbarlimits, colorbar_ylabel=cbylabel,
+                                    colorbar_ticks_side = colorbar_ticks_side, colorbar_location=CF['cbarpar'], colorbar_filename=colorbar_filename)  # This is not refined
     else:
         finalsvg=outsvg
     if outfilename is not None:
@@ -189,7 +190,7 @@ colorize_svg=colorize_svg_by_class_or_id
 #See  colorize_country_svg(twolettercodes_to_data=None, outfilename=None,data2color=None,addcolorbar=None,cbylabel=None,
 # in bin/osm/analysis.py for an implementation which makes use of the tools below and can be generalized to recreate the colorize_svg() below.
 
-def addColorbar_to_svg(svgtext_or_filename,data2color=None, scratchpath=None, colorbarlimits=None, colorbar_ylabel=None, colorbar_aspectratio=6, ticks=None,colorbar_filename=None,
+def addColorbar_to_svg(svgtext_or_filename,data2color=None, scratchpath=None, colorbarlimits=None, colorbar_ylabel=None, colorbar_ticks_side=None, colorbar_aspectratio=6, ticks=None,colorbar_filename=None,
                        # Following set of parameters describes location of colorbar. These used to be
                        frameon=True,colorbar_location=None,):
     """
@@ -256,7 +257,7 @@ The return value is the full svg text with colorbar added.
     from cpblUtilities.color import addColorbarNonImage
     if 'fontsize' in colorbar_location: # This is measured in points.
         plt.rcParams.update({        'font.size': colorbar_location['fontsize'],})
-    hbax=addColorbarNonImage(data2color,ylabel=colorbar_ylabel,ticks=ticks) # data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None):
+    hbax=addColorbarNonImage(data2color,ylabel=colorbar_ylabel,ticks=ticks, colorbar_ticks_side=colorbar_ticks_side) # data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None):
     plt.setp(hax,'visible',False) # In fact, I think I've seen example where this hax was even in a different figure, already closed!
     hbax.ax.set_aspect(colorbar_aspectratio)
     plt.gcf().frameon=frameon
