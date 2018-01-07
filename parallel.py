@@ -141,7 +141,7 @@ names: an optional list of names to identify the processes.
 offsetsSeconds: int or list of ints
     delay some functions' start times
 
-expectNonzeroExit: True/False
+allowFailedJobs: True/False  [This parameter used to be called expectNonzeroExit)
     Normal behaviour is to not proceed if any function exits with a
     failed exit code. This can be used to override this behaviour.
 
@@ -177,7 +177,7 @@ See the testParallel() method in this module
 
     """
 
-    def __init__(self,listOf_FuncAndArgLists, kwargs=None, names=None, parallel=None, offsetsSeconds=None, expectNonzeroExit=False, maxAtOnce=None, showFinished=20, monitor_progress=True):
+    def __init__(self,listOf_FuncAndArgLists, kwargs=None, names=None, parallel=None, offsetsSeconds=None, allowFailedJobs=False, expectNonzeroExit=False, maxAtOnce=None, showFinished=20, monitor_progress=True):
 
         self.parallel= mp.cpu_count() >2  if parallel is None or parallel is True  else  parallel # Use parallel only when we have many processing cores (well, here, more than 8)
 
@@ -216,7 +216,11 @@ See the testParallel() method in this module
         self.delays= list((  (np.arange(len(listOf_FuncAndArgLists))-1) * ( np.arange(len(listOf_FuncAndArgLists))< self.maxAtOnce  ) + 1 )* offsetsSeconds)
         self.offsetsSeconds = offsetsSeconds
         self.showFinished = showFinished
-        self.expectNonzeroExit=  expectNonzeroExit
+        if expectNonzeroExit:
+            assert not allowFailedJobs
+            print('parallel.py: expectNonzeroExit is deprecated. Use (identical) allowFailedJobs instead')
+            allowFailedJobs =expectNonzeroExit 
+        self.allowFailedJobs=  allowFailedJobs
         
         nice(10) # Add 10 to the niceness of this process (POSIX only)
 
@@ -236,7 +240,7 @@ See the testParallel() method in this module
         if self.parallel is False:
             print('++++++++++++++++++++++  DOING FUNCTIONS SEQUENTIALLY ---------------- (parallel=False in runFunctionsInParallel)')
             returnVals=[fffargs[0](*(fffargs[1]),**(fffargs[2]))  for iffargs,fffargs in enumerate(self.listOf_FuncAndArgLists)]
-            assert self.expectNonzeroExit or not any(returnVals)
+            assert self.allowFailedJobs or not any(returnVals)
             return(returnVals)
 
         
@@ -281,7 +285,7 @@ See the testParallel() method in this module
         self.reportStatus( np.inf)
         if any(self.exitcodes):
             print('INPARALLEL: Parallel processing batch set did not ALL succeed successfully ('+' '.join(self.names)+')')
-            assert self.expectNonzeroExit  # one of the functions you called failed.
+            assert self.allowFailedJobs  # one of the functions you called failed.
             return(False)
         else:
             print('INPARALLEL: Apparent success of all functions ('+' '.join(self.names)+')')
@@ -392,23 +396,23 @@ def test_function_failures():
         return(5)
     nTest=10
     try:
-        runFunctionsInParallel([fails22 for ii in range(nTest)], expectNonzeroExit=True, monitor_progress=False)
+        runFunctionsInParallel([fails22 for ii in range(nTest)], allowFailedJobs=True, monitor_progress=False)
         print(' Correctly survived failures.')
     except AssertionError:
         Should_fail_not_get_here
     try:
-        runFunctionsInParallel([returnsValue for ii in range(nTest)], expectNonzeroExit=True, monitor_progress=False)
+        runFunctionsInParallel([returnsValue for ii in range(nTest)], allowFailedJobs=True, monitor_progress=False)
         print(' Correctly survived failures.')
     except AssertionError:
         Should_fail_not_get_here
     try:
-        runFunctionsInParallel([fails22 for ii in range(nTest)], expectNonzeroExit=False, monitor_progress=False)
+        runFunctionsInParallel([fails22 for ii in range(nTest)], allowFailedJobs=False, monitor_progress=False)
         Should_fail_not_get_here
     except AssertionError:
         print(' runFuncs Correctly objected/failed when parallel functions failed.')
     try:
-        runFunctionsInParallel([returnsValue for ii in range(nTest)], expectNonzeroExit=False, monitor_progress=False)
-        print(' Even though expectNonzeroExit is False, returned values are tolerated if function completes.')
+        runFunctionsInParallel([returnsValue for ii in range(nTest)], allowFailedJobs=False, monitor_progress=False)
+        print(' Even though allowFailedJobs is False, returned values are tolerated if function completes.')
     except AssertionError:
         print(' Should arrive here but does not?')
 
@@ -432,7 +436,7 @@ def testParallel():
             i=i+1
         return(jj)
     nTest=10
-    runFunctionsInParallel([[doodle1,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, expectNonzeroExit=True)
+    runFunctionsInParallel([[doodle1,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, allowFailedJobs=True)
 
     # Demo simpler use, function takes no arguments
     def doodle2():
@@ -451,7 +455,7 @@ def testParallel():
             i=i+1
         return(jj)
     nTest=2700
-    runFunctionsInParallel([[doodle3,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, expectNonzeroExit=True)
+    runFunctionsInParallel([[doodle3,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, allowFailedJobs=True)
 
 
 
