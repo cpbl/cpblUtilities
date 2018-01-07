@@ -177,7 +177,7 @@ See the testParallel() method in this module
 
     """
 
-    def __init__(self,listOf_FuncAndArgLists, kwargs=None, names=None, parallel=None, offsetsSeconds=None, expectNonzeroExit=False, maxAtOnce=None, showFinished=20,):
+    def __init__(self,listOf_FuncAndArgLists, kwargs=None, names=None, parallel=None, offsetsSeconds=None, expectNonzeroExit=False, maxAtOnce=None, showFinished=20, monitor_progress=True):
 
         self.parallel= mp.cpu_count() >2  if parallel is None or parallel is True  else  parallel # Use parallel only when we have many processing cores (well, here, more than 8)
 
@@ -227,7 +227,7 @@ See the testParallel() method in this module
         self.queuestatus=[None for        ii,fff in enumerate(listOf_FuncAndArgLists)]
 
         self.listOf_FuncAndArgLists=listOf_FuncAndArgLists
-        
+        self.monitor_progress =  monitor_progress # If False, only report at the end.
     def run(self): # Just a shortcut
         return self.launch_jobs()
 
@@ -281,7 +281,7 @@ See the testParallel() method in this module
         self.reportStatus( np.inf)
         if any(self.exitcodes):
             print('INPARALLEL: Parallel processing batch set did not ALL succeed successfully ('+' '.join(self.names)+')')
-            assert expectNonzeroExit  # one of the functions you called failed.
+            assert self.expectNonzeroExit  # one of the functions you called failed.
             return(False)
         else:
             print('INPARALLEL: Apparent success of all functions ('+' '.join(self.names)+')')
@@ -303,6 +303,7 @@ See the testParallel() method in this module
     def reportStatus(self, showmax, showsuccessful=np.inf, previousReportString=''):
         """
         """
+        if not self.monitor_progress: return('')
         outs=''
         ishowable=range(min(len(self.status), showmax))
         istarted=[ii for ii in range(len(self.status)) if  self.status[ii] not in ['dns']]
@@ -312,8 +313,10 @@ See the testParallel() method in this module
         if 0:
             print(showmax,showsuccessful,earliestSuccess)
             print(len(isuccess)-showsuccessful)
-        tableFormatString='%'+str(max([len(name) for name in self.names]))+'s:\t%10s\t%10s\t%s()'
-        outs+= '-'*75+'\n'+ tableFormatString%('Job','Status','Queue','Func',)+ '\n'+'-'*75+'\n'
+        max_name_length = max([len(name) for name in self.names])
+        max_funcname_length = max([len(name) for name in self.funcNames])
+        tableFormatString='%'+str(max_name_length)+'s:\t%10s\t%10s\t%s()'
+        outs+= '-'*(max_name_length+12+max_funcname_length)+'\n'+ tableFormatString%('Job','Status','Queue','Func',)+ '\n'+'-'*(max_name_length+12+max_funcname_length)+'\n'
         # Check that we aren't going to show more *successfully finished* jobs than we're allowed: Find index of nth-last successful one. That is, if the limit binds, we should show the latest N=showsuccessful ones only.
         outs+=  '\n'.join([tableFormatString%(self.names[ii],self.status[ii], self.queuestatus[ii], self.funcNames[ii]) for ii in ishowable if self.status[ii] not in ['success',0,'0'] or ii>=earliestSuccess  ]) + '\n'
 
@@ -325,7 +328,7 @@ See the testParallel() method in this module
         if len(self.status)>len(istarted):
             outs+=   '%d more jobs waiting for their turn to start...\n'%(len(self.status)-len(istarted)) ##len(sjobs)-len(djobs))
         #print('%d open queues...'%len(queues))
-        outs+= '-'*75+'\n'
+        outs+= '-'*(max_name_length+12+max_funcname_length)+'\n'
         #return([exitcode(job) for ii,job in enumerate(sjobs)])
         if outs != previousReportString:
             print('\n'+datetime.now().strftime("%Y-%m-%d %H:%M:%S")            )
@@ -382,7 +385,32 @@ def breaktest(): # The following demonstrates how to clean up jobs and queues (t
         queues[ii].close()
         queues[ii]=None #  This line does it!
         
-
+def test_function_failures():
+    def fails22():
+        1/0
+    def returnsValue():
+        return(5)
+    nTest=10
+    try:
+        runFunctionsInParallel([fails22 for ii in range(nTest)], expectNonzeroExit=True, monitor_progress=False)
+        print(' Correctly survived failures.')
+    except AssertionError:
+        Should_fail_not_get_here
+    try:
+        runFunctionsInParallel([returnsValue for ii in range(nTest)], expectNonzeroExit=True, monitor_progress=False)
+        print(' Correctly survived failures.')
+    except AssertionError:
+        Should_fail_not_get_here
+    try:
+        runFunctionsInParallel([fails22 for ii in range(nTest)], expectNonzeroExit=False, monitor_progress=False)
+        Should_fail_not_get_here
+    except AssertionError:
+        print(' runFuncs Correctly objected/failed when parallel functions failed.')
+    try:
+        runFunctionsInParallel([returnsValue for ii in range(nTest)], expectNonzeroExit=False, monitor_progress=False)
+        print(' Even though expectNonzeroExit is False, returned values are tolerated if function completes.')
+    except AssertionError:
+        print(' Should arrive here but does not?')
 
 def testParallel():
     import numpy as np

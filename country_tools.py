@@ -6,8 +6,8 @@ Various tools for use with osm analysis
 import os, sys #, platform, time, psutil
 import pandas as pd
 import numpy as np
-from .cpblUtilities_config import paths
-
+#from .cpblUtilities_config import paths
+from .cpblUtilities_config import defaults
 
 class country_tools():
     def __init__(self, forceUpdate=False):
