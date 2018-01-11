@@ -141,7 +141,7 @@ names: an optional list of names to identify the processes.
 offsetsSeconds: int or list of ints
     delay some functions' start times
 
-allowFailedJobs: True/False  [This parameter used to be called expectNonzeroExit)
+allowJobFailure: True/False  [This parameter used to be called expectNonzeroExit)
     Normal behaviour is to not proceed if any function exits with a
     failed exit code. This can be used to override this behaviour.
 
@@ -177,7 +177,7 @@ See the testParallel() method in this module
 
     """
 
-    def __init__(self,listOf_FuncAndArgLists, kwargs=None, names=None, parallel=None, offsetsSeconds=None, allowFailedJobs=False, expectNonzeroExit=False, maxAtOnce=None, showFinished=20, monitor_progress=True):
+    def __init__(self,listOf_FuncAndArgLists, kwargs=None, names=None, parallel=None, offsetsSeconds=None, allowJobFailure=False, expectNonzeroExit=False, maxAtOnce=None, showFinished=20, monitor_progress=True):
 
         self.parallel= mp.cpu_count() >2  if parallel is None or parallel is True  else  parallel # Use parallel only when we have many processing cores (well, here, more than 8)
 
@@ -217,10 +217,10 @@ See the testParallel() method in this module
         self.offsetsSeconds = offsetsSeconds
         self.showFinished = showFinished
         if expectNonzeroExit:
-            assert not allowFailedJobs
-            print('parallel.py: expectNonzeroExit is deprecated. Use (identical) allowFailedJobs instead')
-            allowFailedJobs =expectNonzeroExit 
-        self.allowFailedJobs=  allowFailedJobs
+            assert not allowJobFailure
+            print('parallel.py: expectNonzeroExit is deprecated. Use (identical) allowJobFailure instead')
+            allowJobFailure =expectNonzeroExit 
+        self.allowJobFailure=  allowJobFailure
         
         nice(10) # Add 10 to the niceness of this process (POSIX only)
 
@@ -240,7 +240,7 @@ See the testParallel() method in this module
         if self.parallel is False:
             print('++++++++++++++++++++++  DOING FUNCTIONS SEQUENTIALLY ---------------- (parallel=False in runFunctionsInParallel)')
             returnVals=[fffargs[0](*(fffargs[1]),**(fffargs[2]))  for iffargs,fffargs in enumerate(self.listOf_FuncAndArgLists)]
-            assert self.allowFailedJobs or not any(returnVals)
+            # In non-parallel a job failure should abort before returning. So we don't care about return values.
             return(returnVals)
 
         
@@ -285,7 +285,8 @@ See the testParallel() method in this module
         self.reportStatus( np.inf)
         if any(self.exitcodes):
             print('INPARALLEL: Parallel processing batch set did not ALL succeed successfully ('+' '.join(self.names)+')')
-            assert self.allowFailedJobs  # one of the functions you called failed.
+            assert self.allowJobFailure  # one of the functions you called failed.
+            print('          Tolerating job failure since allowJobFailure == True')
             return(False)
         else:
             print('INPARALLEL: Apparent success of all functions ('+' '.join(self.names)+')')
@@ -388,33 +389,24 @@ def breaktest(): # The following demonstrates how to clean up jobs and queues (t
         print('Terminated job %d'%ii)
         queues[ii].close()
         queues[ii]=None #  This line does it!
+
+def return_values():
+    """ DataFrames,for examples, don't have a boolean value.
+What can we do to discern failures from return values?
+    """
         
-def test_function_failures():
-    def fails22():
-        1/0
-    def returnsValue():
-        return(5)
-    nTest=10
+def test_allowJobFailure(): # In parallel==True case
     try:
-        runFunctionsInParallel([fails22 for ii in range(nTest)], allowFailedJobs=True, monitor_progress=False)
-        print(' Correctly survived failures.')
+        runFunctionsInParallel([[lambda: 1/0], [lambda: 1/0]])
+        raise(Exception('Test failed'))
     except AssertionError:
-        Should_fail_not_get_here
+        print(' ----> runFunctionsInParallel correctly objected to job failure.')
     try:
-        runFunctionsInParallel([returnsValue for ii in range(nTest)], allowFailedJobs=True, monitor_progress=False)
-        print(' Correctly survived failures.')
+        runFunctionsInParallel([[lambda: 1/0], [lambda: 1/0]], allowJobFailure=True)
+        print(' ----> runFunctionsInParallel correctly tolerated job failure.')
     except AssertionError:
-        Should_fail_not_get_here
-    try:
-        runFunctionsInParallel([fails22 for ii in range(nTest)], allowFailedJobs=False, monitor_progress=False)
-        Should_fail_not_get_here
-    except AssertionError:
-        print(' runFuncs Correctly objected/failed when parallel functions failed.')
-    try:
-        runFunctionsInParallel([returnsValue for ii in range(nTest)], allowFailedJobs=False, monitor_progress=False)
-        print(' Even though allowFailedJobs is False, returned values are tolerated if function completes.')
-    except AssertionError:
-        print(' Should arrive here but does not?')
+        raise(Exception('Test failed'))
+    return
 
 def testParallel():
     import numpy as np
@@ -436,7 +428,7 @@ def testParallel():
             i=i+1
         return(jj)
     nTest=10
-    runFunctionsInParallel([[doodle1,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, allowFailedJobs=True)
+    runFunctionsInParallel([[doodle1,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, allowJobFailure=True)
 
     # Demo simpler use, function takes no arguments
     def doodle2():
@@ -455,7 +447,7 @@ def testParallel():
             i=i+1
         return(jj)
     nTest=2700
-    runFunctionsInParallel([[doodle3,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, allowFailedJobs=True)
+    runFunctionsInParallel([[doodle3,[ii],{'a':5,'b':10}] for ii in range(nTest)],names=[str(ii) for ii in range(nTest)], offsetsSeconds=0.2, maxAtOnce=40, parallel=True, allowJobFailure=True)
 
 
 
