@@ -133,7 +133,6 @@ The other/older approoach is to substitute a style inside each path or path grou
         except(ValueError) as e:
             scratchpath = './____tmp_'# if scratchpath is None else os.path.split(outfilename)[0]+'/____tmp_'
 
-    #from cpblUtilities.mapping import colors_for_filling_svg, addColorbar_to_svg
     hexlookup,d2c_cb=colors_for_filling_svg(geo2data_or_color=geo2data_or_color, data2color=data2color, demo=demo,colorbarlimits=colorbarlimits)
 
     import codecs
@@ -515,7 +514,6 @@ def colorize_svg_by_id(geo2data_or_color=None,  blanksvgfile=None, outfilename=N
         except(ValueError) as e:
             scratchpath = './____tmp_'# if scratchpath is None else os.path.split(outfilename)[0]+'/____tmp_'
 
-    #huh?!from cpblUtilities.mapping import colors_for_filling_svg, addColorbar_to_svg
     hexlookup,d2c_cb=colors_for_filling_svg(geo2data_or_color=geo2data_or_color, data2color=data2color, demo=demo,colorbarlimits=colorbarlimits)
 
     def _hexcolors_into_svg(_geo2hex,svgtext,customfeatures,   hideElementsWithoutData= None ):
