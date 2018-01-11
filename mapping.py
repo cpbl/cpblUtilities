@@ -258,6 +258,7 @@ The return value is the full svg text with colorbar added.
     if 'fontsize' in colorbar_location: # This is measured in points.
         plt.rcParams.update({        'font.size': colorbar_location['fontsize'],})
     hbax=addColorbarNonImage(data2color,ylabel=colorbar_ylabel,ticks=ticks, colorbar_ticks_side=colorbar_ticks_side) # data2color=None,data=None,datarange=None,cmap=None,useaxis=None,ylabel=None,colorbarfilename=None,location=None,ticks=None):
+
     plt.setp(hax,'visible',False) # In fact, I think I've seen example where this hax was even in a different figure, already closed!
     hbax.ax.set_aspect(colorbar_aspectratio)
     plt.gcf().frameon=frameon
@@ -378,6 +379,8 @@ def colors_for_filling_svg(geo2data_or_color=None, data2color=None,
     Given some region ids and some color information (e.g. data values for each region), return a lookup suitable for inserting CSS into an SVG map.
     With this info, one can easily do a single substitution/insert to specify colors for all regions.
     If data are also given, then a second item is returned as well. This is a data2color lookup used for making a colorbar.
+
+    If colorbarlimits is given, we should ensure that we add a spread of values to the data so that it spans the colorbarlimits range????? [in prgress] xxxxxxxxxxxxxxxx
     """
     if demo:
         _demo_colorize_svg()
@@ -385,7 +388,13 @@ def colors_for_filling_svg(geo2data_or_color=None, data2color=None,
     import codecs # Never use built-in open anymore
     if colorbarlimits is None:
         colorbarlimits=[-np.inf, np.inf]
-
+        cbarlfill=[]
+    else:
+        assert len(colorbarlimits)==2
+        cbl1,cbl2 = sorted(colorbarlimits)
+        dcbl=cbl2-cbl1
+        cbarlfill=list(np.arange(cbl1,cbl2+dcbl/100,dcbl/100))
+        
     def check_if_numeric(a): # Tell a float or numpy float from  arrays, strings
        try:
            float(a)
@@ -432,8 +441,10 @@ def colors_for_filling_svg(geo2data_or_color=None, data2color=None,
     if data2color is not None:
         if data2color.__class__ is scipy.interpolate.interpolate.interp1d:
             allD=sorted(np.unique(geo2data.values))
-            # Shouldn't this include the limits, if they're specified??
-            d2c=dict([[aa,data2color(aa)] for aa in allD+colorbarlimits if np.isfinite(aa) and  aa>=colorbarlimits[0] and aa <= colorbarlimits[1]])
+            # However, if the limits have been specified explicitly, what behaviour is ideal?
+            # Remove data values outside the specified limits.
+            # If the limits extend beyond the data, then fill in values for continuity:
+            d2c=dict([[aa,data2color(aa)] for aa in allD+cbarlfill if np.isfinite(aa) and  aa>=colorbarlimits[0] and aa <= colorbarlimits[1]])
             # We're getting  :  [(0.0, array([ nan,  nan,  nan])), (0.0078125, array([ nan,  nan,  nan])), 
 
             assert not any([np.isnan(aa[0]) for aa in d2c.values()])
@@ -504,7 +515,7 @@ def colorize_svg_by_id(geo2data_or_color=None,  blanksvgfile=None, outfilename=N
         except(ValueError) as e:
             scratchpath = './____tmp_'# if scratchpath is None else os.path.split(outfilename)[0]+'/____tmp_'
 
-    from cpblUtilities.mapping import colors_for_filling_svg, addColorbar_to_svg
+    #huh?!from cpblUtilities.mapping import colors_for_filling_svg, addColorbar_to_svg
     hexlookup,d2c_cb=colors_for_filling_svg(geo2data_or_color=geo2data_or_color, data2color=data2color, demo=demo,colorbarlimits=colorbarlimits)
 
     def _hexcolors_into_svg(_geo2hex,svgtext,customfeatures,   hideElementsWithoutData= None ):

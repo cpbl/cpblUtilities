@@ -1009,11 +1009,19 @@ cifar_colors={
 'palekhaki':np.array([181,163,0])/255.,
 'black':[0,0,0],
 }
-
+def demo_cifar_colors():
+    fig,axs = plt.subplots(3,3)
+    ccc = cifar_colors.items()
+    for ii,ax in enumerate(axs.flat):
+        ax.set_facecolor(ccc[ii][1])
+        ax.annotate(ccc[ii][0], xy=(.5,.5),  xycoords = 'axes fraction', ha='center',va='center', color='k', size=12)
+    plt.show()
     
 if __name__ == '__main__':
     import pylab as plt
     import matplotlib as mpl
+    demo_cifar_colors()
+    stop
     colorDemos2017(verbose=False)
     notthis
     cpblColorDemos()
