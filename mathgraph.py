@@ -884,6 +884,8 @@ def mean_of_means(vals, ses): # A Weighted mean: weighted by standard errors
     # Takes a simple list of estimates and a simple list of their standard errors.
     # Returns an estimate of the scalar weighted mean and its standard error.
     #
+    # See wtsem() for se of the mean of a list of values.
+    #
     # - COVARIANCE IS IGNORED (ASSUMED ZERO)
     #
     # - NaNs are DROPPED! before taking mean
@@ -3998,23 +4000,28 @@ def wtvar(X, W, method = "R"):
 
 #def wtsem(X, W, method = "R"): 
 #    thevar=wtvar(X, W, method = "R")
-def wtsem(a, w=None,axis=0, bootstrap=False): #
+def wtsem(a, w=None,axis=0, bootstrap=False, dropna= True): #
     """
-    Returns the standard error of the mean, assuming normal distribution, for weighted data.
+    Returns the standard error of the mean, assuming normal distribution, for weighted data. By default, it drops NaNs, like np.mean does.
     """
     if w is None:
         w=np.ones(len(a))
+    a=np.asarray(a)
+    w=np.asarray(w)
+    if dropna:
+        ii=pd.notnull(a) & pd.notnull(w)
+        a=a[ii]
+        w=w[ii]
+        assert len(a) and len(w)
+    
     if not bootstrap:
         #a, axis, w = _chk_asarray(a, axis,w)
-        a=np.asarray(a)
-        w=np.asarray(w)
         #n = a.count(axis=axis)
         #s = a.std(axis=axis,ddof=0) / ma.sqrt(n-1)
         assert axis==0 # Hm, not done yet.
         s = np.sqrt(wtvar(a,w) / (a.size-1) )
         return s
     else:
-        a=np.asarray(a)
         # Bootstrap version?? (not used, just for thought.. waste of space, then.)
         """
         Not clear how to deal with weights when boostrapping. weight sampling based on them? renomralise for each sample draw (done here..)
