@@ -4003,13 +4003,15 @@ def wtvar(X, W, method = "R"):
 def wtsem(a, w=None,axis=0, bootstrap=False, dropna= True): #
     """
     Returns the standard error of the mean, assuming normal distribution, for weighted data. By default, it drops NaNs, like np.mean does.
+    Are you using Pandas? If so, you probably want weightedMeansByGroup or weightedMeans_pandas, not this.
     """
-    if w is None:
+    if w in [1, None]:
         w=np.ones(len(a))
     a=np.asarray(a)
     w=np.asarray(w)
     if dropna:
         ii=pd.notnull(a) & pd.notnull(w)
+        if len(a[ii])==0: return np.nan
         a=a[ii]
         w=w[ii]
         assert len(a) and len(w)
@@ -5229,11 +5231,59 @@ def weightedMeanSE(arrin, weights_in, inputmean=None, calcerr=True, sdev=False):
     else:
         return wmean,werr
 
-def weightedMeanSE_pandas(df,varNames,weightVar='weight'):
+def weightedMeanSE_pandas(df,varNames=None ,weightVar='weight', uniform_sample=None, aggstats=None, as_df=False):
     """
+    uniform_sample=True drops NaNs for all variables at once (ie keeps only rows with finite values for all columns). Otherwise, NaNs are dropped column-by-columnn.
+
+    varNames: columns to aggregate
+
+    aggstats: by default, aggstats is ['mean'] and produces columns with the original name and with a 'se_' suffixe for the standard error of the mean.  Other stats not yet implemented
+
     Example use: aggregate by age:
     means=df.groupby('age').apply(lambda adf: weightedMeanSE_pandas(adf,tomean,weightVar='cw')).reset_index()
+
+
+
+N.B. Can I use  following instead?
+    from statsmodels.stats.weightstats import DescrStatsW
+    weighted_stats = DescrStatsW(dfdna[xv], weights=dfdna['Population'])#, ddof=0) 
+
+N.B.: If I want to use the unbiased version of variance, will need to specify whether the weights are frequency or reliablity weights.
+
     """
+    assert aggstats is None or all([ags in ['mean'] for ags in aggstats])
+    outs={}
+    if varNames is None: varNames = df.columns
+    if isinstance(varNames,basestring):
+        varNames=[varNames]
+    if uniform_sample:
+        df=df.copy()
+        df = df[varNames+[weightVar]].dropna() # Should this be: df2=df[np.isfinite(df[[mv,weightVar]]).all(axis=1)]
+
+    varPrefix=''
+    for mv in varNames:
+        df2=df[np.isfinite(df[[mv,weightVar]]).all(axis=1)]
+        mu,se=weightedMeanSE(df2[mv], df2[weightVar]) # Gives same as Stata
+        variance = np.average( (df2[mv]-mu)**2, weights = df2[weightVar])
+        # Values need to be vectors(lists) for the conversion to DataFrame, it seems.
+        if as_df:
+            res1={'mean': mu,   'sem': se, 'N': len(df2), 'min': df2[mv].min(), 'max': df2[mv].max(), 'std': np.sqrt(variance) }
+            #res = zip(*{'mean': mu,   'sem': se, 'N': len(df2), 'min': df2[mv].min(), 'max_': df2[mv].max() }.items())
+            outs.update({mv:pd.DataFrame(res1, index = [mv])})
+        else:
+            outs.update({varPrefix+mv: mu,   varPrefix+'se_'+mv: se, varPrefix+'N_'+mv: len(df2), varPrefix+'min_'+mv: df2[mv].min(), varPrefix+'max_'+mv: df2[mv].max() })
+    if as_df:
+        return pd.concat(outs.values())
+    else:
+        return(pd.Series(outs)) # Return this as a Series; this avoids adding a new index in groupby().apply
+
+def weightedSTD_pandas(df,varNames,weightVar='weight'):
+    """
+    Adapted from above, but not tested versus stata...
+    Example use: aggregate by age:
+    means=df.groupby('age').apply(lambda adf: weightedSTD_pandas(adf,tomean,weightVar='cw')).reset_index()
+
+    from statsmodels.stats.weightstats import DescrStatsW
     outs={}
     if isinstance(varNames,basestring):
         varNames=[varNames]
@@ -5241,10 +5291,13 @@ def weightedMeanSE_pandas(df,varNames,weightVar='weight'):
     for mv in varNames:
         df2=df[np.isfinite(df[[mv,weightVar]]).all(axis=1)]
         mu,se=weightedMeanSE(df2[mv], df2[weightVar]) # Gives same as Stata!
+        weighted_stats = df[xv].apply(DescrStatsW,df.Population']]., weights=weights, ddof=0)
+    
+
         # Values need to be vectors(lists) for the conversion to DataFrame, it seems.
         outs.update({varPrefix+mv: mu,   varPrefix+'se_'+mv: se})
     return(pd.Series(outs)) # Return this as a Series; this avoids adding a new index in groupby().apply
-
+    """
 
 ##############################################################################
 ##############################################################################
@@ -5275,6 +5328,9 @@ My related functions: 2013July I need a weighted moment by group in recodeGallup
     if isinstance(meansOf,str):
         meansOf=meansOf.split(' ')
     assert all([mm in df for mm in meansOf])
+    if byGroup is None:
+        raise(Error('Just use weightedMeanSE_pandas if there are no groups to average over'))
+
     assert all([mm in df for mm in byGroup])
     grouped=df.groupby(byGroup)
 
