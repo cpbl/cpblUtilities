@@ -6,7 +6,9 @@
 """
 2014 April: Provide tools for extracting a set of cells (location
  fixed) from an Excel sheet, too, doing some markup/formatting
- modifications, and outputting a CPBLtable for LaTeX.
+ modifications, and outputting a CPBLtable for LaTeX, or as a standalone PDF.
+ 
+Because this was originally designed for the pystata package, the cpblTable format allows for normal and transposed versions of a table to coexist in an input .tex file, with the choice between these, and extensive formatting choices, available for adjustment in the input/calling line in LaTeX.
 
 Some possible work flows:
 
@@ -317,7 +319,6 @@ Implementaiton comments:  pandas has a to_latex(), and it offers to bold the fir
 
 
 
-
     def toCPBLtable(self,outfile,tableTitle=None,footer=None,boldHeaders=False, boldFirstColumn=False,columnWidths=None,formatCodes='lc',hlines=False,vlines=None,masterLatexFile=None,landscape=None,cformat=None,tableName=None):
         """A CPBLtable is a LaTeX format with ex-post customizable
         column specifiers, table type (e.g. longtable, table, etc), and some other formatting.
@@ -360,6 +361,8 @@ Implementaiton comments:  pandas has a to_latex(), and it offers to bold the fir
         #print(callerTex.replace('PUT-TABLETEX-FILEPATH-HERE',outfile))
         return (callerTex.replace('PUT-TABLETEX-FILEPATH-HERE',outfile))
 
+    def toPDF(self,outfile,tableTitle=None,footer=None,boldHeaders=False, boldFirstColumn=False,columnWidths=None,formatCodes='lc',hlines=False,vlines=None,masterLatexFile=None,landscape=None,cformat=None,tableName=None):
+        stophere
 
 def interleave_columns_as_rows(df):
     """ Assume every second column of the data frame is a standard error value for the column to its left. Move these values so they are below the point estimates.

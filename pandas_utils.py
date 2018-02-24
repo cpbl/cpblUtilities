@@ -21,8 +21,10 @@ The first line must contain the column names.
         from io import StringIO
     return pd.read_table(StringIO(tss.strip('\n')))
 
-def df_first_differences_by_group(df, groupvar,yearvar):
+def first_differences_by_group(df, groupvar,yearvar):
     """ This may be esoteric, but: rectangularize an index, and take first differences within each group.
+
+    Takes a DataFrame; returns the same but with extra columns and possibly new rows with NaN values.
     """
     # Assume index has been reset. Here are the data columns:
     cols = [cc for cc in df.columns if cc not in [groupvar,yearvar]]
