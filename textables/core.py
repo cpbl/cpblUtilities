@@ -34,6 +34,138 @@ def open(fn, mm,
     import codecs
     return (codecs.open(fn, mm, encoding=encoding))
 
+def texheader_without_CPBLtables():
+    """ TO BE CLEANED UP STILL!!!!  NOT YET IMPLEMENTED"""
+    return r"""
+\usepackage[table]{xcolor}
+\usepackage{relsize}
+\usepackage{longtable} % Only needed for longtables
+\usepackage{afterpage} % Only needed for longtables
+\begin{document}
+\newcommand{\ctNtabCols}{}
+\newcommand{\ctFirstHeader}{}
+\newcommand{\ctSubsequentHeaders}{}
+\newcommand{\ctFirstHeaderTrans}{}
+\newcommand{\ctSubsequentHeadersTrans}{}
+\newcommand{\ctBody}{}
+\newcommand{\ctBodyTrans}{}
+\newcommand{\ctCaption}{}
+\newcommand{\ctCaptionTrans}{}
+\newcommand{\ctStartTabular}{}
+\newcommand{\ctStartTabularTrans}{}
+\newcommand{\ctStartLongtable}{}
+\newcommand{\ctStartLongtableTrans}{}
+\newcommand{\ctNtabColsTrans}{}
+\newcommand{\sltrheadername}[1]{#1}
+\newcommand{\sltcheadername}[1]{#1}
+\newcommand{\cpblbottomrule}{}
+\newcommand\cpbltoprule\hrule
+
+\newcommand{\longTableFooter}{} % Only needed for longtables
+\newcommand{\longtableContinueFooter}{}  % Only needed for longtables
+
+
+\newcommand{\showSEs}[2]{#1} % To show SEs
+    \newcommand{\coefse}[1]{{\smaller\smaller (#1)}}
+
+    \definecolor{cSignifOne}{rgb}{.92,1,.92}
+    \definecolor{cSignifTwo}{rgb}{.78,1,.78}
+    \definecolor{cSignifThree}{rgb}{.5,1,.5}
+    \definecolor{cSignifThousandth}{rgb}{.6,1,0} % .3 1 .3
+    \newcommand{\colourswrapSigTenPercent}[1]{#1\cellcolor{cSignifOne}}
+    \newcommand{\colourswrapSigFivePercent}[1]{#1\cellcolor{cSignifTwo}}
+    \newcommand{\colourswrapSigOnePercent}[1]{#1\cellcolor{cSignifThree}}
+    \newcommand{\colourswrapSigOneThousandth}[1]{#1\cellcolor{cSignifThousandth}}
+    \newcommand{\wrapSigTenPercent}{\colourswrapSigTenPercent}
+    \newcommand{\wrapSigFivePercent}{\colourswrapSigFivePercent}
+    \newcommand{\wrapSigOnePercent}{\colourswrapSigOnePercent}
+    \newcommand{\wrapSigOneThousandth}{\colourswrapSigOneThousandth}
+
+    \newcommand{\YesMark}{{\sc y}}%\textcolor{blue}$\checkmark$}}
+    \newcommand{\cpblColourLegend}{{\footnotesize Significance:~\begin{tabular}{cccc}
+        \wrapSigOneThousandth{0.1\%}~~~~&
+        \wrapSigOnePercent{1\%}~~~~&
+        \wrapSigFivePercent{5\%}~~~~&
+        \wrapSigTenPercent{10\%}
+        \\ \end{tabular} }}
+
+"""
+    
+def texheader_for_CPBLtables(margins=None, allow_underscore=True, standalone_table=False, no_CPBLtables=False):
+    """ LaTeX code to load the packages (\usepackage) needed for use of cpblTables-format .tex files
+
+no_CPBLtables= True excludes including cpblTables.sty! This is useful because without any non-standard packages, cpblTable .tex files can be included to generate a plain table by simply defining a few other macros.
+
+A standalone_table means a PDF/image of a tabular environment, not in a PDF page nor with other material. (By contrast, a standalone document means one which does not require the cpblTables.sty )
+
+Caution:  This must not be confused with pystata's texheader (It should be rewritten to use this.
+    """
+    if standalone: margins='none'
+    if margins in ['None','none']:
+        mmm=r'\usepackage[left=0cm,top=0cm,right=.5cm,nohead,nofoot]{geometry}'+'\n'
+    elif margins in ['default',None]:
+        mmm=''
+    settings=r"""
+%% This file created automatically by CPBL's latexRegressionFile class
+\usepackage{amsfonts} % Some substitions use mathbb
+\usepackage[utf8]{inputenc}
+\usepackage{lscape}
+\usepackage{rotating}
+\usepackage{relsize}
+\usepackage{colortbl} %% handy for colored cells in tables, etc.
+\usepackage{xcolor} %% For general, v powerful color handling: e.g simple coloured text.
+"""+mmm+r"""
+\usepackage[colorlinks]{hyperref}
+"""+r'\usepackage{underscore}'*allow_underscore+r"""
+\usepackage{multirow}
+"""+ (not no_CPBLtables)*r'\usepackage{cpblTables} % http://github.com/cpbl/cpblUtilities'+r"""
+"""+ no_CPBLtables*r"""
+\newcommand\ctDraftComment
+"""+r"""
+\usepackage{xspace}
+\ifdefined\draftComment
+\else
+\newcommand{\draftComment}[1]{{ \footnotesize\em\color{green} #1}\xspace}
+\fi
+\renewcommand{\ctDraftComment}[1]{{\sc\scriptsize ${\rm #1}$}} % Show draft-mode comments
+\renewcommand{\ctDraftComment}[1]{{\sc\scriptsize #1}} % Show draft-mode comments
+"""
+    return({False:r' \documentclass{article} ',
+            True: r'\documentclass[preview]{standalone} '}[standalone] + '\n'+settings)
+
+    """ This is also for pystata . Should not be here... Need to rewrite it!
+
+\usepackage{chngcntr} %This is for counterwithin command, below. amsmath and numberwithin would be an alternative.
+        \begin{document}
+        \title{Regression results preview}\author{CPBL}\maketitle
+%TOC:\tableofcontents
+%LOT:\listoftables
+%LOF:\listoffigures
+\counterwithin{table}{section}
+\counterwithin{figure}{section}
+% Following would require amsmath, instead of chngcntr:
+%\numberwithin{figure}{section}
+%\numberwithin{table}{section}
+        \pagestyle{empty}%%\newpage
+        \begin{landscape}
+    """
+
+# This stuff is for figures, not tables. should be in pystata
+"""
+% Below I will uglyly stick varioius things from cpblRef or etc so that if that package is not included, they will at least be defined:
+\ifdefined\cpblFigureTC
+\else
+% The "TC" in this command means there are two caption titles: one for TOC, one for figure.
+\newcommand{\cpblFigureTC}[6]{%{\begin{figure}\centerline{\includegraphics{#1.eps}}
+% Arguments: 1=filepath, 2=height or width declaration, 3=caption for TOC, 4=caption title, 5=caption details, 6=figlabel
+\begin{figure}
+  \begin{center}
+    \includegraphics[#2]{#1}\caption[#3]{{\bf #4.} #5\label{fig:#6}\draftComment{\\{\bf label:} #6 {\bf file:} #1}}
+  \end{center}
+\end{figure}
+}
+\fi
+"""
 
 ###########################################################################################
 ###
@@ -184,7 +316,7 @@ def extractExcelRange(spreadsheetfile, sheet=None, cells=None,
             '.XLS') or spreadsheetfile.upper().endswith('.XLSX'):
         dfr = pd.ExcelFile(spreadsheetfile).parse(
             sheet, skiprows=rows[0] - 1,
-            parse_cols=cols).iloc[:(rows[1] - rows[0])]
+            usecols=cols).iloc[:(rows[1] - rows[0])]
         # Extract the inner matrix, and the column headers:
         dfm = np.concatenate(
             [np.array([dfr.columns.tolist()]), dfr.as_matrix()])
@@ -474,6 +606,7 @@ Implementaiton comments:  pandas has a to_latex(), and it offers to bold the fir
         #print(callerTex.replace('PUT-TABLETEX-FILEPATH-HERE',outfile))
         return (callerTex.replace('PUT-TABLETEX-FILEPATH-HERE', outfile))
 
+
     def toPDF(self,
               outfile,
               tableTitle=None,
@@ -488,8 +621,22 @@ Implementaiton comments:  pandas has a to_latex(), and it offers to bold the fir
               landscape=None,
               cformat=None,
               tableName=None):
+        """ Create a standalone PDF using a cpblTable filename and its wrapper info.  This should be part of the class or static? Not sure where this should go. Pystata does not seem to use these things yet."""
         stophere
 
+def cpblTable_to_PDF(filename):
+    pathstem = os.path.splitext(filename)[0]
+    with open(pathstem+'-standalone.tex','wt') as fout:
+        fout.write(textables_header(margins = 'none',
+                                        standalone = True,
+                                        allow_underscore = True,
+                                        skipCPBLtables=True )+r"""
+            \begin{document}
+            \input{"""+ tableFilePath+r"""}
+            \end{document}
+            """)
+    from cpblUtilities import doSystemLatex
+    doSystemLatex(pathstem+'-standalone.tex')
 
 def interleave_columns_as_rows(df):
     """ Assume every second column of the data frame is a standard error value for the column to its left. Move these values so they are below the point estimates.
@@ -1390,7 +1537,12 @@ if __name__ == '__main__':
     # (2) Create a modular CPBL table (use it with cpblTables package in LaTeX) from some Excel data
     callerTeX = dff.toCPBLtable(
         'test-cpbl', footer=None, boldFirstColumn=True, boldHeaders=True
-    )  #,columnWidths=None,formatCodes='lc',hlines=False,vlines=None,masterLatexFile=None,landscape=None,cformat=None)
+    )
+
+
+    dff.toPDF('test-cpbl')
+    fooo
+    #,columnWidths=None,formatCodes='lc',hlines=False,vlines=None,masterLatexFile=None,landscape=None,cformat=None)
     # (3) Use that cpblTables file and compile the result (this does not use anything from cpblTablesTex, actually, but is for completeness in the demo)
     with open('test-invoke-cpbl.tex', 'wt') as ff:
         ff.write(r"""\documentclass{article}
