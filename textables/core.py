@@ -100,7 +100,7 @@ A standalone_table means a PDF/image of a tabular environment, not in a PDF page
 
 Caution:  This must not be confused with pystata's texheader (It should be rewritten to use this.
     """
-    if standalone: margins='none'
+    if standalone_table: margins='none'
     if margins in ['None','none']:
         mmm=r'\usepackage[left=0cm,top=0cm,right=.5cm,nohead,nofoot]{geometry}'+'\n'
     elif margins in ['default',None]:
@@ -111,6 +111,7 @@ Caution:  This must not be confused with pystata's texheader (It should be rewri
 \usepackage[utf8]{inputenc}
 \usepackage{lscape}
 \usepackage{rotating}
+\usepackage{siunitx} % This allows use of special column controls for aligning decimals
 \usepackage{relsize}
 \usepackage{colortbl} %% handy for colored cells in tables, etc.
 \usepackage{xcolor} %% For general, v powerful color handling: e.g simple coloured text.
@@ -131,7 +132,7 @@ Caution:  This must not be confused with pystata's texheader (It should be rewri
 \renewcommand{\ctDraftComment}[1]{{\sc\scriptsize #1}} % Show draft-mode comments
 """
     return({False:r' \documentclass{article} ',
-            True: r'\documentclass[preview]{standalone} '}[standalone] + '\n'+settings)
+            True: r'\documentclass[preview]{standalone} '}[standalone_table] + '\n'+settings)
 
     """ This is also for pystata . Should not be here... Need to rewrite it!
 
@@ -624,19 +625,26 @@ Implementaiton comments:  pandas has a to_latex(), and it offers to bold the fir
         """ Create a standalone PDF using a cpblTable filename and its wrapper info.  This should be part of the class or static? Not sure where this should go. Pystata does not seem to use these things yet."""
         stophere
 
-def cpblTable_to_PDF(filename):
+def cpblTable_to_PDF(filename, aftertabulartex=None, caption=None, display=False):
+    """ caption not implemented yet
+    aftertabulartex: footnotes, etc to go below table
+    """
+    if aftertabulartex is None: aftertabulartex=''
     pathstem = os.path.splitext(filename)[0]
     with open(pathstem+'-standalone.tex','wt') as fout:
-        fout.write(textables_header(margins = 'none',
-                                        standalone = True,
-                                        allow_underscore = True,
-                                        skipCPBLtables=True )+r"""
+        fout.write(texheader_for_CPBLtables(margins = 'none',
+                                        standalone_table = True,
+                                        allow_underscore = True,)+r"""
             \begin{document}
-            \input{"""+ tableFilePath+r"""}
+            \input{"""+ filename+r"""}
+            \ctStartTabular
+            \ctFirstHeader
+            \ctBody \hline
+            \end{tabular}
+            """+aftertabulartex+r"""
             \end{document}
             """)
-    from cpblUtilities import doSystemLatex
-    doSystemLatex(pathstem+'-standalone.tex')
+    doSystemLatex(pathstem+'-standalone.tex', display=display)
 
 def interleave_columns_as_rows(df):
     """ Assume every second column of the data frame is a standard error value for the column to its left. Move these values so they are below the point estimates.
@@ -1351,7 +1359,8 @@ def dataframeWithLaTeXToTable(
         boldHeaders=False,
         boldFirstColumn=False,
         columnWidths=None,
-        formatCodes='lc',
+        formatCodes=None, #'lc',
+        formatString=None,
         hlines=False):  #   ncols=None,nrows=None,, alignment="c"):
     """ Note that pandas already has a latex output function built in. If it deals with multiindices, etc, it may be better to edit it rather than to start over. [See issue #5 for columns]. However, my cpblTableC function expects it to be broken up into cells still.
 
@@ -1366,11 +1375,17 @@ columnWidths, if specified, can give LaTeX strings for the widths of some of the
 
 formatCodes is really kludgy. This is a partial or complete list of single-letter codes for the column formats. These would be used as the base values, before adding emboldening, widths, etc.
 
+formatString is an alternative. It specifies the final complete formatcode string, which means it overwrites 
+
 hlines: if True, put horizontal lines on every line.
 
     """
     #cformat=list('l'+'c'*df.shape[1])
     # Pick the basic format codes to start with (ie ones which don't take arguments), e.g. lccccc....
+    if formatString is not None: # This would overwrite cformat
+        assert formatCodes is None and columnWidths is None
+    if formatCodes is None:
+        formatCodes = 'lc'
     cformat = list((formatCodes + 1000 * formatCodes[-1])[:(df.shape[1])])
     if columnWidths is not None:
         assert len(columnWidths) == df.shape[1]
@@ -1390,7 +1405,7 @@ hlines: if True, put horizontal lines on every line.
     cformat = '|' + '|'.join(cformat) + '|'
     if not boldHeaders and not boldFirstColumn and not columnWidths:
         cformat = None
-
+    if formatString is not None: cformat=formatString
     if type(df.columns) == pd.MultiIndex:
         columnheaders = []
         for icr in range(len(df.columns.values[0])):
@@ -1444,6 +1459,8 @@ hlines: if True, put horizontal lines on every line.
 #1\ignorespaces
 }
 """)
+    # Also generate a PDF of the table?
+    cpblTable_to_PDF(outfile)
     #print(callerTex.replace('PUT-TABLETEX-FILEPATH-HERE',outfile))
     return (callerTex.replace('PUT-TABLETEX-FILEPATH-HERE', outfile))
 
@@ -1452,13 +1469,17 @@ def formatDFforLaTeX(df,
                      row=None,
                      sigdigs=None,
                      colour=None,
-                     leadingZeros=False):
+                     leadingZeros=False,
+                     noTeX=False):
     """ Convert  dataframe entries from numeric to formatted strings.
     This is probably not for use by cpblLaTeX regression class. But useful in general for making LaTeX tables from pandas work.
     How to do this...?
 
     For colouring alternating rows, for instance, do not do it here! Just call rowcolors before tabular.
     Here's a nice colour: \definecolor{lightblue}{rgb}{0.93,0.95,1.0}
+
+
+noTeX is passed on to chooseSFormat. If you want, for instance, to align your numbers using siunitx's S parameter in LaTeX, you for instance do not want to replace the minus signs with $-$. 
     """
 
     def sformat(aval, sigdigs=sigdigs):
@@ -1471,7 +1492,7 @@ def formatDFforLaTeX(df,
             lowCutoffOOM=False,
             convertStrings=False,
             highCutoff=1e90,
-            noTeX=False,
+            noTeX=noTeX,
             sigdigs=sigdigs,
             threeSigDigs=False,
             se=None,
@@ -1540,8 +1561,7 @@ if __name__ == '__main__':
     )
 
 
-    dff.toPDF('test-cpbl')
-    fooo
+    cpblTable_to_PDF('./test-cpbl')
     #,columnWidths=None,formatCodes='lc',hlines=False,vlines=None,masterLatexFile=None,landscape=None,cformat=None)
     # (3) Use that cpblTables file and compile the result (this does not use anything from cpblTablesTex, actually, but is for completeness in the demo)
     with open('test-invoke-cpbl.tex', 'wt') as ff:

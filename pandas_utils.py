@@ -22,7 +22,7 @@ The first line must contain the column names.
     return pd.read_table(StringIO(tss.strip('\n')))
 
 def first_differences_by_group(df, groupvar,yearvar):
-    """ This may be esoteric, but: rectangularize an index, and take first differences within each group.
+    """ This may be esoteric, but: rectangularize an index, and take first differences within each group.  
 
     Takes a DataFrame; returns the same but with extra columns and possibly new rows with NaN values.
     """
@@ -35,5 +35,5 @@ def first_differences_by_group(df, groupvar,yearvar):
     # Next, we can simply take differences:
     dfsq.sort_values([groupvar,yearvar], inplace=True)
     for var in cols:
-        dfsq['d_'+var] =dfsq.groupby([groupvar])[var].transform(lambda x: x.diff()) 
+        dfsq['d_'+var] =dfsq.groupby([groupvar])[var].transform(lambda x: x.diff())
     return dfsq

@@ -1166,6 +1166,7 @@ if 0:
 
 def doSystemLatex(fname, texcode=None,
                   launchDaemon=False, # keep watching for the source file to change
+                  display = True,
 ):
     #,latexPath=None,launch=None,launchViewer=None,tex=None,viewLatestSuccess=True,bgCompile=True,fgCompile=False):
     """
@@ -1244,7 +1245,8 @@ John
         print(cli)
         os.system(cli)
         # Only want to do following if success. How to tell?
-        os.system('evince '+latexPath+fname+'.pdf&') # Don't use latexmk's -v because that will view the version in tmpTEX
+        if display: # This seems like it should have a separate switch than launchDaemon:
+            os.system('evince '+latexPath+fname+'.pdf&') # Don't use latexmk's -v because that will view the version in tmpTEX
     elif "Use own kludges":
         notnecyay
     return
