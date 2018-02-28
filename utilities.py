@@ -732,16 +732,39 @@ def importSpreadsheet(filename, masterKey=None):
 
 
 
-
 ###########################################################################################
 ###
 def orderListByRule(alist,orderRule,listKeys=None,dropIfKey=None):
     ###
     #######################################################################################
-
     """ Reorder alist according to the order specified in orderRule. The orderRule lists the order to be imposed on a set of keys. The keys are alist, if listkeys==None, or listkeys otherwise.  That is, the length of listkeys must be the same as of alist. That is, listkeys are the tags on alist which determine the ordering.  orderRule is a list of those same keys and maybe more which specifies the desired ordering.
     There is an optional dropIfKey which lists keys of items that should be dropped outright.
     """
+    maxOR = len(orderRule)
+    orDict = dict(zip(orderRule, range(maxOR)))
+    alDict = dict(zip(range(maxOR, maxOR+len(alist)),
+                      zip(alist if listKeys is None else listKeys, alist)))
+    outpairs = sorted(  [[orDict.get(b[0],a),(b)] for a,b in alDict.items()]  )
+    if dropIfKey is None: dropIfKey=[]
+    outL = [b[1] for a,b in outpairs if b[0] not in dropIfKey]
+    return outL
+
+def test_orderListByRule():
+    L1 = [1,2,3,3,5]
+    L2 = [3,4,5,10]
+    assert orderListByRule(L1, L2) == [3, 3, 5, 1, 2]
+    assert orderListByRule(L1, L2, dropIfKey=[2,3]) == [5, 1,]
+    Lv = [c for c in 'abcce']
+    assert orderListByRule(Lv, L2, listKeys=L1) == ['c', 'c', 'e', 'a', 'b']
+    assert orderListByRule(Lv, L2, listKeys=L1, dropIfKey=[2,3]) == ['e','a']
+
+
+###########################################################################################
+###
+def orderListByRule_old2018(alist,orderRule,listKeys=None,dropIfKey=None):
+    ###
+    #######################################################################################
+
     alist=list(alist)
     assert isinstance(alist,list) and isinstance(orderRule,list)
     alist=deepcopy(alist) #Let's not overwrite the passed array! to be safe and inefficient
@@ -1614,7 +1637,5 @@ if 0:
         from cpblUtilitiesUnicode import *
     except ImportError:
         print(__file__+":Unable to find CPBL's ragged unicode converstions module")
-
-
 
 
