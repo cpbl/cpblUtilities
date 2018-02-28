@@ -625,27 +625,32 @@ Implementaiton comments:  pandas has a to_latex(), and it offers to bold the fir
         """ Create a standalone PDF using a cpblTable filename and its wrapper info.  This should be part of the class or static? Not sure where this should go. Pystata does not seem to use these things yet."""
         stophere
 
-def cpblTable_to_PDF(filename, aftertabulartex=None, caption=None, display=False):
+def cpblTable_to_PDF(filename, aftertabulartex=None, caption=None, display=False, pdfcrop=False, transposed=False):
     """ caption not implemented yet
     aftertabulartex: footnotes, etc to go below table
+
+    transposed = True will use the transposed version instead of the first one, and it will append "-transposed" to the file name
     """
     if aftertabulartex is None: aftertabulartex=''
     pathstem = os.path.splitext(filename)[0]
-    with open(pathstem+'-standalone.tex','wt') as fout:
+    trans = 'Trans' if transposed else ''
+    with open(pathstem+'-standalone'+(transposed*'-transposed')+'.tex','wt') as fout:
         fout.write(texheader_for_CPBLtables(margins = 'none',
                                         standalone_table = True,
                                         allow_underscore = True,)+r"""
             \begin{document}
             \input{"""+ filename+r"""}
-            \ctStartTabular
-            \ctFirstHeader
-            \ctBody \hline
+            \ctStartTabular"""+trans+r"""
+            \ctFirstHeader"""+trans+r"""
+            \ctBody"""+trans+r""" \hline
             \end{tabular}
             """+aftertabulartex+r"""
             \end{document}
             """)
-    doSystemLatex(pathstem+'-standalone.tex', display=display)
-
+    doSystemLatex(pathstem+'-standalone'+(transposed*'-transposed')+'.tex', display=display)
+    if pdfcrop:
+        os.system('pdfcrop {f} {f}'.format(f=pathstem+'-standalone.pdf'))
+    
 def interleave_columns_as_rows(df):
     """ Assume every second column of the data frame is a standard error value for the column to its left. Move these values so they are below the point estimates.
     """
@@ -1361,7 +1366,8 @@ def dataframeWithLaTeXToTable(
         columnWidths=None,
         formatCodes=None, #'lc',
         formatString=None,
-        hlines=False):  #   ncols=None,nrows=None,, alignment="c"):
+        hlines=False,
+        pdfcrop=False):  #   ncols=None,nrows=None,, alignment="c"):
     """ Note that pandas already has a latex output function built in. If it deals with multiindices, etc, it may be better to edit it rather than to start over. [See issue #5 for columns]. However, my cpblTableC function expects it to be broken up into cells still.
 
 This function takes a dataframe whos entries have already been converted to LaTeX strings (where needed)!.
@@ -1460,7 +1466,7 @@ hlines: if True, put horizontal lines on every line.
 }
 """)
     # Also generate a PDF of the table?
-    cpblTable_to_PDF(outfile)
+    cpblTable_to_PDF(outfile, pdfcrop=pdfcrop)
     #print(callerTex.replace('PUT-TABLETEX-FILEPATH-HERE',outfile))
     return (callerTex.replace('PUT-TABLETEX-FILEPATH-HERE', outfile))
 
@@ -1531,14 +1537,6 @@ def wrapDFcells(df, xyindices, before='', after=''):
     return
 
 
-def styleCtoStandalone(infile, tablestyle='simple'):
-    """
-    tablestyle: simple means LaTeX's tabular format
-
-This seems like a good idea, but I've not done it yet. (nov 2015). Also, would be easier if I ended some definitions with }%bracketname etc rather than just }.
-"""
-
-    poss
 
 
 # # # # # # # # # # # # # # # # # # 
@@ -1562,6 +1560,7 @@ if __name__ == '__main__':
 
 
     cpblTable_to_PDF('./test-cpbl')
+    cpblTable_to_PDF('./test-cpbl', transposed = True)
     #,columnWidths=None,formatCodes='lc',hlines=False,vlines=None,masterLatexFile=None,landscape=None,cformat=None)
     # (3) Use that cpblTables file and compile the result (this does not use anything from cpblTablesTex, actually, but is for completeness in the demo)
     with open('test-invoke-cpbl.tex', 'wt') as ff:
