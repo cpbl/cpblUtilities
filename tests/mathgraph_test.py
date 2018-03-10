@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+# Actually, I think each method in mathgraph.py should have a test_method() in mathgraph.py. This module here should simply call all those tests.
 from cpblUtilities.mathgraph import *
 
 

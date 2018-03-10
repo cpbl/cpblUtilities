@@ -759,50 +759,6 @@ def test_orderListByRule():
     assert orderListByRule(Lv, L2, listKeys=L1, dropIfKey=[2,3]) == ['e','a']
 
 
-###########################################################################################
-###
-def orderListByRule_old2018(alist,orderRule,listKeys=None,dropIfKey=None):
-    ###
-    #######################################################################################
-
-    alist=list(alist)
-    assert isinstance(alist,list) and isinstance(orderRule,list)
-    alist=deepcopy(alist) #Let's not overwrite the passed array! to be safe and inefficient
-
-    if listKeys==None:
-        listKeys=deepcopy(alist)
-    assert isinstance(listKeys,list) and len(listKeys)==len(alist)
-
-    # First, drop outright any baddies. Need to do this in parallel for both listKeys and alist, which are of same length:
-    if dropIfKey:
-        for iopr in range(len(alist))[::-1]:
-            if listKeys[iopr] in dropIfKey:
-                alist.pop(iopr)
-                listKeys.pop(iopr)
-
-    newalist= [[] for _ in range(len(orderRule)+len(alist))] # Create list of empty lists
-    debugprint( 'From order ',str(listKeys))
-    # Order pairs that are specified in orderRule. When one is found in alist, place it in its ordered spot in newalist and delete it from (replace with []) alist:
-    for iov in range(len(orderRule)):
-        if orderRule[iov] in listKeys:
-            iopr=[iii for iii in range(len(alist)) if listKeys[iii]==orderRule[iov]][0]
-        #for iopr in range(len(alist)):
-            #if alist[iopr] and listKeys[iopr]==orderRule[iov]:
-            if 1:
-                newalist[iov]=deepcopy(alist[iopr])
-                alist[iopr]=[]
-                #continue
-
-    # Now add remaining (unspecified) pairs to end of newalist list and get rid of blanks:
-    newalist=[pair for pair in newalist+alist if pair]
-    #print( '    to order ',str([aa[0][0] for aa in newalist]))
-
-    # SHould I also ensure uniqueness of list?
-
-
-    return(newalist)
-
-
 
 ##########################################################################
 ##########################################################################
@@ -1627,6 +1583,24 @@ def merge_pdfs_if_exist(infiles, outfile):
     os.system(osc)
     print('   SYSTEMCALL: '+osc+'\n')
 
+
+# A couple of menu-ing / choice utilities: Make shorter one-liners from inquire
+def inquirer_confirm(message, default=False):
+    import inquirer
+    ans = inquirer.prompt([inquirer.Confirm('singleQuestion',
+                                            message= message,
+                                            default=default)])
+    return(ans['singleQuestion'])
+def inquirer_list(choices, message=None, default=None):
+    import inquirer
+    message = 'Please choose' if message is None else message
+    ans = inquirer.prompt([inquirer.List('singleQuestion',
+                                         choices=choices,
+                                            message= message,
+                                            #default=default
+    )])
+    return(ans['singleQuestion'])
+    
 if 0:
     try: # Where is this needed? Should import it only where needed.        
         from parallel import *
