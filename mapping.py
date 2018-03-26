@@ -666,6 +666,42 @@ def ___try_osgeo():
 
 
 
+##########################################################################
+##########################################################################
+#
+class Position:
+    #
+    ##########################################################################
+    ##########################################################################
+    """ This is about as much GIS as I really need here: calculate great circle distance between two points on a sphere. This is done through the subtraction operation (-) for this clas. """
+
+    def __init__(self, longitude, latitude):
+        import math
+        'init position with longitude/latitude coordinates'
+        llx = math.radians(longitude)
+        lly = math.radians(latitude)
+        self.x = math.sin(llx) * math.cos(lly)
+        self.y = math.cos(llx) * math.cos(lly)
+        self.z = math.sin(lly)
+
+    def __sub__(self, other):
+        import math
+        'get distance in km between two positions'
+        d = self.x * other.x + self.y * other.y + self.z * other.z
+        if d < -1:
+            d = -1
+        if d > 1:
+            d = 1
+        km = math.acos(d) / math.pi * 20000.0
+        return km
+
+    #def __mul__(self, other): # Scalar multiply?
+    #    import math
+    #    assert isinstance(other,float)
+    #    return(self.__init(self.x*other,self.y*other))
+
+    # Yikes! This needs to be able to return lat, lon, etc.. much more needed.
+
 
 
 

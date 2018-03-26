@@ -1,11 +1,5 @@
 #!/usr/bin/python
 """
-Some wisdom on graphics:
- - 2015: How to produce PDFs of a given width, with chosen font size, etc:
-   (1) Fix width to journal specifications from the beginning / early. Adjust height as you go, according to preferences for aspect ratio:
-    figure(figsize=(11.4/2.54, chosen height))
-   (2) Do not use 'bbox_inches="tight"' in savefig('fn.pdf').  Instead, use the subplot_adjust options to manually adjust edges to get the figure content to fit in the PDF output
-   (3) Be satisfied with that. If you must get something exactly tight and exactly the right size, you do this in Inkscape. But you cannot scale the content and bbox in the same step. Load PDF, select all, choose the units in the box at the top of the main menu bar, click on the lock htere, set the width.  Then, in File Properties dialog, resize file to content. Save.
 """
 from __future__ import division # Python3-style integer division 5/2=2.5, not 3
 
@@ -1997,69 +1991,7 @@ def axisNearlyTight(ax=None):
         ylim(min(ylim())-yr/20.0,max(ylim())+yr/20.0)
 
 
-def figureFontSetup(uniform=12,figsize='paper', amsmath=True):
-    """
-Set font size settings for matplotlib figures so that they are reasonable for exporting to PDF to use in publications / presentations..... [different!]
-If not for paper, this is not yet useful.
-
-
-Here are some good sizes for paper:
-    figure(468,figsize=(4.6,2)) # in inches
-    figureFontSetup(uniform=12) # 12 pt font
-
-    for a subplot(211)
-
-or for a single plot (?)
-figure(127,figsize=(4.6,4)) # in inches.  Only works if figure is not open from last run!
-        
-why does the following not work to deal with the bad bounding-box size problem?!
-inkscape -f GSSseries-happyLife-QC-bw.pdf --verb=FitCanvasToDrawing -A tmp.pdf .: Due to inkscape cli sucks! bug.
---> See savefigall for an inkscape implementation.
-
-2012 May: new matplotlib has tight_layout(). But it rejigs all subplots etc.  My inkscape solution is much better, since it doesn't change the layout. Hoewever, it does mean that the original size is not respected! Sigh... Still, my favourite way from now on to make figures is to append the font size setting to the name, ie to make one for a given intended final size, and to do no resaling in LaTeX.  Use tight_layout() if it looks okay, but the inkscape solution in general.
-n.b.  a clf() erases size settings on a figure! 
-
-    """
-    figsizelookup={'paper':(4.6,4),'quarter':(1.25,1) ,None:None}
-    try:
-        figsize=figsizelookup[figsize]
-    except KeyError,TypeError:
-        pass
-    params = {#'backend': 'ps',
-           'axes.labelsize': 16,
-        #'text.fontsize': 14,
-        'font.size': 14,
-           'legend.fontsize': 10,
-           'xtick.labelsize': 16,
-           'ytick.labelsize': 16,
-           'text.usetex': True,
-           'figure.figsize': figsize
-        }
-           #'figure.figsize': fig_size}
-    if uniform is not None:
-        assert isinstance(uniform,int)
-        params = {#'backend': 'ps',
-           'axes.labelsize': uniform,
-            #'text.fontsize': uniform,
-           'font.size': uniform,
-           'legend.fontsize': uniform,
-           'xtick.labelsize': uniform,
-           'ytick.labelsize': uniform,
-           'text.usetex': True,
-           'text.latex.unicode': True,
-            'text.latex.preamble':r'\usepackage{amsmath},\usepackage{amssymb}',
-           'figure.figsize': figsize
-           }
-        if not amsmath:
-            params.update({'text.latex.preamble':''})
-
-    plt.rcParams.update(params)
-    plt.rcParams['text.latex.unicode']=True
-    #if figsize:
-    #    plt.rcParams[figure.figsize]={'paper':(4.6,4)}[figsize]
-
-    return(params)
-
+from cpblUtilities.matplotlib_utils import figureFontSetup
 
 def addSignatureToPlot():
     """
@@ -2073,42 +2005,6 @@ def addSignatureToPlot():
     plt.setp(th,'fontsize',7,'verticalalignment','bottom','horizontalalignment','right')
     return(th)
 
-
-##########################################################################
-##########################################################################
-#
-class Position:
-    #
-    ##########################################################################
-    ##########################################################################
-    """ This is about as much GIS as I really need here: calculate great circle distance between two points on a sphere. This is done through the subtraction operation (-) for this clas. """
-
-    def __init__(self, longitude, latitude):
-        import math
-        'init position with longitude/latitude coordinates'
-        llx = math.radians(longitude)
-        lly = math.radians(latitude)
-        self.x = math.sin(llx) * math.cos(lly)
-        self.y = math.cos(llx) * math.cos(lly)
-        self.z = math.sin(lly)
-
-    def __sub__(self, other):
-        import math
-        'get distance in km between two positions'
-        d = self.x * other.x + self.y * other.y + self.z * other.z
-        if d < -1:
-            d = -1
-        if d > 1:
-            d = 1
-        km = math.acos(d) / math.pi * 20000.0
-        return km
-
-    #def __mul__(self, other): # Scalar multiply?
-    #    import math
-    #    assert isinstance(other,float)
-    #    return(self.__init(self.x*other,self.y*other))
-
-    # Yikes! This needs to be able to return lat, lon, etc.. much more needed.
 
 
 
