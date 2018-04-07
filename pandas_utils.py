@@ -89,6 +89,10 @@ N.B.: If I want to use the unbiased version of variance, will need to specify wh
     """
     assert aggstats is None or all([ags in ['mean'] for ags in aggstats])
     outs={}
+    if weightVar is None:
+        weightVar= '___tmpweight'
+        df[weightVar] = 1
+        
     if varNames is None: varNames = df.columns
     if isinstance(varNames,basestring):
         varNames=[varNames]
@@ -113,6 +117,8 @@ N.B.: If I want to use the unbiased version of variance, will need to specify wh
                          varPrefix+'min_'+mv: df2[mv].min(),
                          varPrefix+'max_'+mv: df2[mv].max(),
                          varPrefix+'std_'+mv: np.sqrt(variance)             })
+    if weightVar == '___tmpweight':
+        df = df[[cc for cc in df.columns if not cc==weightVar]]
     if as_df:
         return pd.concat(outs.values())
     else:
