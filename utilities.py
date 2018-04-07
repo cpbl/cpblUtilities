@@ -1366,6 +1366,7 @@ def latexFormatEstimateWithPvalue(x,pval=None,allowZeroSE=None,tstat=False,gray=
     #######################################################################################
     """
     This is supposed to encapsulate the colour/etc formatting for a single value and, optionally, its standard error or t-stat or etc. (take it out of formatpairedrow?)
+    It's rather closely connected to cpbl's pystata package and latex_tables package, which produce statistical tables.
 
     It'll do the chooseSformat as well.
 

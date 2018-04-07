@@ -61,7 +61,9 @@ def correlation_table(df, texfile=None):
             pval[i,j]  = JonI.f_stat['p-value']
 
 
-def weightedMeanSE_pandas(df,varNames=None ,weightVar='weight', uniform_sample=None, aggstats=None, as_df=False):
+def weightedMeanSE_pandas(df,varNames=None ,weightVar='weight', uniform_sample=None, aggstats=None, as_df=False,
+                          statname='statname', # default name for index column
+):
     """
     uniform_sample=True drops NaNs for all variables at once (ie keeps only rows with finite values for all columns). Otherwise, NaNs are dropped column-by-columnn.
 
@@ -120,7 +122,9 @@ N.B.: If I want to use the unbiased version of variance, will need to specify wh
     if weightVar == '___tmpweight':
         df = df[[cc for cc in df.columns if not cc==weightVar]]
     if as_df:
-        return pd.concat(outs.values())
+        odf= pd.concat(outs.values())
+        odf.index.rename('statname', inplace=True)
+        return odf
     else:
         return(pd.Series(outs)) # Return this as a Series; this avoids adding a new index in groupby().apply
 
@@ -173,7 +177,6 @@ My related functions: 2013July I need a weighted moment by group in recodeGallup
 
     if groups_to_columns or wide:
         newdf = grouped.apply(weightedMeanSE_pandas, meansOf, weightVar,  None, None, True) #.unstack(level=[0, 1])
-        newdf.index.rename('statname', level=-1, inplace=True)
         if wide:
             newdf.reset_index(inplace=True)
         if groups_to_columns:
@@ -181,6 +184,7 @@ My related functions: 2013July I need a weighted moment by group in recodeGallup
                 return l[1:]+l[:1]
             # This puts the groups at the top of the columns multiindex, and has all stats together for each group:
             newdf = newdf.unstack(level= range(len(byGroup))).reorder_levels(rotate(range(1+len(byGroup))), axis=1).sortlevel(level=0, axis=1, sort_remaining=True)
+            print('NOOoooooo! sortlevel is deprecated')
     else:
         newdf=grouped.apply(weightedMeanSE_pandas,meansOf,weightVar)
         if varPrefix:
