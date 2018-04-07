@@ -22,6 +22,14 @@ The first line must contain the column names.
         from io import StringIO
     return pd.read_table(StringIO(tss.strip('\n')))
 
+def rectangularize_index(df):
+    # Create a rectangular index of index columns:
+    fofofo
+    blank =pd.DataFrame(index=pd.MultiIndex.from_product([
+        sorted(df[yearvar].unique()), sorted(df[groupvar].unique())], names= [yearvar,groupvar]))
+    dfsq = blank.join(df.set_index([yearvar, groupvar]))[cols].reset_index()
+    
+
 def first_differences_by_group(df, groupvar,yearvar):
     """ This may be esoteric, but: rectangularize an index, and take first differences within each group.  
 
@@ -60,6 +68,8 @@ def weightedMeanSE_pandas(df,varNames=None ,weightVar='weight', uniform_sample=N
     varNames: columns to aggregate
 
     aggstats: by default, aggstats is ['mean'] and produces columns with the original name and with a 'se_' suffixe for the standard error of the mean.  Other stats not yet implemented
+
+    An alternative output format, in which a multiindex is used instead of prefixes, can be had with...
 
     Example use: 
 
@@ -108,23 +118,32 @@ N.B.: If I want to use the unbiased version of variance, will need to specify wh
     else:
         return(pd.Series(outs)) # Return this as a Series; this avoids adding a new index in groupby().apply
 
-
+def test_weightedMeansByGroup():
+    import pandas.util.testing as tm; tm.N = 3
+    # Not written yet
+    fofofo
+    weightedMeansByGroup(pandasDF,meansOf=None,byGroup=None,weightVar='weight',varPrefix='',)
+        
 ##############################################################################
 ##############################################################################
 #
-def weightedMeansByGroup(pandasDF,meansOf=None,byGroup=None,weightVar='weight',varPrefix=''):# varsByQuantile=None,suffix='',skipPlots=True,rankfileprefix=None,ginifileprefix=None,returnFilenamesOnly=False,forceUpdate=False,groupNames=None,ginisOf=None,loadAll=None,parallelSafe=None):
+def weightedMeansByGroup(pandasDF,meansOf=None,byGroup=None,weightVar='weight',varPrefix='',
+                         groups_to_columns = False,
+                         wide = False):# varsByQuantile=None,suffix='',skipPlots=True,rankfileprefix=None,ginifileprefix=None,returnFilenamesOnly=False,forceUpdate=False,groupNames=None,ginisOf=None,loadAll=None,parallelSafe=None):
     #
     ##########################################################################
     ##########################################################################
     """
-2013 Feb: I'm adapting this from weightedQuantilesByGroup.
-
-I've finally found something that gives the same s.e. as Stata. 
-The list of what does NOT is very long: my ( wtmean,wtsem,wtvar), above. 
-statsmodels.WLS gives robust standard errors, I guess, but they ignore the weights! ie give same as stata without any weights. Wow, how poor.  But the code someone gave me on a list in 2010 works.
-
     This returns another DataFrame with appropriately named columns.
 
+    groups_to_columns = True  induces as_df=True in weightedMeanSE_pandas., and restacks so that the rows are the variables given in "meansOf", and the columns are a multiindex of groups and statistics (mean, sem, std, N, min, max).  You may want to do something like .reorder_levels([1,2,0], axis=1).sortlevel(level=0, axis=1, sort_remaining=True) to the result.
+
+    wide=True: This returns the results in a simple wide format, with no row index
+
+This gives the same s.e. as Stata.  (The list of what does NOT is very long: my ( wtmean,wtsem,wtvar), above.)
+statsmodels.WLS gives robust standard errors, I guess, but they ignore the weights! ie give same as stata without any weights. Wow, how poor.  But the code someone gave me on a list in 2010 works.
+
+2013 Feb: I'm adapting this from weightedQuantilesByGroup.
 My related functions: 2013July I need a weighted moment by group in recodeGallup.
 
 2014June (Usually you can get by without this function?:     means=df.groupby('age').apply(lambda adf: weightedMeanSE_pandas(adf,tomean,weightVar='cw')) )
@@ -146,9 +165,20 @@ My related functions: 2013July I need a weighted moment by group in recodeGallup
     assert all([mm in df for mm in byGroup])
     grouped=df.groupby(byGroup)
 
-    newdf=grouped.apply(weightedMeanSE_pandas,meansOf,weightVar)
-    if varPrefix:
-        newdf.columns=[varPrefix+cc for cc in newdf.columns]
+    if groups_to_columns or wide:
+        newdf = grouped.apply(weightedMeanSE_pandas, meansOf, weightVar,  None, None, True) #.unstack(level=[0, 1])
+        newdf.index.rename('statname', level=-1, inplace=True)
+        if wide:
+            newdf.reset_index(inplace=True)
+        if groups_to_columns:
+            def rotate(l):
+                return l[1:]+l[:1]
+            # This puts the groups at the top of the columns multiindex, and has all stats together for each group:
+            newdf = newdf.unstack(level= range(len(byGroup))).reorder_levels(rotate(range(1+len(byGroup))), axis=1).sortlevel(level=0, axis=1, sort_remaining=True)
+    else:
+        newdf=grouped.apply(weightedMeanSE_pandas,meansOf,weightVar)
+        if varPrefix:
+            newdf.columns=[varPrefix+cc for cc in newdf.columns]
     return(newdf)
 
 
