@@ -540,31 +540,34 @@ def interleave_pairs_of_rows(df, list_of_column_pairs):
 def test_interleave_se_columns_as_rows():
     from collections import OrderedDict
     df= pd.DataFrame(OrderedDict([
-        ['b', [3.1234567,2.394832234, 7.65432],],
-        ['se', [.8,.00013984, .01],],
-        ['b2', [73.1234567,82.394832234, 17.65432],],
-        ['se2', [2.8,22.00013984, 10.01],],
-        ['b3', [173.1234567,82.394832234, 17.65432],],
-        ['se3', [12.8,22.00013984, 110.01],],
+        ['b', [1,2,3],],
+         ['se', [4,5,6],],
+        ['b2', [7,8,9],],
+         ['se2', [10,11,12],],
+        ['b3', [13,14,15],],
+        ['se3', [16,17,18]],
     ]))
-    if 0: 
-        df2 = interleave_se_columns_as_rows(df)
-        assert  df2.columns.tolist()==['b', 'b2', 'b3']
-        expected = np.array([[3.12345670e+00, 7.31234567e+01, 1.73123457e+02],
-           [8.00000000e-01, 2.80000000e+00, 1.28000000e+01],
-           [2.39483223e+00, 8.23948322e+01, 8.23948322e+01],
-           [1.39840000e-04, 2.20001398e+01, 2.20001398e+01],
-           [7.65432000e+00, 1.76543200e+01, 1.76543200e+01],
-           [1.00000000e-02, 1.00100000e+01, 1.10010000e+02]])
-        diff=np.abs(df2.as_matrix() - expected)
-        assert (diff <1e-6).all().all()
+    df2 = interleave_se_columns_as_rows(df)
+    assert  df2.columns.tolist()==['b', 'b2', 'b3']
+    expected = np.array([[ 1,  7, 13],
+       [ 4, 10, 16],
+       [ 2,  8, 14],
+       [ 5, 11, 17],
+       [ 3,  9, 15],
+       [ 6, 12, 18]])
+    diff=np.abs(df2.as_matrix() - expected)
+    assert not (df2.as_matrix()-expected).any().any()
 
     # What about a multiindex?
     df.columns = pd.MultiIndex.from_tuples( zip([2,32,42,62,11,12], ['b','se','b2','se2','b3','se3']),
  names=['foo','bar'])
     df3 = interleave_se_columns_as_rows(df)
-    #df.columns = pd.MultiIndex.from_arrays([1,1,1,1],[2,2,2,2], ['b','se','b2','se2','])
-    sososo
+    assert df3.columns.tolist() == [(2, 'b'), (42, 'b2'), (11, 'b3')]
+    assert df3[(42,'b2')].tolist()[1] == 10
+    #[73.1234567, 2.8, 82.394832234, 22.00013984, 17.65432, 10.01]
+
+
+    
     
 def interleave_se_columns_as_rows(df):
     """ Assume every second column of the data frame is a standard error value for the column to its left. Move these values so they are below the point estimates.
