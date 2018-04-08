@@ -1359,50 +1359,6 @@ Oct 2016: Above sounds like a mess. This
     return()
 
 
-###########################################################################################
-###
-def latexFormatEstimateWithPvalue(x,pval=None,allowZeroSE=None,tstat=False,gray=False,convertStrings=True,threeSigDigs=None):
-    ###
-    #######################################################################################
-    """
-    This is supposed to encapsulate the colour/etc formatting for a single value and, optionally, its standard error or t-stat or etc. (take it out of formatpairedrow?)
-    It's rather closely connected to cpbl's pystata package and latex_tables package, which produce statistical tables.
-
-    It'll do the chooseSformat as well.
-
-    May 2011.
-    Still needs to learn about tratios and calculate own p...! if tstat==True
-    """
-    yesGrey=gray
-    if isinstance(x,list):
-        assert len(x)==2
-        est,ses= x # Primary estimate, and secondary t-stat/se/p-value
-        singlet=False
-    else:
-        singlet=True
-        est=x###chooseSFormat(x,convertStrings=convertStrings,threeSigDigs=threeSigDigs)
-
-    assert isinstance(pval,float) or pval in [] # For now, require p to be passed!
-
-    if 0 and ses<1e-10 and not allowZeroSE:
-        pair[0]=''
-        pair[1]='' # Added Aug 2009... is not this right? It covers the (0,0) case.
-    if pval not in [None,fNaN]: # This is if we specified p-values directly: then don't calculate it from t-stat, etc!
-        significanceString=(['']+[tt[0] for tt in significanceTable if pval<= tt[2]*1.0/100.0])[-1]
-
-    if significanceString and yesGrey:
-            significanceString=r'\agg'+significanceString[1:]
-    if not significanceString and yesGrey:
-            significanceString=r'\aggc{'
-    if yesGrey:
-        greyString=r'\aggc'
-    if singlet:
-        return(significanceString+chooseSFormat(est,convertStrings=convertStrings,threeSigDigs=threeSigDigs)+'}'*(not not significanceString))
-
-    return([significanceString+chooseSFormat(est,convertStrings=convertStrings,threeSigDigs=threeSigDigs)+'}'*(not not significanceString),
-           significanceString+chooseSFormat(est,convertStrings=convertStrings,threeSigDigs=threeSigDigs,conditionalWrapper=[r'\coefp{','}'])])
-
-
 
 def collapseByField(e,collapsefield,keepFields=None,agg=None):
     """
