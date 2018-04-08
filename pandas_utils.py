@@ -62,6 +62,7 @@ def correlation_table(df, texfile=None):
 
 
 def weightedMeanSE_pandas(df,varNames=None ,weightVar='weight', uniform_sample=None, aggstats=None, as_df=False,
+                          sem_name = 'se_mean',
                           statname='statname', # default name for index column
 ):
     """
@@ -109,7 +110,7 @@ N.B.: If I want to use the unbiased version of variance, will need to specify wh
         variance = np.average( (df2[mv]-mu)**2, weights = df2[weightVar])
         # Values need to be vectors(lists) for the conversion to DataFrame, it seems.
         if as_df:
-            res1={'mean': mu,   'sem': se, 'N': len(df2), 'min': df2[mv].min(), 'max': df2[mv].max(), 'std': np.sqrt(variance) }
+            res1={'mean': mu,   sem_name: se, 'N': len(df2), 'min': df2[mv].min(), 'max': df2[mv].max(), 'std': np.sqrt(variance) }
             #res = zip(*{'mean': mu,   'sem': se, 'N': len(df2), 'min': df2[mv].min(), 'max_': df2[mv].max() }.items())
             outs.update({mv:pd.DataFrame(res1, index = [mv])})
         else:
@@ -146,7 +147,7 @@ def weightedMeansByGroup(pandasDF,meansOf=None,byGroup=None,weightVar='weight',v
     """
     This returns another DataFrame with appropriately named columns.
 
-    groups_to_columns = True  induces as_df=True in weightedMeanSE_pandas., and restacks so that the rows are the variables given in "meansOf", and the columns are a multiindex of groups and statistics (mean, sem, std, N, min, max).  You may want to do something like .reorder_levels([1,2,0], axis=1).sortlevel(level=0, axis=1, sort_remaining=True) to the result.
+    groups_to_columns = True  induces as_df=True in weightedMeanSE_pandas., and restacks so that the rows are the variables given in "meansOf", and the columns are a multiindex of groups and statistics (mean, se_mean, std, N, min, max).  You may want to do something like .reorder_levels([1,2,0], axis=1).sortlevel(level=0, axis=1, sort_remaining=True) to the result.
 
     wide=True: This returns the results in a simple wide format, with no row index
 
