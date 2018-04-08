@@ -14,7 +14,7 @@ import pandas as pd
 
 # Recent use cases: coal_analysis
 
-
+# To do: Allow se to be passed in df_format_estimate_column_with_latex_significance
 
 def test_pvalue_to_latex_significance():
     assert pvalue_to_latex_significance(2.394832234, .0013984) == '\\wrapSigOnePercent{2.4}'
@@ -31,7 +31,7 @@ def pvalue_to_latex_significance(estimate, pvalue, **vararg):
     
     estimate: scalar or vector float
     pvalue:   scale or vector (of same length as estimate) float
-    
+
     See test_(methodname) method for examples.
     """
 
@@ -59,7 +59,41 @@ def pvalue_to_latex_significance(estimate, pvalue, **vararg):
 """
         
     
+def test_df_format_estimate_column_with_latex_significance():
+    df= pd.DataFrame({
+        'mean': [3.1234567,2.394832234, 7.65432],
+        'p': [.8,.00013984, .01]})
+    odf = df_format_estimate_column_with_latex_significance(df, 'mean','p')
+    assert (odf.columns==['mean']).all()
+    assert odf['mean'].tolist() == ['3.1', '\\wrapSigOneThousandth{2.4}', '\\wrapSigOnePercent{7.7}']
+    
+    
+def df_format_estimate_column_with_latex_significance(df,
+                                                      est_col,
+                                                      p_col=None,
+                                                      se_col=None,
+                                                      replace_estimate_column=True,
+                                                      drop_p_column=True):
+    """
+    Either the p-value (p_col) or the standard error (se_col) must be given.
+    The column names are passed. They can be strings or tuples (for MultiIndex columns)
+    Both columns should be float type.
 
+    By default, the p-value column is dropped, and the est_col is replaced by a string version, with LaTeX formatting to denote the p-value significance.
+    """
+    s_est = pvalue_to_latex_significance(df[est_col], df[p_col])
+    if replace_estimate_column:
+        df[est_col] = s_est
+    else:
+        must_supply_prefix
+    if drop_p_column:
+        df.drop(columns=[p_col], inplace=True)
+    return df
+
+    
+    #pvalue_to_latex_significance(estimate, pvalue, **vararg)
+
+    
 ###########################################################################################
 ###
 def chooseSFormat(ff,
@@ -318,39 +352,6 @@ def latexFormatEstimateWithPvalue(x,
                 ])
         ])
 
-def test_df_format_estimate_column_with_latex_significance():
-    df= pd.DataFrame({
-        'mean': [3.1234567,2.394832234, 7.65432],
-        'p': [.8,.00013984, .01]})
-    odf = df_format_estimate_column_with_latex_significance(df, 'mean','p')
-    assert (odf.columns==['mean']).all()
-    assert odf['mean'].tolist() == ['3.1', '\\wrapSigOneThousandth{2.4}', '\\wrapSigOnePercent{7.7}']
-    
-    
-def df_format_estimate_column_with_latex_significance(df,
-                                                      est_col,
-                                                      p_col=None,
-                                                      se_col=None,
-                                                      replace_estimate_column=True,
-                                                      drop_p_column=True):
-    """
-    Either the p-value (p_col) or the standard error (se_col) must be given.
-    The column names are passed. They can be strings or tuples (for MultiIndex columns)
-    Both columns should be float type.
-
-    By default, the p-value column is dropped, and the est_col is replaced by a string version, with LaTeX formatting to denote the p-value significance.
-    """
-    s_est = pvalue_to_latex_significance(df[est_col], df[p_col])
-    if replace_estimate_column:
-        df[est_col] = s_est
-    else:
-        must_supply_prefix
-    if drop_p_column:
-        df.drop(columns=[p_col], inplace=True)
-    return df
-
-    
-    #pvalue_to_latex_significance(estimate, pvalue, **vararg)
 def formatPairedRow_DataFrame(df, est_col, se_col, pvalue_col=None, prefix=None,
                               drop_original_columns = False,
                               **varargs):
