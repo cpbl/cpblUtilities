@@ -27,7 +27,7 @@ import pandas as pd
 import numpy as np
 from cpblUtilities import doSystemLatex
 from cpblUtilities.mathgraph import tonumeric
-
+from cpblUtilities.textables.stats_formatting import chooseSFormat
 
 def open(fn, mm,
          encoding='utf-8'):  # Replace default "open" to be unicode-safe
@@ -530,20 +530,62 @@ def cpblTable_to_PDF(filename, aftertabulartex=None, caption=None, display=False
     doSystemLatex(pathstem+'-standalone'+(transposed*'-transposed')+'.tex', display=display)
     if pdfcrop:
         os.system('pdfcrop {f} {f}'.format(f=pathstem+'-standalone.pdf'))
+
+
+def interleave_pairs_of_rows(df, list_of_column_pairs):
+    """ list_of_column_pairs is a list of pairs of string or tuple identifiers of columns.
+    New rows are inserted after each existing row in the df.
+    Values from the second in each pair of columns are put underneath the first in each pair.
+    """
+def test_interleave_se_columns_as_rows():
+    from collections import OrderedDict
+    df= pd.DataFrame(OrderedDict([
+        ['b', [3.1234567,2.394832234, 7.65432],],
+        ['se', [.8,.00013984, .01],],
+        ['b2', [73.1234567,82.394832234, 17.65432],],
+        ['se2', [2.8,22.00013984, 10.01],],
+        ['b3', [173.1234567,82.394832234, 17.65432],],
+        ['se3', [12.8,22.00013984, 110.01],],
+    ]))
+    if 0: 
+        df2 = interleave_se_columns_as_rows(df)
+        assert  df2.columns.tolist()==['b', 'b2', 'b3']
+        expected = np.array([[3.12345670e+00, 7.31234567e+01, 1.73123457e+02],
+           [8.00000000e-01, 2.80000000e+00, 1.28000000e+01],
+           [2.39483223e+00, 8.23948322e+01, 8.23948322e+01],
+           [1.39840000e-04, 2.20001398e+01, 2.20001398e+01],
+           [7.65432000e+00, 1.76543200e+01, 1.76543200e+01],
+           [1.00000000e-02, 1.00100000e+01, 1.10010000e+02]])
+        diff=np.abs(df2.as_matrix() - expected)
+        assert (diff <1e-6).all().all()
+
+    # What about a multiindex?
+    df.columns = pd.MultiIndex.from_tuples( zip([2,32,42,62,11,12], ['b','se','b2','se2','b3','se3']),
+ names=['foo','bar'])
+    df3 = interleave_se_columns_as_rows(df)
+    #df.columns = pd.MultiIndex.from_arrays([1,1,1,1],[2,2,2,2], ['b','se','b2','se2','])
+    sososo
     
-def interleave_columns_as_rows(df):
+def interleave_se_columns_as_rows(df):
     """ Assume every second column of the data frame is a standard error value for the column to its left. Move these values so they are below the point estimates.
     """
+    assert len(df.columns) % 2 == 0
     alts = df.iloc[:, 1::2].copy()
     alts.columns = df.columns[0::2]
     newdf = df.iloc[:, 0::2].copy()
+    orig_columns = newdf.columns
     newdf['__origOrd'] = range(len(newdf))
     newdf['_sorting'] = 1
     alts['_sorting'] = 2
     alts['__origOrd'] = range(len(newdf))
-    anewdf = newdf.append(alts).sort_values(['__origOrd', '_sorting'])
+    anewdf = newdf.append(alts).sort_values(['__origOrd', '_sorting']) # Pandas bug: append sorts columns
+    # Reimpose column order, to fix bug: https://github.com/pandas-dev/pandas/issues/4588
+    # And also drop the sorting columns:
+    """
     anewdf = anewdf[
         [cc for cc in anewdf if cc not in ['__origOrd', '_sorting']]]
+    """
+    anewdf = anewdf[orig_columns]
     indd = anewdf.index.tolist()
     # Now let's get rid of the row labels on every second line, so they're not duplicated:
     for ii in range(1, len(indd), 2):
@@ -554,7 +596,11 @@ def interleave_columns_as_rows(df):
 
 def interleave_and_format_paired_columns_as_rows(odf,
                                                  method='standard_errors'):
-    """ Assume every second column of the data frame is a standard error value for the column to its left. Format these Move these values so they are below the point estimates.
+    """ Assume every second column of the data frame is a standard error value for the column to its left. 
+    
+    This makes use of interleave_se_columns_as_rows, but in addition uses a formatter to format the estimates.  201804: I want to do that a bit differently, using new tools, so this function needs update. Just use the other (lower level) one, above, for now.
+
+Format these Move these values so they are below the point estimates.
     """
     assert method == 'standard_errors'
     df = odf.copy()
@@ -567,7 +613,7 @@ def interleave_and_format_paired_columns_as_rows(odf,
     df = df.iloc[:, len(cols):]
     df.columns = df.columns.map(lambda ss: ss[7:])
     if 0: print df
-    return interleave_columns_as_rows(df)
+    return interleave_se_columns_as_rows(df)
 
 
 class cpblTableElements():
@@ -1421,6 +1467,10 @@ def wrapDFcells(df, xyindices, before='', after=''):
 
 # # # # # # # # # # # # # # # # # # 
 if __name__ == '__main__':
+    
+    test_interleave_se_columns_as_rows()
+    print('All tests succeeded.')
+    
     """ This should do a full demo(s):
     Write an excel file. Then create outputs from it.
     """
