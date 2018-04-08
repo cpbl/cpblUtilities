@@ -557,7 +557,11 @@ def test_interleave_se_columns_as_rows():
        [ 6, 12, 18]])
     diff=np.abs(df2.as_matrix() - expected)
     assert not (df2.as_matrix()-expected).any().any()
+    # Test LaTeX wrappers:
+    df2w = interleave_se_columns_as_rows(df, wrap_se_for_LaTeX=True)
+    assert df2w['b2'].tolist()[1] == r'{\coefse(10)}'
 
+    
     # What about a multiindex?
     df.columns = pd.MultiIndex.from_tuples( zip([2,32,42,62,11,12], ['b','se','b2','se2','b3','se3']),
  names=['foo','bar'])
@@ -569,12 +573,19 @@ def test_interleave_se_columns_as_rows():
 
     
     
-def interleave_se_columns_as_rows(df):
+def interleave_se_columns_as_rows(df, wrap_se_for_LaTeX=False):
     """ Assume every second column of the data frame is a standard error value for the column to its left. Move these values so they are below the point estimates.
+
+    Values can be strings or numbers; they're not formatted/changed by this method.
+
+    wrap_se_for_LaTeX=True:  Assuming values are already formatted, this wraps the strings of the standard errors in '{\coefse(',')}'
     """
     assert len(df.columns) % 2 == 0
     alts = df.iloc[:, 1::2].copy()
     alts.columns = df.columns[0::2]
+    if wrap_se_for_LaTeX:
+        alts = alts.applymap(str).applymap(lambda ss:  r'{\coefse('+ss+')}')
+    
     newdf = df.iloc[:, 0::2].copy()
     orig_columns = newdf.columns
     newdf['__origOrd'] = range(len(newdf))
