@@ -596,6 +596,8 @@ When pairs_of_columns=None, assume every second column of the data frame is a st
 
     """
     assert len(odf.columns) % 2 == 0 or (pairs_of_columns is not None and len(pairs_of_columns) % 2 == 0)
+    if pairs_of_columns is None:
+        pairs_of_columns = odf.columns
     if pairs_of_columns is not None:
         est_cols = pairs_of_columns[0::2]
         se_cols = pairs_of_columns[1::2]
@@ -610,29 +612,29 @@ When pairs_of_columns=None, assume every second column of the data frame is a st
     if wrap_se_for_LaTeX:
         alts = alts.applymap(str).applymap(lambda ss:  r'\coefse{'+ss+'}' if ss else '')
     
-    newdf = df.iloc[:, 0::2].copy()
     newdf = df[[cc for cc in df.columns if cc not in se_cols]].copy() # Template for new values.
     orig_columns = newdf.columns
     newdf['__origOrd'] = range(len(newdf))
     newdf['_sorting'] = 1
     alts['_sorting'] = 2
     alts['__origOrd'] = range(len(newdf))
-    for oc in other_cols:
+    for oc in other_cols: # Doing this before append() avoids conversion of ints to NaNs
         alts.loc[:,oc] =''
     anewdf = newdf.append(alts).sort_values(['__origOrd', '_sorting']) # Pandas bug: append sorts columns
+    #indd = anewdf.index
+    anewdf.index = [x if not ii%2 else '' for ii,x in enumerate(anewdf.index)]
+
+    # Now let's get rid of the row labels on every second line, so they're not duplicated:
+    #for ii in range(1, len(indd), 2):
+    #    indd[ii] = ''
+
 
     # Reimpose column order, to fix bug: https://github.com/pandas-dev/pandas/issues/4588
     # And also drop the sorting columns:
-    """
-    anewdf = anewdf[
-        [cc for cc in anewdf if cc not in ['__origOrd', '_sorting']]]
-    """
     anewdf = anewdf[orig_columns]
-    indd = anewdf.index.tolist()
-    # Now let's get rid of the row labels on every second line, so they're not duplicated:
-    for ii in range(1, len(indd), 2):
-        indd[ii] = ''
-    anewdf.index = indd
+
+
+    #anewdf.index = indd
     return (anewdf)
 
 
