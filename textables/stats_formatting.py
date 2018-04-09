@@ -24,7 +24,6 @@ def test_pvalue_to_latex_significance():
         'p': [.8,.00013984]})
     assert pvalue_to_latex_significance(df['mean'], df.p) == ['3.1', '\\wrapSigOneThousandth{2.4}']
     #assert pvalue_to_latex_significance(2.394832234, .0013984, sigdigs=3) == '\\wrapSigOnePercent{2.39}'
-
     
 def pvalue_to_latex_significance(estimate, pvalue, **vararg):
     """ Given a p-value, and a floating-point estimate, generate a LaTeX string to colour-code the formatted estimate according to its (p-value) significance.
@@ -67,7 +66,6 @@ def test_df_format_estimate_column_with_latex_significance():
     assert (odf.columns==['mean']).all()
     assert odf['mean'].tolist() == ['3.1', '\\wrapSigOneThousandth{2.4}', '\\wrapSigOnePercent{7.7}']
     
-    
 def df_format_estimate_column_with_latex_significance(df,
                                                       est_col,
                                                       p_col=None,
@@ -75,7 +73,7 @@ def df_format_estimate_column_with_latex_significance(df,
                                                       replace_estimate_column=True,
                                                       drop_p_column=True):
     """
-    Either the p-value (p_col) or the standard error (se_col) must be given.
+    Either the p-value (p_col) or the standard error (se_col) [NOT YET IMPLEMENTDE] must be given.
     The column names are passed. They can be strings or tuples (for MultiIndex columns)
     Both columns should be float type.
 
@@ -226,6 +224,9 @@ def latexFormatEstimateWithPvalue(x,
     ###
     #######################################################################################
     """
+
+    DEPRECATED. Use above (pvalue_to_latex_significance or something similar which takes se, not yet written?)
+
     This is supposed to encapsulate the colour/etc formatting for a single value and, optionally, its standard error or t-stat or etc. (take it out of formatpairedrow?)
     It's rather closely connected to cpbl's pystata package and latex_tables package, which produce statistical tables.
 
@@ -283,6 +284,8 @@ def latexFormatEstimateWithPvalue(x,
     ### Why is this in pystata.py? Becuase it needs significanceTable.
     #######################################################################################
     """
+    DEPRECATED. Use above (pvalue_to_latex_significance or something similar which takes se, not yet written?)
+
     This is supposed to encapsulate the colour/etc formatting for a single value and, optionally, its standard error or t-stat or etc. (take it out of formatpairedrow?)
 
     It'll do the chooseSformat as well.
@@ -356,6 +359,9 @@ def formatPairedRow_DataFrame(df, est_col, se_col, pvalue_col=None, prefix=None,
                               drop_original_columns = False,
                               **varargs):
     """
+
+DEPRECATED. 201804. clarify...
+
     The name of this function is not great, but it simply applies formatPairedRow to two columns in a dataframe, returning the df with two new formatted string columns. The formatting is for use in cpblTables.
 
 2017: What about a tool to take every other column and stick them as alternate rows? See interleave_columns_as_rows in cpblutils

@@ -533,11 +533,11 @@ def cpblTable_to_PDF(filename, aftertabulartex=None, caption=None, display=False
 
 
 def interleave_pairs_of_rows(df, list_of_column_pairs):
-    """ list_of_column_pairs is a list of pairs of string or tuple identifiers of columns.
-    New rows are inserted after each existing row in the df.
-    Values from the second in each pair of columns are put underneath the first in each pair.
-    """
+    """"""
 def test_interleave_se_columns_as_rows():
+    """
+    
+    """
     from collections import OrderedDict
     df= pd.DataFrame(OrderedDict([
         ['b', [1,2,3],],
@@ -559,40 +559,68 @@ def test_interleave_se_columns_as_rows():
     assert not (df2.as_matrix()-expected).any().any()
     # Test LaTeX wrappers:
     df2w = interleave_se_columns_as_rows(df, wrap_se_for_LaTeX=True)
-    assert df2w['b2'].tolist()[1] == r'{\coefse(10)}'
+    assert df2w['b2'].tolist()[1] == r'\coefse{10}'
 
     
     # What about a multiindex?
-    df.columns = pd.MultiIndex.from_tuples( zip([2,32,42,62,11,12], ['b','se','b2','se2','b3','se3']),
+    mdf = df.copy()
+    mdf.columns = pd.MultiIndex.from_tuples( zip([2,32,42,62,11,12], ['b','se','b2','se2','b3','se3']),
  names=['foo','bar'])
-    df3 = interleave_se_columns_as_rows(df)
+    df3 = interleave_se_columns_as_rows(mdf)
     assert df3.columns.tolist() == [(2, 'b'), (42, 'b2'), (11, 'b3')]
     assert df3[(42,'b2')].tolist()[1] == 10
     #[73.1234567, 2.8, 82.394832234, 22.00013984, 17.65432, 10.01]
 
+    # And when not all columns have se's?
+    df['foo'] = 5
+    df4= interleave_se_columns_as_rows(df, pairs_of_columns= df.columns[:-1], wrap_se_for_LaTeX=False)
+    assert df4.columns.tolist() == [u'b', u'b2', u'b3', u'foo']
+    assert df4.to_csv(index=False) == 'b,b2,b3,foo\n1,7,13,5\n4,10,16,\n2,8,14,5\n5,11,17,\n3,9,15,5\n6,12,18,\n'
+
+    # And test the latex wrapping?
+    df5= interleave_se_columns_as_rows(df, pairs_of_columns= df.columns[:-1], wrap_se_for_LaTeX=True)
+    assert df5.to_csv(index=False, sep='\t') == 'b\tb2\tb3\tfoo\n1\t7\t13\t5\n\\coefse{4}\t\\coefse{10}\t\\coefse{16}\t\n2\t8\t14\t5\n\\coefse{5}\t\\coefse{11}\t\\coefse{17}\t\n3\t9\t15\t5\n\\coefse{6}\t\\coefse{12}\t\\coefse{18}\t\n'
 
     
-    
-def interleave_se_columns_as_rows(df, wrap_se_for_LaTeX=False):
-    """ Assume every second column of the data frame is a standard error value for the column to its left. Move these values so they are below the point estimates.
+def interleave_se_columns_as_rows(odf, pairs_of_columns=None, wrap_se_for_LaTeX=False):
+    """ 
+When pairs_of_columns=None, assume every second column of the data frame is a standard error value for the estimate (column) to its left. Move these values so they are below the point estimates.
 
-    Values can be strings or numbers; they're not formatted/changed by this method.
+    That is, new rows are inserted after each existing row in the df.
 
-    wrap_se_for_LaTeX=True:  Assuming values are already formatted, this wraps the strings of the standard errors in '{\coefse(',')}'
+    If, instead, pairs_of_columns is specified, as a list of pairs of string or tuple (for MultiIndex columns) identifiers of columns, then only those are treated.
+
+    Values in the DataFrame can be strings or numbers; they're not formatted/changed by this method, unless wrap_se_for_LaTeX = True.
+
+    wrap_se_for_LaTeX=True:  Assuming values are already formatted (ie strings), this wraps the strings of the standard errors in '\coefse{','}'.  No change is made to the point estimate columns.
+
     """
-    assert len(df.columns) % 2 == 0
-    alts = df.iloc[:, 1::2].copy()
-    alts.columns = df.columns[0::2]
+    assert len(odf.columns) % 2 == 0 or (pairs_of_columns is not None and len(pairs_of_columns) % 2 == 0)
+    if pairs_of_columns is not None:
+        est_cols = pairs_of_columns[0::2]
+        se_cols = pairs_of_columns[1::2]
+        other_cols = [cc for cc in odf.columns if cc not in pairs_of_columns]
+    else:
+        est_cols = odf.columns[0::2]
+        se_cols = odf.columns[1::2]
+        other_cols= []
+    df=odf.copy()
+    alts = df.loc[:, se_cols].copy()
+    alts.columns = est_cols
     if wrap_se_for_LaTeX:
-        alts = alts.applymap(str).applymap(lambda ss:  r'{\coefse('+ss+')}')
+        alts = alts.applymap(str).applymap(lambda ss:  r'\coefse{'+ss+'}' if ss else '')
     
     newdf = df.iloc[:, 0::2].copy()
+    newdf = df[[cc for cc in df.columns if cc not in se_cols]].copy() # Template for new values.
     orig_columns = newdf.columns
     newdf['__origOrd'] = range(len(newdf))
     newdf['_sorting'] = 1
     alts['_sorting'] = 2
     alts['__origOrd'] = range(len(newdf))
+    for oc in other_cols:
+        alts.loc[:,oc] =''
     anewdf = newdf.append(alts).sort_values(['__origOrd', '_sorting']) # Pandas bug: append sorts columns
+
     # Reimpose column order, to fix bug: https://github.com/pandas-dev/pandas/issues/4588
     # And also drop the sorting columns:
     """
@@ -1310,7 +1338,7 @@ def dataframeWithLaTeXToTable(
         pdfcrop=False):  #   ncols=None,nrows=None,, alignment="c"):
     """ Note that pandas already has a latex output function built in. If it deals with multiindices, etc, it may be better to edit it rather than to start over. [See issue #5 for columns]. However, my cpblTableC function expects it to be broken up into cells still.
 
-This function takes a dataframe whos entries have already been converted to LaTeX strings (where needed)!.
+This function takes a dataframe whose entries have already been converted to LaTeX strings (where needed).
 So not much is left to do before passing to cpblTableStyc.
 
 boldHeaders requires the array package. It inserts a command \rowstyle before the header. It requires definition of funny column format types, and it requires a special column format.
@@ -1330,6 +1358,7 @@ hlines: if True, put horizontal lines on every line.
     # Pick the basic format codes to start with (ie ones which don't take arguments), e.g. lccccc....
     if formatString is not None: # This would overwrite cformat
         assert formatCodes is None and columnWidths is None
+        assert not boldFirstColumn  # Alternative is not written yet
     if formatCodes is None:
         formatCodes = 'lc'
     cformat = list((formatCodes + 1000 * formatCodes[-1])[:(df.shape[1])])
@@ -1365,7 +1394,7 @@ hlines: if True, put horizontal lines on every line.
                     df.columns.values[ii][icr]
                     for ii in range(len(df.columns.values))
                 ],
-                fmt=cformat)
+                fmt='|c|')#cformat)
             columnheaders += [(boldHeaders * '\\rowstyle{\\bfseries}%\n') +
                               ' & '.join(onerow) + '\\\\ \n']
         if 0: print columnheaders
