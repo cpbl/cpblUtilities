@@ -100,8 +100,9 @@ A standalone_table means a PDF/image of a tabular environment, not in a PDF page
 
 Caution:  This must not be confused with pystata's texheader (It should be rewritten to use this.
     """
-    if standalone_table: margins='none'
-    if margins in ['None','none']:
+    if standalone_table:
+        mmm = '' #margins='none'
+    elif margins in ['None','none']:
         mmm=r'\usepackage[left=0cm,top=0cm,right=.5cm,nohead,nofoot]{geometry}'+'\n'
     elif margins in ['default',None]:
         mmm=''
@@ -132,7 +133,7 @@ Caution:  This must not be confused with pystata's texheader (It should be rewri
 \renewcommand{\ctDraftComment}[1]{{\sc\scriptsize #1}} % Show draft-mode comments
 """
     return({False:r' \documentclass{article} ',
-            True: r'\documentclass[preview]{standalone} '}[standalone_table] + '\n'+settings)
+            True: r'\documentclass{standalone} '}[standalone_table] + '\n'+settings)
 
     """ This is also for pystata . Should not be here... Need to rewrite it!
 
@@ -650,6 +651,7 @@ When pairs_of_columns=None, assume every second column of the data frame is a st
 
 def interleave_and_format_paired_columns_as_rows(odf,
                                                  method='standard_errors'):
+    return DEPRECATED__USE_FUNC_ABOVE
     """ Assume every second column of the data frame is a standard error value for the column to its left. 
     
     This makes use of interleave_se_columns_as_rows, but in addition uses a formatter to format the estimates.  201804: I want to do that a bit differently, using new tools, so this function needs update. Just use the other (lower level) one, above, for now.
