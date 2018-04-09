@@ -539,14 +539,31 @@ def test_interleave_se_columns_as_rows():
     
     """
     from collections import OrderedDict
-    df= pd.DataFrame(OrderedDict([
+    df0= pd.DataFrame(OrderedDict([
+        ['z', [10,20,30],],
         ['b', [1,2,3],],
          ['se', [4,5,6],],
+        ['zz', [10,20,30],],
         ['b2', [7,8,9],],
+        ['zaz', [10,20,30],],
          ['se2', [10,11,12],],
         ['b3', [13,14,15],],
         ['se3', [16,17,18]],
+        ['foo', [5,5,5]],
     ]))
+    mdf0 = df0.copy()
+
+    mdf0.columns = pd.MultiIndex.from_tuples(zip(df0.columns.tolist(),
+                                                 ['B'+cc for cc in df0.columns.tolist()]),
+                                                 names=['foo','bar'])
+    paircols = [cc for cc in df0.columns if cc[0] in ['b','s']]
+    ipaircols = [ii for ii,cc in enumerate(df0.columns) if cc[0] in ['b','s']]
+    mpaircols = mdf0.columns[ipaircols]
+
+    df = df0[paircols]
+    mdf = mdf0[paircols]
+
+    
     df2 = interleave_se_columns_as_rows(df)
     assert  df2.columns.tolist()==['b', 'b2', 'b3']
     expected = np.array([[ 1,  7, 13],
@@ -563,23 +580,23 @@ def test_interleave_se_columns_as_rows():
 
     
     # What about a multiindex?
-    mdf = df.copy()
-    mdf.columns = pd.MultiIndex.from_tuples( zip([2,32,42,62,11,12], ['b','se','b2','se2','b3','se3']),
- names=['foo','bar'])
     df3 = interleave_se_columns_as_rows(mdf)
-    assert df3.columns.tolist() == [(2, 'b'), (42, 'b2'), (11, 'b3')]
-    assert df3[(42,'b2')].tolist()[1] == 10
-    #[73.1234567, 2.8, 82.394832234, 22.00013984, 17.65432, 10.01]
+    assert df3.columns.tolist() == [('b', 'Bb'), ('b2', 'Bb2'), ('b3', 'Bb3')]
+    assert df3.to_csv(index=False, sep='\t') == 'b\tb2\tb3\nBb\tBb2\tBb3\n1\t7\t13\n4\t10\t16\n2\t8\t14\n5\t11\t17\n3\t9\t15\n6\t12\t18\n'
+
 
     # And when not all columns have se's?
-    df['foo'] = 5
-    df4= interleave_se_columns_as_rows(df, pairs_of_columns= df.columns[:-1], wrap_se_for_LaTeX=False)
-    assert df4.columns.tolist() == [u'b', u'b2', u'b3', u'foo']
-    assert df4.to_csv(index=False) == 'b,b2,b3,foo\n1,7,13,5\n4,10,16,\n2,8,14,5\n5,11,17,\n3,9,15,5\n6,12,18,\n'
+    df4= interleave_se_columns_as_rows(df0, pairs_of_columns= paircols, wrap_se_for_LaTeX=False)
+    assert  df4.to_csv(index=False, sep='\t') == 'z\tb\tzz\tb2\tzaz\tb3\tfoo\n10\t1\t10\t7\t10\t13\t5\n\t4\t\t10\t\t16\t\n20\t2\t20\t8\t20\t14\t5\n\t5\t\t11\t\t17\t\n30\t3\t30\t9\t30\t15\t5\n\t6\t\t12\t\t18\t\n'
+
+    # Same, but with multiindex:
+    df6 = interleave_se_columns_as_rows(mdf0, pairs_of_columns= mpaircols)
+    assert df6.to_csv(index=False, sep='\t') == 'z\tb\tzz\tb2\tzaz\tb3\tfoo\nBz\tBb\tBzz\tBb2\tBzaz\tBb3\tBfoo\n10\t1\t10\t7\t10\t13\t5\n\t4\t\t10\t\t16\t\n20\t2\t20\t8\t20\t14\t5\n\t5\t\t11\t\t17\t\n30\t3\t30\t9\t30\t15\t5\n\t6\t\t12\t\t18\t\n'
 
     # And test the latex wrapping?
-    df5= interleave_se_columns_as_rows(df, pairs_of_columns= df.columns[:-1], wrap_se_for_LaTeX=True)
-    assert df5.to_csv(index=False, sep='\t') == 'b\tb2\tb3\tfoo\n1\t7\t13\t5\n\\coefse{4}\t\\coefse{10}\t\\coefse{16}\t\n2\t8\t14\t5\n\\coefse{5}\t\\coefse{11}\t\\coefse{17}\t\n3\t9\t15\t5\n\\coefse{6}\t\\coefse{12}\t\\coefse{18}\t\n'
+    df5= interleave_se_columns_as_rows(mdf0, pairs_of_columns= mpaircols, wrap_se_for_LaTeX=True)
+    assert df5.to_csv(index=False, sep='\t') == 'z\tb\tzz\tb2\tzaz\tb3\tfoo\nBz\tBb\tBzz\tBb2\tBzaz\tBb3\tBfoo\n10\t1\t10\t7\t10\t13\t5\n\t\\coefse{4}\t\t\\coefse{10}\t\t\\coefse{16}\t\n20\t2\t20\t8\t20\t14\t5\n\t\\coefse{5}\t\t\\coefse{11}\t\t\\coefse{17}\t\n30\t3\t30\t9\t30\t15\t5\n\t\\coefse{6}\t\t\\coefse{12}\t\t\\coefse{18}\t\n'
+
 
     
 def interleave_se_columns_as_rows(odf, pairs_of_columns=None, wrap_se_for_LaTeX=False):
@@ -621,20 +638,13 @@ When pairs_of_columns=None, assume every second column of the data frame is a st
     for oc in other_cols: # Doing this before append() avoids conversion of ints to NaNs
         alts.loc[:,oc] =''
     anewdf = newdf.append(alts).sort_values(['__origOrd', '_sorting']) # Pandas bug: append sorts columns
-    #indd = anewdf.index
+    # Get rid of the row labels on every second line, so they're not duplicated (preserves MultiIndex row index)
     anewdf.index = [x if not ii%2 else '' for ii,x in enumerate(anewdf.index)]
-
-    # Now let's get rid of the row labels on every second line, so they're not duplicated:
-    #for ii in range(1, len(indd), 2):
-    #    indd[ii] = ''
-
 
     # Reimpose column order, to fix bug: https://github.com/pandas-dev/pandas/issues/4588
     # And also drop the sorting columns:
     anewdf = anewdf[orig_columns]
 
-
-    #anewdf.index = indd
     return (anewdf)
 
 
