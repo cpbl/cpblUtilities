@@ -551,12 +551,13 @@
 
     \newcommand{\usetinytablefont}{\scriptsize}    
 
-    \newcommand{\cpblColourLegend}{Significance:~\begin{tabular}{cccc}
+    \newcommand{\cpblColourLegend}{{\footnotesize \begin{tabular}{lcccc}
+Significance: &
         \wrapSigOneThousandth{0.1\%}~~~~&
         \wrapSigOnePercent{1\%}~~~~&
-\wrapSigFivePercent{5\%}~~~~&
-\wrapSigTenPercent{10\%}
-\\ \end{tabular} }
+        \wrapSigFivePercent{5\%}~~~~&
+        \wrapSigTenPercent{10\%}
+        \\ \end{tabular} }}
 \newcommand{\cpblThreeLevelColourLegend}{Significance:~\begin{tabular}{ccc}
         \wrapSigOnePercent{1\%}~~~~&
 \wrapSigFivePercent{5\%}~~~~&

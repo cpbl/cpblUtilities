@@ -82,7 +82,8 @@ def texheader_without_CPBLtables():
     \newcommand{\wrapSigOneThousandth}{\colourswrapSigOneThousandth}
 
     \newcommand{\YesMark}{{\sc y}}%\textcolor{blue}$\checkmark$}}
-    \newcommand{\cpblColourLegend}{{\footnotesize Significance:~\begin{tabular}{cccc}
+    \newcommand{\cpblColourLegend}{{\footnotesize \begin{tabular}{lcccc}
+Significance:~ &
         \wrapSigOneThousandth{0.1\%}~~~~&
         \wrapSigOnePercent{1\%}~~~~&
         \wrapSigFivePercent{5\%}~~~~&
@@ -508,7 +509,7 @@ Implementaiton comments:  pandas has a to_latex(), and it offers to bold the fir
 
 def cpblTable_to_PDF(filename, aftertabulartex=None, caption=None, display=False, pdfcrop=False, transposed=False):
     """ caption not implemented yet
-    aftertabulartex: footnotes, etc to go below table
+    aftertabulartex: footnotes, legend, etc to go below table
 
     transposed = True will use the transposed version instead of the first one, and it will append "-transposed" to the file name
     """
@@ -519,14 +520,19 @@ def cpblTable_to_PDF(filename, aftertabulartex=None, caption=None, display=False
         fout.write(texheader_for_CPBLtables(margins = 'none',
                                         standalone_table = True,
                                         allow_underscore = True,)+r"""
+\usepackage{threeparttable}
             \begin{document}
             \input{"""+ filename+r"""}
+"""+ (aftertabulartex is  not None) * (r"""   \begin{threeparttable}""")+r"""
             \ctStartTabular"""+trans+r"""
             \ctFirstHeader"""+trans+r"""
             \ctBody"""+trans+r""" \hline
-            \end{tabular}
-            """+aftertabulartex+r"""
-            \end{document}
+            \end{tabular}  """+ (aftertabulartex is  not None) * (r"""
+            \begin{tablenotes}
+            \item   """+aftertabulartex+r"""
+            \end{tablenotes}
+            \end{threeparttable}""")+ r"""
+   \end{document}
             """)
     doSystemLatex(pathstem+'-standalone'+(transposed*'-transposed')+'.tex', display=display)
     if pdfcrop:
@@ -1367,6 +1373,7 @@ formatString is an alternative. It specifies the final complete formatcode strin
 
 hlines: if True, put horizontal lines on every line.
 
+footer: this is footnotes, legend, etc to put right below the table (elsewhere called aftertabulartex)
     """
     #cformat=list('l'+'c'*df.shape[1])
     # Pick the basic format codes to start with (ie ones which don't take arguments), e.g. lccccc....
@@ -1449,7 +1456,7 @@ hlines: if True, put horizontal lines on every line.
 }
 """)
     # Also generate a PDF of the table?
-    cpblTable_to_PDF(outfile, pdfcrop=pdfcrop)
+    cpblTable_to_PDF(outfile, pdfcrop=pdfcrop, aftertabulartex=footer)
     #print(callerTex.replace('PUT-TABLETEX-FILEPATH-HERE',outfile))
     return (callerTex.replace('PUT-TABLETEX-FILEPATH-HERE', outfile))
 
