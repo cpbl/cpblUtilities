@@ -122,15 +122,89 @@ N.B.: If I want to use the unbiased version of variance, will need to specify wh
                          varPrefix+'std_'+mv: np.sqrt(variance)             })
     if weightVar == '___tmpweight':
         df = df[[cc for cc in df.columns if not cc==weightVar]]
+
     if as_df:
         odf= pd.concat(outs.values())
         odf.index.rename('statname', inplace=True)
+        odf.columns.rename('stat', inplace=True)
+        # Ensure easy ordering columns by turning these into ordered category:
+        odf.columns = pd.Categorical(odf.columns, ['min', 'max', 'mean','se_mean', u'std', 'N', 'delta', 'se_delta', 'p'       ])
         return odf
     else:
         return(pd.Series(outs)) # Return this as a Series; this avoids adding a new index in groupby().apply
 
 def test_weightedMeansByGroup():
+    """
+    Consider 
+    """
+    N=100
+    groupLevels= 3
+    levelnames = dict(
+    l0 = ['A3','B1','C2'],
+    l1 = ['I2','J3','K1'],
+    l2 = ['x1','y3','z2'],
+        )
+
+    yvars = ['foo','bar','bas']
+    
+    df = pd.DataFrame()
+    for yvar in yvars:
+        df[yvar] = np.random.random(N)
+    for lev in range(groupLevels):
+        lname = 'l'+str(lev)
+        df[lname] = np.random.choice(levelnames[lname], N)
+        df[lname] = pd.Categorical(df[lname], sorted(levelnames[lname], key=lambda ss: ss[1]))
+
+    df['weight'] =1
+    wm_ = weightedMeansByGroup(df, yvars, ['l0','l1','l2'])
+    wmg = weightedMeansByGroup(df, yvars, ['l0','l1','l2'], groups_to_columns= True)
+    #wmg = weightedMeansByGroup(df, yvars, ['l0','l1'], groups_to_columns= True)
+    dfs = wmg.stack(level=[0,1,2])
+
+
+
+
+    """
+
+    df['District'] =  pd.Categorical(df.District, ['Overall']+ Districts)
+    df['Village'] = pd.Categorical(df.Village, ['Overall',]+ vils)
+    df.set_index(['District','statname','Village'], inplace=True)
+    df.columns = pd.Categorical(df.columns, statcols[0])
+    df.sort_index(axis=1, inplace=True)
+    df.columns.name= 'stat'
+    df3 = df.unstack(level=['District','Village']).reorder_levels(['District','Village','stat'], axis=1).sort_index(axis=1).dropna(axis=1, how='all')
+"""
+    
+    #statcols= ['min', 'max', 'mean','se_mean', u'std', 'N', 'delta', 'se_delta', 'p'       ],
+    
+    #dfs.columns =  pd.Categorical(dfs.columns, statcols[0])
+    dfs.sort_index(level=0, axis=1)
+
+    foiu
+
     import pandas.util.testing as tm; tm.N = 3
+    from collections import OrderedDict
+    df0= pd.DataFrame(OrderedDict([
+        ['z', [10,20,30],],
+        ['b', [1,2,3],],
+         ['se', [4,5,6],],
+        ['zz', [10,20,30],],
+        ['b2', [7,8,9],],
+        ['zaz', [10,20,30],],
+         ['se2', [10,11,12],],
+        ['b3', [13,14,15],],
+        ['se3', [16,17,18]],
+        ['foo', [5,5,5]],
+    ]))
+    mdf0 = df0.copy()
+
+    mdf0.columns = pd.MultiIndex.from_tuples(zip(df0.columns.tolist(),
+                                                 ['B'+cc for cc in df0.columns.tolist()]),
+                                                 names=['foo','bar'])
+    paircols = [cc for cc in df0.columns if cc[0] in ['b','s']]
+    ipaircols = [ii for ii,cc in enumerate(df0.columns) if cc[0] in ['b','s']]
+    mpaircols = mdf0.columns[ipaircols]
+
     # Not written yet
     fofofo
     weightedMeansByGroup(pandasDF,meansOf=None,byGroup=None,weightVar='weight',varPrefix='',)
@@ -681,6 +755,9 @@ def weightedSTD_pandas(df,varNames,weightVar='weight'):
     
 
 
+if __name__ == '__main__':
+    test_weightedMeansByGroup()
+    print('All tests succeeded.')
 
 
 
