@@ -62,18 +62,31 @@ To do:
 
 
     import statsmodels.formula.api as smf
-    import statsmodels.regression.linear_model as olsm
+    import statsmodels.regression.linear_model as lm
     import statsmodels.api as sm
     # WTH? which of these three (one above, two below) are we to use?
     import pandas.stats.api as pds
     ###df = pd.DataFrame({"A": [10,20,30,40,50], "B": [20, 30, 10, 40, 50], "C": [32, 234, 23, 23, 42523]})
     weights = 1 if aweights is None  else df[aweights] # Careful!! Do I want 1/weights or weights?!
-    res = pds.ols(y=df[yv], x=df[[xv]], weights=weights)
-    beta,se= res.beta[xv], res.std_err[xv]
+    if 0: res = pds.ols(y=df[yv], x=df[[xv]], weights=weights)
+    y,x = df[yv].values, df[xv].values
+    x= lm.add_constant(x)
+    olsm = lm.OLS(y, x, weights=weights)
+    results = olsm.fit()
+    #import statsmodels.regression.linear_model as olsm
+    b_intercept, b_beta= results.params
+    t_intercept, t_beta = results.tvalues
+    p_intercept, p_beta = results.pvalues
+    se_intercept, se_beta = results.HC2_se
+    
+    beta, se = b_beta, se_beta
+    yhat = results.predict()
+    
+    #beta,se= res.beta[xv], res.std_err[xv]
     from pylab import plot
     if label is not None:
-        label=label%{'beta':beta,'2se':1.96*se, 'r2':res.r2}
-    ax.plot(df[xv],res.y_predict,label=label,**kwargs)
+        label=label%{'beta':beta,'2se':1.96*se, 'r2':results.rsquared}
+    ax.plot(df[xv], yhat, label=label,**kwargs)
 
     if 1:
         #import statsmodels.api as sm
@@ -83,14 +96,14 @@ To do:
         #fitted = model.fit()
         x_pred = np.linspace(df[xv].min(), df[xv].max(), 50)
         #y_pred = fitted.predict(x_pred2)
-        y_pred=res.beta['intercept'] + x_pred*beta
+        y_pred= b_intercept + x_pred* b_beta
         #ax.plot(x_pred, y_pred, '-', color='darkorchid', linewidth=2)
         mean_x = df[xv].mean()
         n = len(df)
-        dof = n - res.df_model - 1
+        dof = n - results.df_model - 1
         from scipy import stats
         t = stats.t.ppf(1-0.025, df=dof)
-        s_err = np.sum(np.power(res.resid, 2))
+        s_err = np.sum(np.power(results.resid, 2))
         conf = t * np.sqrt((s_err/(n-2))*(1.0/n + (np.power((x_pred-mean_x),2) / 
             ((np.sum(np.power(x_pred,2))) - n*(np.power(mean_x,2))))))
         upper = y_pred + abs(conf)
@@ -2008,7 +2021,7 @@ def addSignatureToPlot():
 
 
 
-def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels=None,nse=1,ax=None,fig=None,clearfig=False,marker='o',labelfontsize=None):#,xlog=False,ylog=False,): #ids=None,xlab=None,ylab=None,fname=None,,xlog=False,byRegion=None,labelFunction=None,labelFunctionArgs=None,fitEachRegion=False,regionOrder=None,legendMode=None,markerMode=None,subsetIndices=None,forceUpdate=True,labels=None,nearlyTight=True,color=None): #markersize=10         
+def cpblScatter(df, x, y, z=None, markersize=20, cmap=None, vmin=None, vmax=None, labels=None, nse=1, ax=None, fig=None, clearfig=False, marker='o', labelfontsize=None):#, xlog=False, ylog=False, ): #ids=None, xlab=None, ylab=None, fname=None, , xlog=False, byRegion=None, labelFunction=None, labelFunctionArgs=None, fitEachRegion=False, regionOrder=None, legendMode=None, markerMode=None, subsetIndices=None, forceUpdate=True, labels=None, nearlyTight=True, color=None): #markersize=10         
     """
     This has been rewritten so that it demands Pandas Dataframe data. However, it really needs to integrate properly with cpblUtilities.color routines; right now I don't think the colour scale can be trusted.
 
