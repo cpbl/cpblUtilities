@@ -739,7 +739,18 @@ def orderListByRule(alist,orderRule,listKeys=None,dropIfKey=None):
     #######################################################################################
     """ Reorder alist according to the order specified in orderRule. The orderRule lists the order to be imposed on a set of keys. The keys are alist, if listkeys==None, or listkeys otherwise.  That is, the length of listkeys must be the same as of alist. That is, listkeys are the tags on alist which determine the ordering.  orderRule is a list of those same keys and maybe more which specifies the desired ordering.
     There is an optional dropIfKey which lists keys of items that should be dropped outright.
+
+A fix to deal with repeated entries in orderRule may mean that a better approach to this whole method is possible. 
+
     """
+    # Remove duplicates in rule
+    def f7(seq):
+        seen = set()
+        seen_add = seen.add
+        return [x for x in seq if not (x in seen or seen_add(x))]
+    orderRule = f7(orderRule)
+
+    # Assign indices to do ordering
     maxOR = len(orderRule)
     orDict = dict(zip(orderRule, range(maxOR)))
     alDict = dict(zip(range(maxOR, maxOR+len(alist)),
@@ -750,6 +761,7 @@ def orderListByRule(alist,orderRule,listKeys=None,dropIfKey=None):
     return outL
 
 def test_orderListByRule():
+
     L1 = [1,2,3,3,5]
     L2 = [3,4,5,10]
     assert orderListByRule(L1, L2) == [3, 3, 5, 1, 2]
@@ -758,8 +770,13 @@ def test_orderListByRule():
     assert orderListByRule(Lv, L2, listKeys=L1) == ['c', 'c', 'e', 'a', 'b']
     assert orderListByRule(Lv, L2, listKeys=L1, dropIfKey=[2,3]) == ['e','a']
 
+    # Test duplicates:
+    L1 = [1,2,3,3,5]
+    L2 = [3,4,5,10,3,4,8]
+    assert orderListByRule(L1, L2) == [3, 3, 5, 1, 2]
 
 
+    
 ##########################################################################
 ##########################################################################
 #
