@@ -4,6 +4,8 @@ __author__ = 'cpbl'
 
 import numpy as np
 import pandas as pd
+from copy import deepcopy
+fNaN = np.nan
 #from cpblUtilities.textables  import chooseSFormat
 
 # The reason I wrote textables originally was to format tables of statistical results.

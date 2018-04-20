@@ -39,7 +39,9 @@ Solutions for bounding box / whitespace in output figures:
 
 
 #####################################################################################
-def dfOverplotLinFit(df,xv,yv,aweights=None, label=None,ax=None,ci=True,**kwargs): # This is for a bivariate relationship just now.
+def dfOverplotLinFit(df,xv,yv,aweights=None, label=None,ax=None,ci=True,
+                     fill_color = '#888888', fill_alpha=0.4,
+                     **kwargs): # This is for a bivariate relationship just now.
     """ 2015June: overplot a linear fit (no se shown now) and return b, se for bivariate DataFrame
      You can pass a label string which refers to some of the fit parameters: ['beta','2se','r2'] as floats. For example:
            label=' OLS '+r' ($\beta$=%(beta).2g$\pm$%(2se).2g)'
@@ -51,6 +53,13 @@ To do:
    - show the envelope of cI
    - allow for confidence weights for each datapoint
    - or allow for sampling weights for each datapoint
+
+
+Example:
+    ps =   chooseSFormat(pvalue+1e-5, lowCutoff=.0001)
+    dfOverplotLinFit(df, xv, yv, fill_alpha=.05, ax=ax, label='$p$'+'='*('<' not in ps)+ps)
+    plt.legend(title='this one')
+
 
     """
     if ax is None:
@@ -109,7 +118,7 @@ To do:
         upper = y_pred + abs(conf)
         lower = y_pred - abs(conf)
         if ci in [True]:
-            ax.fill_between(x_pred, lower, upper, color='#888888', alpha=0.4)
+            ax.fill_between(x_pred, lower, upper, facecolor= fill_color, alpha= fill_alpha, edgecolor = 'None') 
     if 0: # Last part: show 95% confidence interval of predicted values (as opposed to regression line)
         x_pred2 = sm.add_constant(x_pred)
         from statsmodels.sandbox.regression.predstd import wls_prediction_std

@@ -64,6 +64,7 @@ def correlation_table(df, texfile=None):
 def weightedMeanSE_pandas(df,varNames=None ,weightVar='weight', uniform_sample=None, aggstats=None, as_df=False,
                           sem_name = 'se_mean',
                           statname='statname', # default name for index column
+                          order_stats = False,
 ):
     """
     uniform_sample=True drops NaNs for all variables at once (ie keeps only rows with finite values for all columns). Otherwise, NaNs are dropped column-by-columnn.
@@ -71,6 +72,8 @@ def weightedMeanSE_pandas(df,varNames=None ,weightVar='weight', uniform_sample=N
     varNames: columns to aggregate
 
     aggstats: by default, aggstats is ['mean'] and produces columns with the original name and with a 'se_' suffixe for the standard error of the mean.  Other stats not yet implemented
+
+    order_stats = True: This imposes a nice order to the stats by typing them to Categorical. But if you do that, a reset_index() would cause a conflict.
 
     An alternative output format, in which a multiindex is used instead of prefixes, can be had with...
 
@@ -128,7 +131,8 @@ N.B.: If I want to use the unbiased version of variance, will need to specify wh
         odf.index.rename('statname', inplace=True)
         odf.columns.rename('stat', inplace=True)
         # Ensure easy ordering columns by turning these into ordered category:
-        odf.columns = pd.Categorical(odf.columns, ['min', 'max', 'mean','se_mean', u'std', 'N', 'delta', 'se_delta', 'p'       ])
+        if order_stats:
+            odf.columns = pd.Categorical(odf.columns, ['min', 'max', 'mean','se_mean', u'std', 'N', 'delta', 'se_delta', 'p'       ])
         return odf
     else:
         return(pd.Series(outs)) # Return this as a Series; this avoids adding a new index in groupby().apply
@@ -253,6 +257,7 @@ My related functions: 2013July I need a weighted moment by group in recodeGallup
     if groups_to_columns or wide:
         newdf = grouped.apply(weightedMeanSE_pandas, meansOf, weightVar,  None, None, True) #.unstack(level=[0, 1])
         if wide:
+            newdf.columns = newdf.columns.astype(str)
             newdf.reset_index(inplace=True)
         if groups_to_columns:
             def rotate(l):
