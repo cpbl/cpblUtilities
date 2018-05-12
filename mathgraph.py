@@ -640,12 +640,12 @@ wh_inches: width and height of output in inches[sic!]
                    ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,png=png,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,rv=False,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,facecolor=facecolor)#facecolor)
         if facecolor is None:
             facecolor='k'
-        savefigall(fn+'-rv',transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,png=png,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,rv=True,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,facecolor=facecolor)
+        savefigall(fn+'-rv', transparent=transparent, ifany=ifany, fig=fig, skipIfExists=skipIfExists, pauseForMissing=pauseForMissing, png=png, jpeg=jpeg, jpeghi=jpeghi, svg=svg, pdf=pdf, rv=True, FitCanvasToDrawing=FitCanvasToDrawing, eps=eps, tikz=tikz, facecolor=facecolor)
         return(root+tail)
 
     if not root:
         try:
-            from .cpblUtilities_config import defaults, paths
+            from .cpblUtilities_config import defaults,  paths
             root=paths['graphics']#'/home/cpbl/rdc/workingData/graphics/'#defaults['workingPath']+'graphics/'#'graphicsPath'
         except:
             root='./'#/home/cpbl/rdc/graphicsOuttest/graphics/'#defaults['workingPath']+'graphics/'#'graphicsPath'
@@ -662,8 +662,8 @@ wh_inches: width and height of output in inches[sic!]
 
     if ifany:
         if not plt.findobj(match=ifany):
-            print '   savefigall: Empty plot (no %s), so not saving %s.'%(str(ifany),root+tail)
-            plt.savefig(root+tail+'.png.FAILED',format='png',facecolor=facecolor, bbox_inches=bbox_inches, pad_inches=pad_inches)
+            print '   savefigall: Empty plot (no %s),  so not saving %s.'%(str(ifany), root+tail)
+            plt.savefig(root+tail+'.png.FAILED', format='png', facecolor=facecolor, bbox_inches=bbox_inches, pad_inches=pad_inches)
             if pauseForMissing:
                 plt.show()
                 from cpblUtilities import cwarning
@@ -5737,7 +5737,7 @@ def test_bug3_for_multipage_plot_iterator():
     plt.draw()
     plt.savefig('tmph.pdf', )
 
-def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inches = None):
+def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inches = None, transparent = True):
     """
     If you want to have a series of subplots that goes more than one page,  use this to generate figs and axes handles.
     You specify the list of data items which you will use to plot in each axis, how many (rows and columns) to plot per page, and the filename stem for the pages (which will ultimately be a single multi-page PDF).
@@ -5748,6 +5748,8 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
     "items" data structure.
 
     items could be an iterator itself, but that is not implemented yet. It must be a list at the moment.
+
+    transparent [True]:  Set this to False if you use  ax.set_facecolor in your loop; this will avoid using transparency in the saved result.
 
     To do:
      - check that this also works nicely for ncols==nrows==1
@@ -5810,7 +5812,7 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
             axs[idelAx].set_visible(False)
         pagefilename = filename+'page%02d'%ipage
         pagefiles += [pagefilename+'.pdf']
-        savefigall(pagefilename,  wh_inches=wh_inches, rv=False, png = False)
+        savefigall(pagefilename,  wh_inches=wh_inches, rv=False, png = False, transparent=transparent)
     mergePDFs(pagefiles, filename+'ALL.pdf')
     #for ff in pagefiles: os.remove(ff)
     yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(actualRows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == esplot-ssplot , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
