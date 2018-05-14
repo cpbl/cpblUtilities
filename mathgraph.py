@@ -75,8 +75,53 @@ Example:
     import statsmodels.api as sm
     # WTH? which of these three (one above, two below) are we to use?
     import pandas.stats.api as pds
+
+    """import statsmodels.formula.api as sm
+    >>> df = pd.DataFrame({"A": [10,20,30,40,50], "B": [20, 30, 10, 40, 50], "C": [32, 234, 23, 23, 42523]})
+    >>> result = sm.ols(formula="A ~ B + C", data=df).fit()
+    """
+    
     ###df = pd.DataFrame({"A": [10,20,30,40,50], "B": [20, 30, 10, 40, 50], "C": [32, 234, 23, 23, 42523]})
     weights = 1 if aweights is None  else df[aweights] # Careful!! Do I want 1/weights or weights?!
+    if 0: # I literally fixed this twice, once on laptop, and once on server. Booh. Here is the server version: 2018-05
+        newdf = df[[xv, yv]+ [aweights]*(aweights is not None)].dropna()
+        Y, X = newdf[yv].astype(float).values, newdf[xv].astype(float).values
+        X = olsm.add_constant(X)
+        res = olsm.OLS(Y, X).fit()
+        print res.summary()
+        b0, beta,se, yhat = res.params[0], res.params[1],  res.bse[0], res.predict()
+        mean_x = newdf[xv].mean()
+        n = len(newdf)
+        dof = n - res.df_model - 1
+        #res = olsm.OLS( df[[xv]], df[yv], weights=weights).fit() # pds.ols(y=df[yv], x=df[[xv]], weights=weights)
+        #beta,se= res.beta[xv], res.std_err[xv]
+
+        from pylab import plot
+        if label is not None:
+            label=label%{'beta':beta,'2se':1.96*se, 'r2':res.r2}
+        #ax.plot(df[xv],res.y_predict,label=label,**kwargs)
+        ax.plot(newdf[xv], yhat,label=label,**kwargs)
+
+
+        #import statsmodels.api as sm
+        #x = sm.add_constant(x) # constant intercept term
+        # Model: y ~ x + c
+        #model = sm.OLS(y, x)
+        #fitted = model.fit()
+        x_pred = np.linspace(newdf[xv].min(), newdf[xv].max(), 50)
+        #y_pred = fitted.predict(x_pred2)
+        y_pred= b0 + x_pred*beta
+        #ax.plot(x_pred, y_pred, '-', color='darkorchid', linewidth=2)
+        from scipy import stats
+        t = stats.t.ppf(1-0.025, df=dof)
+        s_err = np.sum(np.power(res.resid, 2))
+        conf = t * np.sqrt((s_err/(n-2))*(1.0/n + (np.power((x_pred-mean_x),2) / 
+            ((np.sum(np.power(x_pred,2))) - n*(np.power(mean_x,2))))))
+        upper = y_pred + abs(conf)
+        lower = y_pred - abs(conf)
+        if ci in [True]:
+            ax.fill_between(x_pred, lower, upper, color='#888888', alpha=0.4)
+    # And here is the laptop version 2018-05
     if 0: res = pds.ols(y=df[yv], x=df[[xv]], weights=weights)
     y,x = df[yv].values, df[xv].values
     x= lm.add_constant(x)
@@ -119,6 +164,7 @@ Example:
         lower = y_pred - abs(conf)
         if ci in [True]:
             ax.fill_between(x_pred, lower, upper, facecolor= fill_color, alpha= fill_alpha, edgecolor = 'None') 
+
     if 0: # Last part: show 95% confidence interval of predicted values (as opposed to regression line)
         x_pred2 = sm.add_constant(x_pred)
         from statsmodels.sandbox.regression.predstd import wls_prediction_std
