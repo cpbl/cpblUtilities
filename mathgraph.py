@@ -55,10 +55,15 @@ To do:
    - or allow for sampling weights for each datapoint
 
 
-Example:
+Example: (strange example; this is the case when I've already done the OLS elsewhere and know the pvalue)
     ps =   chooseSFormat(pvalue+1e-5, lowCutoff=.0001)
     dfOverplotLinFit(df, xv, yv, fill_alpha=.05, ax=ax, label='$p$'+'='*('<' not in ps)+ps)
     plt.legend(title='this one')
+Better example: 
+label = 'R$^2$$_a$={r2a:.2f}'
+
+See code below; you can use substitution strings in the label value, to use results from the regression. This label is associated with the line. Use legend() to show it.
+    
 
 
     """
@@ -75,6 +80,7 @@ Example:
     import statsmodels.api as sm
     # WTH? which of these three (one above, two below) are we to use?
     import pandas.stats.api as pds
+    import statsmodels.regression.linear_model as olsm
 
     """import statsmodels.formula.api as sm
     >>> df = pd.DataFrame({"A": [10,20,30,40,50], "B": [20, 30, 10, 40, 50], "C": [32, 234, 23, 23, 42523]})
@@ -83,7 +89,7 @@ Example:
     
     ###df = pd.DataFrame({"A": [10,20,30,40,50], "B": [20, 30, 10, 40, 50], "C": [32, 234, 23, 23, 42523]})
     weights = 1 if aweights is None  else df[aweights] # Careful!! Do I want 1/weights or weights?!
-    if 0: # I literally fixed this twice, once on laptop, and once on server. Booh. Here is the server version: 2018-05
+    if 1: # I literally fixed this twice, once on laptop, and once on server. Booh. Here is the server version: 2018-05
         newdf = df[[xv, yv]+ [aweights]*(aweights is not None)].dropna()
         Y, X = newdf[yv].astype(float).values, newdf[xv].astype(float).values
         X = olsm.add_constant(X)
@@ -98,7 +104,8 @@ Example:
 
         from pylab import plot
         if label is not None:
-            label=label%{'beta':beta,'2se':1.96*se, 'r2':res.r2}
+            #label=label%{'beta':beta,'2se':1.96*se, 'r2':res.rsquared, 'r2a': res.rsquared_adj}
+            label=label.format(**{'beta':beta,'2se':1.96*se, 'r2':res.rsquared, 'r2a': res.rsquared_adj})
         #ax.plot(df[xv],res.y_predict,label=label,**kwargs)
         ax.plot(newdf[xv], yhat,label=label,**kwargs)
 
@@ -121,49 +128,49 @@ Example:
         lower = y_pred - abs(conf)
         if ci in [True]:
             ax.fill_between(x_pred, lower, upper, color='#888888', alpha=0.4)
-    # And here is the laptop version 2018-05
-    if 0: res = pds.ols(y=df[yv], x=df[[xv]], weights=weights)
-    y,x = df[yv].values, df[xv].values
-    x= lm.add_constant(x)
-    olsm = lm.OLS(y, x, weights=weights)
-    results = olsm.fit()
-    #import statsmodels.regression.linear_model as olsm
-    b_intercept, b_beta= results.params
-    t_intercept, t_beta = results.tvalues
-    p_intercept, p_beta = results.pvalues
-    se_intercept, se_beta = results.HC2_se
-    
-    beta, se = b_beta, se_beta
-    yhat = results.predict()
-    
-    #beta,se= res.beta[xv], res.std_err[xv]
-    from pylab import plot
-    if label is not None:
-        label=label%{'beta':beta,'2se':1.96*se, 'r2':results.rsquared}
-    ax.plot(df[xv], yhat, label=label,**kwargs)
+    if 0: # And here is the laptop version 2018-05
+        if 0: res = pds.ols(y=df[yv], x=df[[xv]], weights=weights)
+        y,x = df[yv].values, df[xv].values
+        x= lm.add_constant(x)
+        olsm = lm.OLS(y, x, weights=weights)
+        results = olsm.fit()
+        #import statsmodels.regression.linear_model as olsm
+        b_intercept, b_beta= results.params
+        t_intercept, t_beta = results.tvalues
+        p_intercept, p_beta = results.pvalues
+        se_intercept, se_beta = results.HC2_se
 
-    if 1:
-        #import statsmodels.api as sm
-        #x = sm.add_constant(x) # constant intercept term
-        # Model: y ~ x + c
-        #model = sm.OLS(y, x)
-        #fitted = model.fit()
-        x_pred = np.linspace(df[xv].min(), df[xv].max(), 50)
-        #y_pred = fitted.predict(x_pred2)
-        y_pred= b_intercept + x_pred* b_beta
-        #ax.plot(x_pred, y_pred, '-', color='darkorchid', linewidth=2)
-        mean_x = df[xv].mean()
-        n = len(df)
-        dof = n - results.df_model - 1
-        from scipy import stats
-        t = stats.t.ppf(1-0.025, df=dof)
-        s_err = np.sum(np.power(results.resid, 2))
-        conf = t * np.sqrt((s_err/(n-2))*(1.0/n + (np.power((x_pred-mean_x),2) / 
-            ((np.sum(np.power(x_pred,2))) - n*(np.power(mean_x,2))))))
-        upper = y_pred + abs(conf)
-        lower = y_pred - abs(conf)
-        if ci in [True]:
-            ax.fill_between(x_pred, lower, upper, facecolor= fill_color, alpha= fill_alpha, edgecolor = 'None') 
+        beta, se = b_beta, se_beta
+        yhat = results.predict()
+
+        #beta,se= res.beta[xv], res.std_err[xv]
+        from pylab import plot
+        if label is not None:
+            label=label%{'beta':beta,'2se':1.96*se, 'r2':results.rsquared}
+        ax.plot(df[xv], yhat, label=label,**kwargs)
+
+        if 1:
+            #import statsmodels.api as sm
+            #x = sm.add_constant(x) # constant intercept term
+            # Model: y ~ x + c
+            #model = sm.OLS(y, x)
+            #fitted = model.fit()
+            x_pred = np.linspace(df[xv].min(), df[xv].max(), 50)
+            #y_pred = fitted.predict(x_pred2)
+            y_pred= b_intercept + x_pred* b_beta
+            #ax.plot(x_pred, y_pred, '-', color='darkorchid', linewidth=2)
+            mean_x = df[xv].mean()
+            n = len(df)
+            dof = n - results.df_model - 1
+            from scipy import stats
+            t = stats.t.ppf(1-0.025, df=dof)
+            s_err = np.sum(np.power(results.resid, 2))
+            conf = t * np.sqrt((s_err/(n-2))*(1.0/n + (np.power((x_pred-mean_x),2) / 
+                ((np.sum(np.power(x_pred,2))) - n*(np.power(mean_x,2))))))
+            upper = y_pred + abs(conf)
+            lower = y_pred - abs(conf)
+            if ci in [True]:
+                ax.fill_between(x_pred, lower, upper, facecolor= fill_color, alpha= fill_alpha, edgecolor = 'None') 
 
     if 0: # Last part: show 95% confidence interval of predicted values (as opposed to regression line)
         x_pred2 = sm.add_constant(x_pred)
