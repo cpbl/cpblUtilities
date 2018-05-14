@@ -1458,7 +1458,7 @@ df=dfs['Sheet1']
     return(df)
 
 
-def downloadOpenGoogleDoc(url, filename=None, format=None, pandas=False, update=True):
+def downloadOpenGoogleDoc(url, filename=None, fileformat=None, pandas=False, update=True):
     """
     If you: Set a Google doc or Google drive document to be readable to anyone with the link:
 
@@ -1466,27 +1466,33 @@ def downloadOpenGoogleDoc(url, filename=None, format=None, pandas=False, update=
 
     The filename (currently mandatory; should be fixed to be a hash of the url by default) should not include a path.
 
+    Specify fileformat as one of "txt", "xlsx", "odt" or etc as supported by Google
+
     This returns the full-path filename of the downloaded file, unless pandas is True for spreadsheets, in which case it returns a pandas version.
 
     If update False, and the file has already been downloaded, download will be skipped.
     """
     from  xlrd import XLRDError
     if not url.endswith('/'): url=url+'/'
-    if format is None:
-        format='xlsx'
-    full_file_name        =paths['scratch']+filename
+    if fileformat is None:
+        fileformat='xlsx'
+
+    full_file_name        =(paths['scratch'])*(not os.path.split(filename)[0])  +filename
     if update or not os.path.exists(full_file_name):
-        oss=' wget '+url+'export?format='+format+' -O '+full_file_name+'-dl'
+        oss=' wget "'+url+'export?format='+fileformat+'" -O '+full_file_name+'-dl'
         print(oss)
         result=os.system(oss)
         if result:
             print('  NO INTERNET CONNECTION, or other problem grabbing Google Docs file. Using old offline version ('+filename+')...')
         else:
-            result=os.system(' mv '+ full_file_name+'-dl ' + full_file_name)
+            if fileformat in ['txt']:
+                result = os.system('dos2unix -n '+ full_file_name+'-dl ' + full_file_name)
+            else:
+                result=os.system(' mv '+ full_file_name+'-dl ' + full_file_name)
             assert not result
     else:
         print('   Using local (offline) version of '+filename)
-    if pandas and format in ['xlsx']:
+    if pandas and fileformat in ['xlsx']:
         return(   pd.ExcelFile(full_file_name)  )
 
     return(full_file_name)
