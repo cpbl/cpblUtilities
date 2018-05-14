@@ -19,7 +19,7 @@ import time
 from math import sqrt
 
 __author__ = "Christopher Barrington-Leigh"
-class pWrapper(): # Maybe if I enclose this in a class, the Garbage Collection will work better?
+class pWrapper(): # Enclosing in a class originally motivated to make Garbage Collection work better
     def __init__(self,thefunc,theArgs=None,thekwargs=None,delay=None,name=None):
         self.callfunc = thefunc
         self.callargs = theArgs if theArgs is not None else []

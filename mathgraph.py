@@ -1,11 +1,5 @@
 #!/usr/bin/python
 """
-Some wisdom on graphics:
- - 2015: How to produce PDFs of a given width, with chosen font size, etc:
-   (1) Fix width to journal specifications from the beginning / early. Adjust height as you go, according to preferences for aspect ratio:
-    figure(figsize=(11.4/2.54, chosen height))
-   (2) Do not use 'bbox_inches="tight"' in savefig('fn.pdf').  Instead, use the subplot_adjust options to manually adjust edges to get the figure content to fit in the PDF output
-   (3) Be satisfied with that. If you must get something exactly tight and exactly the right size, you do this in Inkscape. But you cannot scale the content and bbox in the same step. Load PDF, select all, choose the units in the box at the top of the main menu bar, click on the lock htere, set the width.  Then, in File Properties dialog, resize file to content. Save.
 """
 from __future__ import division # Python3-style integer division 5/2=2.5, not 3
 
@@ -45,7 +39,9 @@ Solutions for bounding box / whitespace in output figures:
 
 
 #####################################################################################
-def dfOverplotLinFit(df,xv,yv,aweights=None, label=None,ax=None,ci=True,**kwargs): # This is for a bivariate relationship just now.
+def dfOverplotLinFit(df,xv,yv,aweights=None, label=None,ax=None,ci=True,
+                     fill_color = '#888888', fill_alpha=0.4,
+                     **kwargs): # This is for a bivariate relationship just now.
     """ 2015June: overplot a linear fit (no se shown now) and return b, se for bivariate DataFrame
      You can pass a label string which refers to some of the fit parameters: ['beta','2se','r2'] as floats. For example:
            label=' OLS '+r' ($\beta$=%(beta).2g$\pm$%(2se).2g)'
@@ -58,6 +54,13 @@ To do:
    - allow for confidence weights for each datapoint
    - or allow for sampling weights for each datapoint
 
+
+Example:
+    ps =   chooseSFormat(pvalue+1e-5, lowCutoff=.0001)
+    dfOverplotLinFit(df, xv, yv, fill_alpha=.05, ax=ax, label='$p$'+'='*('<' not in ps)+ps)
+    plt.legend(title='this one')
+
+
     """
     if ax is None:
         ax=plt.gca()
@@ -68,7 +71,7 @@ To do:
 
 
     import statsmodels.formula.api as smf
-    import statsmodels.regression.linear_model as olsm
+    import statsmodels.regression.linear_model as lm
     import statsmodels.api as sm
     # WTH? which of these three (one above, two below) are we to use?
     import pandas.stats.api as pds
@@ -80,43 +83,88 @@ To do:
     
     ###df = pd.DataFrame({"A": [10,20,30,40,50], "B": [20, 30, 10, 40, 50], "C": [32, 234, 23, 23, 42523]})
     weights = 1 if aweights is None  else df[aweights] # Careful!! Do I want 1/weights or weights?!
-    newdf = df[[xv, yv]+ [aweights]*(aweights is not None)].dropna()
-    Y, X = newdf[yv].astype(float).values, newdf[xv].astype(float).values
-    X = olsm.add_constant(X)
-    res = olsm.OLS(Y, X).fit()
-    print res.summary()
-    b0, beta,se, yhat = res.params[0], res.params[1],  res.bse[0], res.predict()
-    mean_x = newdf[xv].mean()
-    n = len(newdf)
-    dof = n - res.df_model - 1
-    #res = olsm.OLS( df[[xv]], df[yv], weights=weights).fit() # pds.ols(y=df[yv], x=df[[xv]], weights=weights)
-    #beta,se= res.beta[xv], res.std_err[xv]
+    if 0: # I literally fixed this twice, once on laptop, and once on server. Booh. Here is the server version: 2018-05
+        newdf = df[[xv, yv]+ [aweights]*(aweights is not None)].dropna()
+        Y, X = newdf[yv].astype(float).values, newdf[xv].astype(float).values
+        X = olsm.add_constant(X)
+        res = olsm.OLS(Y, X).fit()
+        print res.summary()
+        b0, beta,se, yhat = res.params[0], res.params[1],  res.bse[0], res.predict()
+        mean_x = newdf[xv].mean()
+        n = len(newdf)
+        dof = n - res.df_model - 1
+        #res = olsm.OLS( df[[xv]], df[yv], weights=weights).fit() # pds.ols(y=df[yv], x=df[[xv]], weights=weights)
+        #beta,se= res.beta[xv], res.std_err[xv]
+
+        from pylab import plot
+        if label is not None:
+            label=label%{'beta':beta,'2se':1.96*se, 'r2':res.r2}
+        #ax.plot(df[xv],res.y_predict,label=label,**kwargs)
+        ax.plot(newdf[xv], yhat,label=label,**kwargs)
+
+
+        #import statsmodels.api as sm
+        #x = sm.add_constant(x) # constant intercept term
+        # Model: y ~ x + c
+        #model = sm.OLS(y, x)
+        #fitted = model.fit()
+        x_pred = np.linspace(newdf[xv].min(), newdf[xv].max(), 50)
+        #y_pred = fitted.predict(x_pred2)
+        y_pred= b0 + x_pred*beta
+        #ax.plot(x_pred, y_pred, '-', color='darkorchid', linewidth=2)
+        from scipy import stats
+        t = stats.t.ppf(1-0.025, df=dof)
+        s_err = np.sum(np.power(res.resid, 2))
+        conf = t * np.sqrt((s_err/(n-2))*(1.0/n + (np.power((x_pred-mean_x),2) / 
+            ((np.sum(np.power(x_pred,2))) - n*(np.power(mean_x,2))))))
+        upper = y_pred + abs(conf)
+        lower = y_pred - abs(conf)
+        if ci in [True]:
+            ax.fill_between(x_pred, lower, upper, color='#888888', alpha=0.4)
+    # And here is the laptop version 2018-05
+    if 0: res = pds.ols(y=df[yv], x=df[[xv]], weights=weights)
+    y,x = df[yv].values, df[xv].values
+    x= lm.add_constant(x)
+    olsm = lm.OLS(y, x, weights=weights)
+    results = olsm.fit()
+    #import statsmodels.regression.linear_model as olsm
+    b_intercept, b_beta= results.params
+    t_intercept, t_beta = results.tvalues
+    p_intercept, p_beta = results.pvalues
+    se_intercept, se_beta = results.HC2_se
     
+    beta, se = b_beta, se_beta
+    yhat = results.predict()
+    
+    #beta,se= res.beta[xv], res.std_err[xv]
     from pylab import plot
     if label is not None:
-        label=label%{'beta':beta,'2se':1.96*se, 'r2':res.r2}
-    #ax.plot(df[xv],res.y_predict,label=label,**kwargs)
-    ax.plot(newdf[xv], yhat,label=label,**kwargs)
+        label=label%{'beta':beta,'2se':1.96*se, 'r2':results.rsquared}
+    ax.plot(df[xv], yhat, label=label,**kwargs)
 
+    if 1:
+        #import statsmodels.api as sm
+        #x = sm.add_constant(x) # constant intercept term
+        # Model: y ~ x + c
+        #model = sm.OLS(y, x)
+        #fitted = model.fit()
+        x_pred = np.linspace(df[xv].min(), df[xv].max(), 50)
+        #y_pred = fitted.predict(x_pred2)
+        y_pred= b_intercept + x_pred* b_beta
+        #ax.plot(x_pred, y_pred, '-', color='darkorchid', linewidth=2)
+        mean_x = df[xv].mean()
+        n = len(df)
+        dof = n - results.df_model - 1
+        from scipy import stats
+        t = stats.t.ppf(1-0.025, df=dof)
+        s_err = np.sum(np.power(results.resid, 2))
+        conf = t * np.sqrt((s_err/(n-2))*(1.0/n + (np.power((x_pred-mean_x),2) / 
+            ((np.sum(np.power(x_pred,2))) - n*(np.power(mean_x,2))))))
+        upper = y_pred + abs(conf)
+        lower = y_pred - abs(conf)
+        if ci in [True]:
+            ax.fill_between(x_pred, lower, upper, facecolor= fill_color, alpha= fill_alpha, edgecolor = 'None') 
 
-    #import statsmodels.api as sm
-    #x = sm.add_constant(x) # constant intercept term
-    # Model: y ~ x + c
-    #model = sm.OLS(y, x)
-    #fitted = model.fit()
-    x_pred = np.linspace(newdf[xv].min(), newdf[xv].max(), 50)
-    #y_pred = fitted.predict(x_pred2)
-    y_pred= b0 + x_pred*beta
-    #ax.plot(x_pred, y_pred, '-', color='darkorchid', linewidth=2)
-    from scipy import stats
-    t = stats.t.ppf(1-0.025, df=dof)
-    s_err = np.sum(np.power(res.resid, 2))
-    conf = t * np.sqrt((s_err/(n-2))*(1.0/n + (np.power((x_pred-mean_x),2) / 
-        ((np.sum(np.power(x_pred,2))) - n*(np.power(mean_x,2))))))
-    upper = y_pred + abs(conf)
-    lower = y_pred - abs(conf)
-    if ci in [True]:
-        ax.fill_between(x_pred, lower, upper, color='#888888', alpha=0.4)
     if 0: # Last part: show 95% confidence interval of predicted values (as opposed to regression line)
         x_pred2 = sm.add_constant(x_pred)
         from statsmodels.sandbox.regression.predstd import wls_prediction_std
@@ -638,12 +686,12 @@ wh_inches: width and height of output in inches[sic!]
                    ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,png=png,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,rv=False,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,facecolor=facecolor)#facecolor)
         if facecolor is None:
             facecolor='k'
-        savefigall(fn+'-rv',transparent=transparent,ifany=ifany,fig=fig,skipIfExists=skipIfExists,pauseForMissing=pauseForMissing,png=png,jpeg=jpeg,jpeghi=jpeghi,svg=svg,pdf=pdf,rv=True,FitCanvasToDrawing=FitCanvasToDrawing,eps=eps,tikz=tikz,facecolor=facecolor)
+        savefigall(fn+'-rv', transparent=transparent, ifany=ifany, fig=fig, skipIfExists=skipIfExists, pauseForMissing=pauseForMissing, png=png, jpeg=jpeg, jpeghi=jpeghi, svg=svg, pdf=pdf, rv=True, FitCanvasToDrawing=FitCanvasToDrawing, eps=eps, tikz=tikz, facecolor=facecolor)
         return(root+tail)
 
     if not root:
         try:
-            from .cpblUtilities_config import defaults, paths
+            from .cpblUtilities_config import defaults,  paths
             root=paths['graphics']#'/home/cpbl/rdc/workingData/graphics/'#defaults['workingPath']+'graphics/'#'graphicsPath'
         except:
             root='./'#/home/cpbl/rdc/graphicsOuttest/graphics/'#defaults['workingPath']+'graphics/'#'graphicsPath'
@@ -660,8 +708,8 @@ wh_inches: width and height of output in inches[sic!]
 
     if ifany:
         if not plt.findobj(match=ifany):
-            print '   savefigall: Empty plot (no %s), so not saving %s.'%(str(ifany),root+tail)
-            plt.savefig(root+tail+'.png.FAILED',format='png',facecolor=facecolor, bbox_inches=bbox_inches, pad_inches=pad_inches)
+            print '   savefigall: Empty plot (no %s),  so not saving %s.'%(str(ifany), root+tail)
+            plt.savefig(root+tail+'.png.FAILED', format='png', facecolor=facecolor, bbox_inches=bbox_inches, pad_inches=pad_inches)
             if pauseForMissing:
                 plt.show()
                 from cpblUtilities import cwarning
@@ -897,6 +945,8 @@ from numpy import mean # This one deals with no values!, so overwrite python's d
 def mean_of_means(vals, ses): # A Weighted mean: weighted by standard errors
     # Takes a simple list of estimates and a simple list of their standard errors.
     # Returns an estimate of the scalar weighted mean and its standard error.
+    #
+    # See wtsem() for se of the mean of a list of values.
     #
     # - COVARIANCE IS IGNORED (ASSUMED ZERO)
     #
@@ -2009,69 +2059,7 @@ def axisNearlyTight(ax=None):
         ylim(min(ylim())-yr/20.0,max(ylim())+yr/20.0)
 
 
-def figureFontSetup(uniform=12,figsize='paper', amsmath=True):
-    """
-Set font size settings for matplotlib figures so that they are reasonable for exporting to PDF to use in publications / presentations..... [different!]
-If not for paper, this is not yet useful.
-
-
-Here are some good sizes for paper:
-    figure(468,figsize=(4.6,2)) # in inches
-    figureFontSetup(uniform=12) # 12 pt font
-
-    for a subplot(211)
-
-or for a single plot (?)
-figure(127,figsize=(4.6,4)) # in inches.  Only works if figure is not open from last run!
-        
-why does the following not work to deal with the bad bounding-box size problem?!
-inkscape -f GSSseries-happyLife-QC-bw.pdf --verb=FitCanvasToDrawing -A tmp.pdf .: Due to inkscape cli sucks! bug.
---> See savefigall for an inkscape implementation.
-
-2012 May: new matplotlib has tight_layout(). But it rejigs all subplots etc.  My inkscape solution is much better, since it doesn't change the layout. Hoewever, it does mean that the original size is not respected! Sigh... Still, my favourite way from now on to make figures is to append the font size setting to the name, ie to make one for a given intended final size, and to do no resaling in LaTeX.  Use tight_layout() if it looks okay, but the inkscape solution in general.
-n.b.  a clf() erases size settings on a figure! 
-
-    """
-    figsizelookup={'paper':(4.6,4),'quarter':(1.25,1) ,None:None}
-    try:
-        figsize=figsizelookup[figsize]
-    except KeyError,TypeError:
-        pass
-    params = {#'backend': 'ps',
-           'axes.labelsize': 16,
-        #'text.fontsize': 14,
-        'font.size': 14,
-           'legend.fontsize': 10,
-           'xtick.labelsize': 16,
-           'ytick.labelsize': 16,
-           'text.usetex': True,
-           'figure.figsize': figsize
-        }
-           #'figure.figsize': fig_size}
-    if uniform is not None:
-        assert isinstance(uniform,int)
-        params = {#'backend': 'ps',
-           'axes.labelsize': uniform,
-            #'text.fontsize': uniform,
-           'font.size': uniform,
-           'legend.fontsize': uniform,
-           'xtick.labelsize': uniform,
-           'ytick.labelsize': uniform,
-           'text.usetex': True,
-           'text.latex.unicode': True,
-            'text.latex.preamble':r'\usepackage{amsmath},\usepackage{amssymb}',
-           'figure.figsize': figsize
-           }
-        if not amsmath:
-            params.update({'text.latex.preamble':''})
-
-    plt.rcParams.update(params)
-    plt.rcParams['text.latex.unicode']=True
-    #if figsize:
-    #    plt.rcParams[figure.figsize]={'paper':(4.6,4)}[figsize]
-
-    return(params)
-
+from cpblUtilities.matplotlib_utils import figureFontSetup
 
 def addSignatureToPlot():
     """
@@ -2086,45 +2074,9 @@ def addSignatureToPlot():
     return(th)
 
 
-##########################################################################
-##########################################################################
-#
-class Position:
-    #
-    ##########################################################################
-    ##########################################################################
-    """ This is about as much GIS as I really need here: calculate great circle distance between two points on a sphere. This is done through the subtraction operation (-) for this clas. """
-
-    def __init__(self, longitude, latitude):
-        import math
-        'init position with longitude/latitude coordinates'
-        llx = math.radians(longitude)
-        lly = math.radians(latitude)
-        self.x = math.sin(llx) * math.cos(lly)
-        self.y = math.cos(llx) * math.cos(lly)
-        self.z = math.sin(lly)
-
-    def __sub__(self, other):
-        import math
-        'get distance in km between two positions'
-        d = self.x * other.x + self.y * other.y + self.z * other.z
-        if d < -1:
-            d = -1
-        if d > 1:
-            d = 1
-        km = math.acos(d) / math.pi * 20000.0
-        return km
-
-    #def __mul__(self, other): # Scalar multiply?
-    #    import math
-    #    assert isinstance(other,float)
-    #    return(self.__init(self.x*other,self.y*other))
-
-    # Yikes! This needs to be able to return lat, lon, etc.. much more needed.
 
 
-
-def cpblScatter(df,x,y,z=None,markersize=20,cmap=None,vmin=None,vmax=None,labels=None,nse=1,ax=None,fig=None,clearfig=False,marker='o',labelfontsize=None):#,xlog=False,ylog=False,): #ids=None,xlab=None,ylab=None,fname=None,,xlog=False,byRegion=None,labelFunction=None,labelFunctionArgs=None,fitEachRegion=False,regionOrder=None,legendMode=None,markerMode=None,subsetIndices=None,forceUpdate=True,labels=None,nearlyTight=True,color=None): #markersize=10         
+def cpblScatter(df, x, y, z=None, markersize=20, cmap=None, vmin=None, vmax=None, labels=None, nse=1, ax=None, fig=None, clearfig=False, marker='o', labelfontsize=None):#, xlog=False, ylog=False, ): #ids=None, xlab=None, ylab=None, fname=None, , xlog=False, byRegion=None, labelFunction=None, labelFunctionArgs=None, fitEachRegion=False, regionOrder=None, legendMode=None, markerMode=None, subsetIndices=None, forceUpdate=True, labels=None, nearlyTight=True, color=None): #markersize=10         
     """
     This has been rewritten so that it demands Pandas Dataframe data. However, it really needs to integrate properly with cpblUtilities.color routines; right now I don't think the colour scale can be trusted.
 
@@ -4012,23 +3964,30 @@ def wtvar(X, W, method = "R"):
 
 #def wtsem(X, W, method = "R"): 
 #    thevar=wtvar(X, W, method = "R")
-def wtsem(a, w=None,axis=0, bootstrap=False): #
+def wtsem(a, w=None,axis=0, bootstrap=False, dropna= True): #
     """
-    Returns the standard error of the mean, assuming normal distribution, for weighted data.
+    Returns the standard error of the mean, assuming normal distribution, for weighted data. By default, it drops NaNs, like np.mean does.
+    Are you using Pandas? If so, you probably want weightedMeansByGroup or weightedMeans_pandas, not this.
     """
-    if w is None:
+    if w in [1, None]:
         w=np.ones(len(a))
+    a=np.asarray(a)
+    w=np.asarray(w)
+    if dropna:
+        ii=pd.notnull(a) & pd.notnull(w)
+        if len(a[ii])==0: return np.nan
+        a=a[ii]
+        w=w[ii]
+        assert len(a) and len(w)
+    
     if not bootstrap:
         #a, axis, w = _chk_asarray(a, axis,w)
-        a=np.asarray(a)
-        w=np.asarray(w)
         #n = a.count(axis=axis)
         #s = a.std(axis=axis,ddof=0) / ma.sqrt(n-1)
         assert axis==0 # Hm, not done yet.
         s = np.sqrt(wtvar(a,w) / (a.size-1) )
         return s
     else:
-        a=np.asarray(a)
         # Bootstrap version?? (not used, just for thought.. waste of space, then.)
         """
         Not clear how to deal with weights when boostrapping. weight sampling based on them? renomralise for each sample draw (done here..)
@@ -5236,523 +5195,6 @@ def weightedMeanSE(arrin, weights_in, inputmean=None, calcerr=True, sdev=False):
     else:
         return wmean,werr
 
-def weightedMeanSE_pandas(df,varNames,weightVar='weight'):
-    """
-    Example use: aggregate by age:
-    means=df.groupby('age').apply(lambda adf: weightedMeanSE_pandas(adf,tomean,weightVar='cw')).reset_index()
-    """
-    outs={}
-    if isinstance(varNames,basestring):
-        varNames=[varNames]
-    varPrefix=''
-    for mv in varNames:
-        df2=df[np.isfinite(df[[mv,weightVar]]).all(axis=1)]
-        mu,se=weightedMeanSE(df2[mv], df2[weightVar]) # Gives same as Stata!
-        # Values need to be vectors(lists) for the conversion to DataFrame, it seems.
-        outs.update({varPrefix+mv: mu,   varPrefix+'se_'+mv: se})
-    return(pd.Series(outs)) # Return this as a Series; this avoids adding a new index in groupby().apply
-
-
-##############################################################################
-##############################################################################
-#
-def weightedMeansByGroup(pandasDF,meansOf,byGroup=None,weightVar='weight',varPrefix=''):# varsByQuantile=None,suffix='',skipPlots=True,rankfileprefix=None,ginifileprefix=None,returnFilenamesOnly=False,forceUpdate=False,groupNames=None,ginisOf=None,loadAll=None,parallelSafe=None):
-    #
-    ##########################################################################
-    ##########################################################################
-    """
-2013 Feb: I'm adapting this from weightedQuantilesByGroup.
-
-I've finally found something that gives the same s.e. as Stata. 
-The list of what does NOT is very long: my ( wtmean,wtsem,wtvar), above. 
-statsmodels.WLS gives robust standard errors, I guess, but they ignore the weights!! ie give same as stata without any weights. Wow, how poor.  But the code someone gave me on a list in 2010 works.
-
-    This returns another DataFrame with appropriately named columns.
-
-My related functions: 2013July I need a weighted moment by group in recodeGallup.
-
-2014June :(Usually you can get by without this function?:     means=df.groupby('age').apply(lambda adf: weightedMeanSE_pandas(adf,tomean,weightVar='cw')) )
-
-    """
-
-    df=pandasDF
-    #from scipy import stats
-    if isinstance(byGroup,str):
-        byGroup=byGroup.split(' ')
-    if isinstance(meansOf,str):
-        meansOf=meansOf.split(' ')
-    assert all([mm in df for mm in meansOf])
-    assert all([mm in df for mm in byGroup])
-    grouped=df.groupby(byGroup)
-
-    newdf=grouped.apply(weightedMeanSE_pandas,meansOf,weightVar)
-    if varPrefix:
-        newdf.columns=[varPrefix+cc for cc in newdf.columns]
-    return(newdf)
-
-
-##############################################################################
-##############################################################################
-#
-def weightedMomentsByGroup(pandasDF,momentsOf,momfunc,byGroup=None,weightVar='weight',varPrefix=''):
-    #
-    ##########################################################################
-    ##########################################################################
-    """
-2013 To calculate, for example, the mean log income (using momfunc=np.log)
-
-So far, does not report any S.E. 
-
-
-
-Sample usage: sprawl/cpblUtilities.mathgraph.py:    newdf=grouped.apply(weightedMeanSE_pandas,meansOf,weightVar)
-
-"""
-
-    df=pandasDF
-    if isinstance(byGroup,str):
-        byGroup=byGroup.split(' ')
-    if isinstance(momentsOf,str):
-        momentsOf=momentsOf.split(' ')
-    assert all([mm in df for mm in momentsOf])
-    assert all([mm in df for mm in byGroup])
-    grouped=df.groupby(byGroup)
-
-    #def weightedMoment(arrin, weights_in):#, inputmean=None, calcerr=True, sdev=False):
-    
-        
-    def weightedMoment_pandas(df,varNames,weightVar='weight'):
-        outs={}
-        varPrefix=''
-        for mv in varNames:
-            X,W=finiteValues(df[mv].values,df[weightVar].values)
-            mu= (W * X.map(momfunc)).sum()/W.sum()
-            #mu,se=weightedMoment(X,W) # Gives same as Stata!
-            # Values need to be vectors(lists) for the conversion to DataFrame, it seems.
-            ninininin
-            outs.update({varPrefix+mv: mu,   varPrefix+'se_'+mv: se})
-        return(pd.Series(outs)) # Return this as a Series; this avoids adding a new index in groupby().apply
-
-    newdf=grouped.apply(weightedMoment_pandas,momentsOf,weightVar)
-    if varPrefix:
-        newdf.columns=[varPrefix+cc for cc in newdf.columns]
-    return(newdf)
-
-
-
-
-##############################################################################
-##############################################################################
-#
-def weightedQuantilesByGroup(pandasDF,quantilesOf,byGroup=None,weightVar='weight',varPrefix='qtl_', varsByQuantile=None):#,suffix='',skipPlots=True,rankfileprefix=None,ginifileprefix=None,returnFilenamesOnly=False,forceUpdate=False,groupNames=None,ginisOf=None,loadAll=None,parallelSafe=None):
-    #
-    ##########################################################################
-    ##########################################################################
-    """
-
-2013 Jan: This is derived from pystata's generateRankingData() for stata data, but this one takes pandas DataFrame instead. And we don't include ginis! (ugh). And leave plotting to a separate function, since we could return data.
-
-e.g.: generateRankingData(pandasDF,'income', varsByQuantile=None,byGroup='year PRuid',weightVar='weight',suffix='',skipPlots=True,rankfileprefix=None,returnFilenamesOnly=False,forceUpdate=False,groupNames=None,parallelSafe=None):
-
-As for the "varsByQuantile", those can easily be done in pandas using cut and groupby etc... not done yet.
-
-This no longer creates files. It returns an augmented DataFrame.
-Does not allow more than one variable for quantilesOf.
-    """
-
-    df=pandasDF
-    from scipy import stats
-    assert quantilesOf in df
-    if isinstance(byGroup,str):
-        byGroup=byGroup.split(' ')
-
-    import numpy as np
-
-    newvar=varPrefix+quantilesOf
-    df[newvar]=np.nan
-    def getq(adf):
-        # If I remove the .values from the following, it fails to preserve order.
-        ww=weightedQuantile(adf[quantilesOf].values,adf[weightVar].values)
-        adf[newvar]=ww
-        assert ww is np.nan or len(ww)==len(adf)
-        return(adf)
-
-    print 'Calculating quantiles...', #,end=' ')
-    withquantiles=df.groupby(byGroup,group_keys=False).apply(getq)
-    print(' [Done]')
-    return(withquantiles)
-    # 2013 Feb. Also calculate varsByQuantile, if desired.
-    if varsByQuantile==None:
-        varsByQuantile==[]
-    assert all(vbq in df for vbq in varsByQuantile)
-    assert not varsByQuantile
-    if 0: # NOT WRITTEN YET!!!!!!!!!!!!!!!!!!!!!!!
-        for iv,vname in enumerate(varsByQuantile+[quantilesOf]):
-            # Use values with weights:
-            vvww=[  finiteValues(array([respondent[vname] for respondent in byQtl[qtl]]),
-				   array([respondent[weightVar] for respondent in byQtl[qtl]])
-				   ) for qtl in pQtl]
-
-            #qtlStats['uw_'+vname]=[np.mean(
-            #            finiteValues(array([respondent[vname] for respondent in byQtl[qtl]]))
-            # )                    for qtl in pQtl]
-            qtlStats[vname]=[wtmean(vv,weights=ww) for vv,ww in vvww]
-            #qtlStats['uw_se'+vname]=[stats.sem(
-            #            finiteValues(array([respondent[vname] for respondent in byQtl[qtl]]))
-            #            )             for qtl in pQtl]
-            qtlStats['se'+vname]=[wtsem(vv,ww) for vv,ww in vvww]
-
-	    # Ugly kludge:
-	    if vname in ['SWL','lifeToday']:
-
-                vvall,wwall=finiteValues(array([respondent[vname] for respondent in groupDfinite]),
-				   array([respondent[weightVar] for respondent in groupDfinite]))
-		from pylab import histogram,array
-                qtlStats['hist'+vname]=histogram(vvall,bins=-0.5+array([0,1,2,3,4,5,6,7,8,9,10,11]),weights=wwall)
-
-
-	    # Shall I also calculate Gini here? It seems it may be much faster than Stata's version. #:(, Though I won't have a standard error for it.
-	    if doGini and (ginisOf is None or vname in ginisOf):
-                # n.b. I don't just want the ones with finite rankVar. So go back to groupD:
-                xxV=array([respondent[vname] for respondent in groupD])
-		macroInequalities[agroup]['gini'+vname]= cpblGini(weightD,xxV)
-
-
-		#print "             %s=%s: Gini=%f"%(byGroup,agroup,inequality.Gini)
-
-            # ne=where(logical_and(logical_and(isfinite(x),isfinite(y)),logical_and(isfinite(yLow),isfinite(yHigh))))
-
-
-            #vQtl=array([stats.mean(finiteValues(
-            #            vv[find(logical_and(y<=yQtl[iq] , y>=([min(y)]+yQtl)[iq]))]      )) for iq in range(len(yQtl))])
-            #sevQtl=array([stats.sem(finiteValues(
-            #            vv[find(logical_and(y<=yQtl[iq] , y>=([min(y)]+yQtl)[iq]))]      )) for iq in range(len(yQtl))])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    return(withquantiles) 
-
-
-
-
-
-    if 0:
-        def assignQs(x,w):#adf, xv,wv)
-            from scipy import interpolate
-            import numpy as np
-            #w,x=adf[wv],adf[xv]
-            CDF=np.cumsum(w)*1.0/sum(w)
-            # interp1d returns a function...
-            qinterp=interpolate.interp1d(np.array(CDF),np.array(x))
-            return([np.nan if np.isnan(xi) else qinterp(xi) for xi in x])
-        # else: # Return a value for quantile q
-        #            return(interpolate.interp1d(array(CDF),array(x))(q))
-
-    #quantiles=df.groupby(byGroup).apply(lambda adf: assignQs(adf[quantilesOf],adf[weightVar]))
-
-
-
-
-
-
-
-
-    bb=quantiles0[quantiles0['PRuid']==24]
-    plt.plot(bb['qtl_lnHHincome'],bb['lnHHincome'],'.')   
-    plt.show()
-    iuiui
-    # as_index=False makes it so that the eventual returned value is not grouped!
-    print 'Calculating quantiles...', #,end=' ')
-    quantiles=df.groupby(byGroup, as_index=False).apply(lambda adf: weightedQuantile(adf[quantilesOf],adf[weightVar]))
-    print(' [Done]')
-
-
-
-
-
-    quantilesi=df.groupby(byGroup, group_keys=False).apply(lambda adf: weightedQuantile(adf[quantilesOf],adf[weightVar]))
-
-    xdf=df.groupby(byGroup).transform(lambda adf: weightedQuantile(adf[quantilesOf],adf[weightVar]))
-    #df.merge(quantilesi
-    ###links2=links.merge(pd.DataFrame(fuelByStateYear),how='left',left_on=['MIN_AGE','state'],right_on=['year','state'])
-
-
-
-    fooo
-    # OLD FUNCTION BELOW
-
-    from pylab import figure,plot,show,clf,arange,floor,array,find,logical_and,where,isfinite,xlabel,ylabel,cumsum,subplot,rcParams
-    rcParams.update({'text.usetex': False,}) #Grrr. need it for plusminus sign, but can't deal with all foreign characters in country and region names?!
-    import numpy as np
-    from cpblUtilities import plotWithEnvelope,transLegend,savefigall,sortDictsIntoQuantiles,finiteValues,shelfSave,shelfLoad
-    # Because numpy and scipy don't have basic weight option in mean, sem !!!
-    from cpblUtilities import wtmean,wtsem,wtvar
-    from inequality import ineq,cpblGini
-
-
-
-    if byGroup==None:
-        byGroup=''
-    if varsByQuantile==None:
-        varsByQuantile==[]
-    if suffix:
-        suffix='-'+suffix
-    assert isinstance(byGroup,str)
-    #tsvFile=WP+stripWPdta(stataFile)+'-qtlInput'+suffix+'.tsv'
-    microQuantFile=WP+stripWPdta(stataFile)+'-qtlData'+suffix+'.tsv'
-    macroQuantFileShelf=WP+stripWPdta(stataFile)+'-qtlData-'+byGroup+suffix+'.pyshelf'
-    macroQuantFile=WP+stripWPdta(stataFile)+'-qtlData-'+byGroup+suffix+'.tsv'
-    macroGiniFile=WP+stripWPdta(stataFile)+'-gini-'+byGroup+suffix+'.tsv'
-    plotfileprefix=WP+'graphics/TMPRANK'
-    if rankfileprefix:
-        microQuantFile=rankfileprefix+'-'+byGroup+'.tsv'
-        macroQuantFileShelf=rankfileprefix+'-'+byGroup+'.pyshelf'
-        macroQuantFile=rankfileprefix+'-'+byGroup+'.tsv'
-	plotfileprefix=WP+'graphics/'+stripWPdta(rankfileprefix)+byGroup
-    if ginifileprefix:
-	    macroGiniFile=ginifileprefix+'-'+byGroup+'.tsv'
-    if not fileOlderThan([microQuantFile,macroQuantFileShelf]+doGini*[macroGiniFile],WPdta(stataFile)) and not forceUpdate:
-        print '    (Skipping generateRankingData; no need to update %s/%s from %s...)'%(microQuantFile,macroQuantFileShelf,stataFile)
-        return(os.path.splitext(microQuantFile)[0],os.path.splitext(macroQuantFileShelf)[0])
-        #return(microQuantFile,macroQuantFileShelf)
-
-    # Suffix is used in following to ensure that different calls to this function get the correct result exported from Stata, etc, (see notes in fcn below).
-    # Caution! if
-    onlyVars=None
-    if not loadAll:
-        onlyVars=' '.join(uniqueInOrder(inVars+[byGroup, quantilesOf]+varsByQuantile+[weightVar]))
-    # If parallelSafe, Make the following force-updated, to avoid using shelve/shelf files simultanously by different processes!!
-    dddT=loadStataDataForPlotting(stataFile,onlyVars=onlyVars,treeKeys=[byGroup],forceUpdate='parallel' if parallelSafe else forceUpdate,suffix=suffix)#vectors=True)#False,forceUpdate=False,singletLeaves=False):
-
-    # Testing functionality aug 2012 to make this robust to weight variable not existing for all in dataset:
-    for kk in dddT:
-        plen=len(dddT[kk])
-        dddT[kk]=[rrrr for rrrr in dddT[kk] if isfinite(rrrr[weightVar])]
-        if not len(dddT[kk])==plen:
-            print('CAUTION: I found and ditched some (%d/%d) individuals without weight %s for group %s in generateRankingData'%(plen-len(dddT[kk]),plen,weightVar,kk))
-
-    if 0:
-        from dictTrees import dictTree
-        kk=ddd.keys()
-        #for byKey in byGroup
-        print 'Sorting by key...'
-        dddT=dictTree([dict([[akey,ddd[akey][irow]] for akey in kk]) for irow in range(len(ddd[kk[0]]))],[byGroup])
-
-    # Now.. Order these and assign ranking (between 0 and 1):  This should take into account the weights, properly.
-    print '%d elements have no group (%s).'%(len(dddT.get('',[])),byGroup)
-    rankGroups=[]
-    macroStats=[]
-    macroInequalities={}
-    if not skipPlots:
-        figure(126)
-        clf()
-        figure(124)
-    for agroup in sorted(dddT.keys()):#.keys()[0:10]:
-        if not agroup:
-            continue
-        groupD=dddT[agroup]
-        weightD=array([respondent[weightVar] for respondent in groupD])
-        groupDfinite=[xx for xx in groupD if isfinite(xx[quantilesOf]) ]
-        # Hm, does the following fail if I include the nan's!?
-        groupDfinite.sort(key=lambda x:x[quantilesOf])
-	if doGini:
-            macroInequalities[agroup]={byGroup:agroup}
-
-        if 0: # I'm eliminating the following, unweighted ranking for now.
-            if len(groupDfinite)==0:
-                continue
-            if len(groupDfinite)==1:
-                groupDfinite[0]['rank'+quantilesOf]=0.5
-            else:
-                for iRank,respondent in enumerate(groupDfinite):
-                    # THIS IS WRONG!!!!!!!!!! IT IGNORES WEIGHT. I SHOULD BE USING WEIGHTED RANK. I DO THIS BELOW. CANNOT FIND scipy ROUTINE TO DO QUANTILES WITH SAMPLE WEIGHTS.
-                    respondent['rank'+quantilesOf]=iRank*1.0/(len(groupDfinite)-1)
-                    x=array([respondent['rank'+quantilesOf] for respondent in groupDfinite])
-        y=array([respondent[quantilesOf] for respondent in groupDfinite])
-        w=array([respondent[weightVar] for respondent in groupDfinite])
-
-
-        # Now, I also need to section these up into groups, in order to calculate other variables by quantile. How to do this? I could use a kernel smoothing, to estimate y(I), where, e.g. y is SWB and I is income.  OR I could calculate quantiles. e.g. qtlY(I) would be the mean y amongst all those in the ith quantile. I'll do the latter. This means that curves will NOT represent y(I), since it's mean(y) but i<I.
-        minN=20
-        nQuantiles=min(25,floor(len(y)/minN))
-        pQtl=(1.0+1.0*arange(nQuantiles))/nQuantiles
-        assert len(pQtl)==nQuantiles
-
-        assert all(isfinite(w))  # Really? Couldn't I make this robust... [aug2012: okay, i have, above, by modifying ddTT]
-
-        # Use my nifty sort-into-quantiles function
-        minN=20
-        if len(y)<minN/2:
-            print ' SKIPPING '+agroup+' with only %d respondents...'%len(y)
-            continue
-        nQuantiles=max(2,min(25,floor(len(y)/minN)))
-        # The following function ALSO fills in a new element of the weighted rank of each individual.
-        byQtl=sortDictsIntoQuantiles(groupD,sortkey=quantilesOf,weightkey=weightVar,approxN=25,)#nQuantiles=min(25,floor(len(y)/minN)))
-        pQtl=sorted(byQtl.keys())
-        print '   Quantiles: parsing for group %s=%20s,\t with %d respondents,\t with %d having rank variable;\t therefore using %d quantiles...'%(byGroup,agroup,len(groupDfinite),len(finiteValues(y)),len(pQtl))
-
-
-        # So since sortDictsIntoQ... filled in individual ranks, I can now plot these:
-        x=array([respondent['rank'+quantilesOf[0].upper()+quantilesOf[1:]] for respondent in groupDfinite])
-        if not skipPlots:
-            figure(126)
-            clf()
-            subplot(121)
-            plot(y,x,hold=True)
-            xlabel(substitutedNames(quantilesOf))
-            ylabel('Quantile')
-	    print 'More up to date plots are made by a custom function using the .shelf data, in regressionsInequality'
-
-        #print [stats.mean([gg['lnHHincome'] for gg in byQtl[qq]])  for qq in pQtl]
-        #print [stats.mean([gg['lifeToday'] for gg in byQtl[qq]])  for qq in pQtl]
-
-
-        # Cool! That worked nicely, and is even quite efficient.
-
-        # I wonder how byQtl.keys() compares with the unweighted measure below...    (uses approximately quantile unbiased (Cunnane) parameters)
-        yQtl2=stats.mstats.mquantiles(y, prob=pQtl, alphap=0.40000000000000002, betap=0.40000000000000002, axis=None, limit=())
-
-
-        # Now calculate weighted means for variables of interest within each quantile group:
-        qtlStats={'qtl':pQtl,'group':agroup}
-        # Also save in the output any variables which are uniform within this group (ie markers of a group in which this is a subgroup):
-        if 0:
-            for vvv in [vv for vv in inVars if vv not in [byGroup]]:
-                if all(array([respondent[vvv] for respondent in groupDfinite])==groupDfinite[0][vvv]): # ah, this variable is uniform within the group
-                    qtlStats[vvv]=groupDfinite[0][vvv]
-
-        qtlStats['n']=[ len(
-                        finiteValues(array([respondent[quantilesOf] for respondent in byQtl[qtl]]))
-                        )             for qtl in pQtl]
-        for iv,vname in enumerate(varsByQuantile+[quantilesOf]):
-            # Use values with weights:
-            vvww=[  finiteValues(array([respondent[vname] for respondent in byQtl[qtl]]),
-				   array([respondent[weightVar] for respondent in byQtl[qtl]])
-				   ) for qtl in pQtl]
-
-            #qtlStats['uw_'+vname]=[np.mean(
-            #            finiteValues(array([respondent[vname] for respondent in byQtl[qtl]]))
-            # )                    for qtl in pQtl]
-            qtlStats[vname]=[wtmean(vv,weights=ww) for vv,ww in vvww]
-            #qtlStats['uw_se'+vname]=[stats.sem(
-            #            finiteValues(array([respondent[vname] for respondent in byQtl[qtl]]))
-            #            )             for qtl in pQtl]
-            qtlStats['se'+vname]=[wtsem(vv,ww) for vv,ww in vvww]
-
-	    # Ugly kludge:
-	    if vname in ['SWL','lifeToday']:
-
-                vvall,wwall=finiteValues(array([respondent[vname] for respondent in groupDfinite]),
-				   array([respondent[weightVar] for respondent in groupDfinite]))
-		from pylab import histogram,array
-                qtlStats['hist'+vname]=histogram(vvall,bins=-0.5+array([0,1,2,3,4,5,6,7,8,9,10,11]),weights=wwall)
-
-
-	    # Shall I also calculate Gini here? It seems it may be much faster than Stata's version. #:(, Though I won't have a standard error for it.
-	    if doGini and (ginisOf is None or vname in ginisOf):
-                # n.b. I don't just want the ones with finite rankVar. So go back to groupD:
-                xxV=array([respondent[vname] for respondent in groupD])
-		macroInequalities[agroup]['gini'+vname]= cpblGini(weightD,xxV)
-
-
-		#print "             %s=%s: Gini=%f"%(byGroup,agroup,inequality.Gini)
-
-            # ne=where(logical_and(logical_and(isfinite(x),isfinite(y)),logical_and(isfinite(yLow),isfinite(yHigh))))
-
-
-            #vQtl=array([stats.mean(finiteValues(
-            #            vv[find(logical_and(y<=yQtl[iq] , y>=([min(y)]+yQtl)[iq]))]      )) for iq in range(len(yQtl))])
-            #sevQtl=array([stats.sem(finiteValues(
-            #            vv[find(logical_and(y<=yQtl[iq] , y>=([min(y)]+yQtl)[iq]))]      )) for iq in range(len(yQtl))])
-
-
-            if (not skipPlots) and vname in varsByQuantile:
-                figure(126)
-                subplot(122)
-                colors='rgbckm'
-                vQtl= array(qtlStats[vname])
-                sevQtl= array(qtlStats['se'+vname])
-                pQtl=array(pQtl)
-                plotWithEnvelope(pQtl,vQtl,vQtl+sevQtl,vQtl-sevQtl,linestyle='.-',linecolor=None,facecolor=colors[iv],alpha=0.5,label=None,lineLabel=None,patchLabel=vname,laxSkipNaNsSE=True,laxSkipNaNsXY=True,ax=None,skipZeroSE=True) # Why do I seem to need both lax flags?
-                plot(pQtl,vQtl,'.',color=colors[iv],alpha=0.5)
-                xlabel(substitutedNames(quantilesOf) +' quantile')
-
-            ##ylabel(vname)
-        from cpblUtilities import str2pathname
-        if not skipPlots:
-            transLegend(comments=[groupNames.get(agroup,agroup),r'$\pm$1s.e.'],loc='lower right')
-            savefigall(plotfileprefix+'-'+str2pathname(agroup))
-        rankGroups+=groupDfinite
-        macroStats+=[qtlStats]
-
-
-	if 0*'doRankCoefficients':
-		groupVectors=dict([[kk,[gd[kk] for gd in groupDfinite ]] for kk in groupDfinite[0].keys()])
-		from cpblUtilities import cpblOLS
-		x=cpblOLS('lifeToday',groupVectors,rhsOnly=[ 'rankHHincome'],betacoefs=False,weights=groupVectors['weight'])
-		foioi
-
-        # assert not 'afg: Kabul' in agroup
-        # Add the quantile info for this group to the data. Also, compile the summary stats for it.
-
-#[, 0.25, 0.5, 0.75]
-        # Centre a series of quantiles
-        """
-	No. Create 20 quantiles. Assign. if none there, weight nearest?
-
-	e.g. 1  2 10 13
-
-
-	scipy.stats.mstats.mquantiles
-
-	scipy.stats.mstats.mquantiles(data, prob=[, 0.25, 0.5, 0.75], alphap=0.40000000000000002, betap=0.40000000000000002, axis=None, limit=())
-
-	"""
-
-
-    from cpblUtilities import dictToTsv
-    dictToTsv(rankGroups,microQuantFile)
-    tsv2dta(microQuantFile)
-    if doGini:
-        dictToTsv(macroInequalities.values(),macroGiniFile)
-	tsv2dta(macroGiniFile)
-
-    shelfSave(macroQuantFileShelf,macroStats)
-    if 0: # whoooo... i think this was totally misguided. it's not a macro file..
-        dictToTsv(macroStats,macroQuantFile)
-        tsv2dta(macroQuantFile)
-
-    #vectorsToTsv(qtlStats,macroQuantFile)
-    #tsv2dta(macroQuantFile)
-
-    #inequality,redundancy,equality,variation,thesum,absolute=ineq(zip(popn,wealth))
-
-    return(os.path.splitext(microQuantFile)[0],os.path.splitext(macroQuantFileShelf)[0])
-    #return(microQuantFile,macroQuantFileShelf)
-
-
 
 def surveyMeans():
     """
@@ -6341,7 +5783,7 @@ def test_bug3_for_multipage_plot_iterator():
     plt.draw()
     plt.savefig('tmph.pdf', )
 
-def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inches = None):
+def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inches = None, transparent = True):
     """
     If you want to have a series of subplots that goes more than one page,  use this to generate figs and axes handles.
     You specify the list of data items which you will use to plot in each axis, how many (rows and columns) to plot per page, and the filename stem for the pages (which will ultimately be a single multi-page PDF).
@@ -6352,6 +5794,8 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
     "items" data structure.
 
     items could be an iterator itself, but that is not implemented yet. It must be a list at the moment.
+
+    transparent [True]:  Set this to False if you use  ax.set_facecolor in your loop; this will avoid using transparency in the saved result.
 
     To do:
      - check that this also works nicely for ncols==nrows==1
@@ -6414,7 +5858,7 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
             axs[idelAx].set_visible(False)
         pagefilename = filename+'page%02d'%ipage
         pagefiles += [pagefilename+'.pdf']
-        savefigall(pagefilename,  wh_inches=wh_inches, rv=False, png = False)
+        savefigall(pagefilename,  wh_inches=wh_inches, rv=False, png = False, transparent=transparent)
     mergePDFs(pagefiles, filename+'ALL.pdf')
     #for ff in pagefiles: os.remove(ff)
     yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(actualRows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == esplot-ssplot , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    

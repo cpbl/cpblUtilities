@@ -78,6 +78,7 @@ Dec 2011: upgraded to python3, in case that makes things easier...  It didn't.
 2013 July: copied unicode_to_latex.py to my ~/bin.
 """
 
+import re
 
 def ensure_unicode(
          obj, encoding='utf-8'):
@@ -387,6 +388,7 @@ def str2latex_specialAndMath(ss,safeMode=True):
      So order matters, so don't use a dict!
 
      2013: safeMode now does nothing if it looks at all like it might have already been converted. 
+     2018: Do not replace dollar signs if there is an even number of them.
      """
 
      if '\\' in ss and safeMode:
@@ -394,7 +396,6 @@ def str2latex_specialAndMath(ss,safeMode=True):
 
      subs=[
 	[ u"\\", "\\\\" ],    # Characters that should be quoted
-	    ['$',r'\$'],
             ['_',r'\_'],
 	    ['%',r'\%'],
 	    ['#','\#'],
@@ -427,6 +428,10 @@ def str2latex_specialAndMath(ss,safeMode=True):
 
      for asub in subs:
         ss=ss.replace(asub[0],asub[1])
+     # Deal separately with $ character:
+     # Following regexp looks for $ signs either at the beginning of the string, or NOT following a backslash. Though in fact if there are any escaped $-signs, we should already have aborted.
+     if len(re.findall('((^|[^\\\\])\$)', ss)) % 2 ==1: # Odd number of raw dollar signs
+         ss = ss.replace('$',r'\$')
      return(ss)
 
 

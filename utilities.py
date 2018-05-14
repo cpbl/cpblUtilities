@@ -732,55 +732,51 @@ def importSpreadsheet(filename, masterKey=None):
 
 
 
-
 ###########################################################################################
 ###
 def orderListByRule(alist,orderRule,listKeys=None,dropIfKey=None):
     ###
     #######################################################################################
-
     """ Reorder alist according to the order specified in orderRule. The orderRule lists the order to be imposed on a set of keys. The keys are alist, if listkeys==None, or listkeys otherwise.  That is, the length of listkeys must be the same as of alist. That is, listkeys are the tags on alist which determine the ordering.  orderRule is a list of those same keys and maybe more which specifies the desired ordering.
     There is an optional dropIfKey which lists keys of items that should be dropped outright.
+
+A fix to deal with repeated entries in orderRule may mean that a better approach to this whole method is possible. 
+
     """
-    alist=list(alist)
-    assert isinstance(alist,list) and isinstance(orderRule,list)
-    alist=deepcopy(alist) #Let's not overwrite the passed array! to be safe and inefficient
+    # Remove duplicates in rule
+    def f7(seq):
+        seen = set()
+        seen_add = seen.add
+        return [x for x in seq if not (x in seen or seen_add(x))]
+    orderRule = f7(orderRule)
 
-    if listKeys==None:
-        listKeys=deepcopy(alist)
-    assert isinstance(listKeys,list) and len(listKeys)==len(alist)
+    # Assign indices to do ordering
+    maxOR = len(orderRule)
+    orDict = dict(zip(orderRule, range(maxOR)))
+    alDict = dict(zip(range(maxOR, maxOR+len(alist)),
+                      zip(alist if listKeys is None else listKeys, alist)))
+    outpairs = sorted(  [[orDict.get(b[0],a),(b)] for a,b in alDict.items()]  )
+    if dropIfKey is None: dropIfKey=[]
+    outL = [b[1] for a,b in outpairs if b[0] not in dropIfKey]
+    return outL
 
-    # First, drop outright any baddies. Need to do this in parallel for both listKeys and alist, which are of same length:
-    if dropIfKey:
-        for iopr in range(len(alist))[::-1]:
-            if listKeys[iopr] in dropIfKey:
-                alist.pop(iopr)
-                listKeys.pop(iopr)
+def test_orderListByRule():
 
-    newalist= [[] for _ in range(len(orderRule)+len(alist))] # Create list of empty lists
-    debugprint( 'From order ',str(listKeys))
-    # Order pairs that are specified in orderRule. When one is found in alist, place it in its ordered spot in newalist and delete it from (replace with []) alist:
-    for iov in range(len(orderRule)):
-        if orderRule[iov] in listKeys:
-            iopr=[iii for iii in range(len(alist)) if listKeys[iii]==orderRule[iov]][0]
-        #for iopr in range(len(alist)):
-            #if alist[iopr] and listKeys[iopr]==orderRule[iov]:
-            if 1:
-                newalist[iov]=deepcopy(alist[iopr])
-                alist[iopr]=[]
-                #continue
+    L1 = [1,2,3,3,5]
+    L2 = [3,4,5,10]
+    assert orderListByRule(L1, L2) == [3, 3, 5, 1, 2]
+    assert orderListByRule(L1, L2, dropIfKey=[2,3]) == [5, 1,]
+    Lv = [c for c in 'abcce']
+    assert orderListByRule(Lv, L2, listKeys=L1) == ['c', 'c', 'e', 'a', 'b']
+    assert orderListByRule(Lv, L2, listKeys=L1, dropIfKey=[2,3]) == ['e','a']
 
-    # Now add remaining (unspecified) pairs to end of newalist list and get rid of blanks:
-    newalist=[pair for pair in newalist+alist if pair]
-    #print( '    to order ',str([aa[0][0] for aa in newalist]))
-
-    # SHould I also ensure uniqueness of list?
+    # Test duplicates:
+    L1 = [1,2,3,3,5]
+    L2 = [3,4,5,10,3,4,8]
+    assert orderListByRule(L1, L2) == [3, 3, 5, 1, 2]
 
 
-    return(newalist)
-
-
-
+    
 ##########################################################################
 ##########################################################################
 #
@@ -1166,6 +1162,7 @@ if 0:
 
 def doSystemLatex(fname, texcode=None,
                   launchDaemon=False, # keep watching for the source file to change
+                  display = True,
 ):
     #,latexPath=None,launch=None,launchViewer=None,tex=None,viewLatestSuccess=True,bgCompile=True,fgCompile=False):
     """
@@ -1244,7 +1241,8 @@ John
         print(cli)
         os.system(cli)
         # Only want to do following if success. How to tell?
-        os.system('evince '+latexPath+fname+'.pdf&') # Don't use latexmk's -v because that will view the version in tmpTEX
+        if display: # This seems like it should have a separate switch than launchDaemon:
+            os.system('evince '+latexPath+fname+'.pdf&') # Don't use latexmk's -v because that will view the version in tmpTEX
     elif "Use own kludges":
         notnecyay
     return
@@ -1376,49 +1374,6 @@ Oct 2016: Above sounds like a mess. This
             print '...  but making an attempt to compile in bg anyway. (Caution: stderr/out from LaTeX will follow, mixed in)..'
             print os.system('bash %s &'%texsh)
     return()
-
-
-###########################################################################################
-###
-def latexFormatEstimateWithPvalue(x,pval=None,allowZeroSE=None,tstat=False,gray=False,convertStrings=True,threeSigDigs=None):
-    ###
-    #######################################################################################
-    """
-    This is supposed to encapsulate the colour/etc formatting for a single value and, optionally, its standard error or t-stat or etc. (take it out of formatpairedrow?)
-
-    It'll do the chooseSformat as well.
-
-    May 2011.
-    Still needs to learn about tratios and calculate own p...! if tstat==True
-    """
-    yesGrey=gray
-    if isinstance(x,list):
-        assert len(x)==2
-        est,ses= x # Primary estimate, and secondary t-stat/se/p-value
-        singlet=False
-    else:
-        singlet=True
-        est=x###chooseSFormat(x,convertStrings=convertStrings,threeSigDigs=threeSigDigs)
-
-    assert isinstance(pval,float) or pval in [] # For now, require p to be passed!
-
-    if 0 and ses<1e-10 and not allowZeroSE:
-        pair[0]=''
-        pair[1]='' # Added Aug 2009... is not this right? It covers the (0,0) case.
-    if pval not in [None,fNaN]: # This is if we specified p-values directly: then don't calculate it from t-stat, etc!
-        significanceString=(['']+[tt[0] for tt in significanceTable if pval<= tt[2]*1.0/100.0])[-1]
-
-    if significanceString and yesGrey:
-            significanceString=r'\agg'+significanceString[1:]
-    if not significanceString and yesGrey:
-            significanceString=r'\aggc{'
-    if yesGrey:
-        greyString=r'\aggc'
-    if singlet:
-        return(significanceString+chooseSFormat(est,convertStrings=convertStrings,threeSigDigs=threeSigDigs)+'}'*(not not significanceString))
-
-    return([significanceString+chooseSFormat(est,convertStrings=convertStrings,threeSigDigs=threeSigDigs)+'}'*(not not significanceString),
-           significanceString+chooseSFormat(est,convertStrings=convertStrings,threeSigDigs=threeSigDigs,conditionalWrapper=[r'\coefp{','}'])])
 
 
 
@@ -1602,6 +1557,24 @@ def merge_pdfs_if_exist(infiles, outfile):
     os.system(osc)
     print('   SYSTEMCALL: '+osc+'\n')
 
+
+# A couple of menu-ing / choice utilities: Make shorter one-liners from inquire
+def inquirer_confirm(message, default=False):
+    import inquirer
+    ans = inquirer.prompt([inquirer.Confirm('singleQuestion',
+                                            message= message,
+                                            default=default)])
+    return(ans['singleQuestion'])
+def inquirer_list(choices, message=None, default=None):
+    import inquirer
+    message = 'Please choose' if message is None else message
+    ans = inquirer.prompt([inquirer.List('singleQuestion',
+                                         choices=choices,
+                                            message= message,
+                                            #default=default
+    )])
+    return(ans['singleQuestion'])
+    
 if 0:
     try: # Where is this needed? Should import it only where needed.        
         from parallel import *
@@ -1612,7 +1585,5 @@ if 0:
         from cpblUtilitiesUnicode import *
     except ImportError:
         print(__file__+":Unable to find CPBL's ragged unicode converstions module")
-
-
 
 
