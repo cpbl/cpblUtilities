@@ -5737,7 +5737,7 @@ def test_bug3_for_multipage_plot_iterator():
     plt.draw()
     plt.savefig('tmph.pdf', )
 
-def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inches = None, transparent = True):
+def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inches = None, transparent = True,):
     """
     If you want to have a series of subplots that goes more than one page,  use this to generate figs and axes handles.
     You specify the list of data items which you will use to plot in each axis, how many (rows and columns) to plot per page, and the filename stem for the pages (which will ultimately be a single multi-page PDF).
@@ -5750,6 +5750,8 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
     items could be an iterator itself, but that is not implemented yet. It must be a list at the moment.
 
     transparent [True]:  Set this to False if you use  ax.set_facecolor in your loop; this will avoid using transparency in the saved result.
+    
+    Deletes the one-page files after creating the final merged-page produce
 
     To do:
      - check that this also works nicely for ncols==nrows==1
@@ -5814,7 +5816,6 @@ def multipage_plot_iterator(items, nrows=None, ncols=None, filename=None, wh_inc
         pagefiles += [pagefilename+'.pdf']
         savefigall(pagefilename,  wh_inches=wh_inches, rv=False, png = False, transparent=transparent)
     mergePDFs(pagefiles, filename+'ALL.pdf')
-    #for ff in pagefiles: os.remove(ff)
     yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(actualRows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == esplot-ssplot , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
     #yield (dict(data = anitem, ax = ax, fig = fig, bottom = iItem>=(nrows-1)*ncols, left = not (iItem)%ncols, first = iItem==0, last = iItem == erow-srow-1 , ipage =ipage)) # This allows a final "next" by the caller to finish the final saving.    
 
