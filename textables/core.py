@@ -224,8 +224,7 @@ def extractExcelRange(spreadsheetfile, sheet=None, cells=None,
 
 class latexTable(object):  # pd.DataFrame):
     """
-Define a class to manage conversion of a spreadsheet extract all the way to a cpblTables tex file
-
+Define a class to manage conversion of a DataFrame or spreadsheet extract all the way to a cpblTables tex file
 
 ToDo: create function isSpreadsheetCoordinate() to check for form BB78. Allow for specification of title and comments that way.
 
@@ -237,11 +236,13 @@ Decide on and document combined decimals / sigdigs behaviour.
 
     """
     """
-    Don't use pd.DataFrame as a subclass. This is not normal behaviour in python, and pd.DataFrame returns its own class from most functions, not the class it was given, so it's not useful/easy to do this. Instead, this class will just a dataframe internally, as self.df.
+    Don't make a subclass of pd.DataFrame (though I do in surveypandas...). This is not normal behaviour in python, and pd.DataFrame returns its own class from most functions, not the class it was given, so it's not useful/easy to do this. Instead, this class will just a dataframe internally, as self.df.
 
     """
 
     def __init__(self,
+                 dataframe=None,
+                 transposed_dataframe = None,
                  spreadsheetfile=None,
                  sheet=None,
                  cells=None,
@@ -265,38 +266,54 @@ Decide on and document combined decimals / sigdigs behaviour.
         if title is not None:
             self._tabletitle = title
 
-        if spreadsheetfile.upper().endswith(
-                '.XLS') or spreadsheetfile.upper().endswith('.XLSX'):
+        if spreadsheetfile is not None:
+            assert dataframe is None and transposed_dataframe is None
+            self._init_from_spreadsheet(spreadsheetfile, sheet, cells)
+            return
+        
+        if dataframe is not None:
+            self.df = dataframe
+            if transposed_dataframe is not None:
+                self.tdf = transposed_dataframe
+            return
+        assert transposed_dataframe is None
 
-            df = extractExcelRange(
-                spreadsheetfile, sheet=sheet, cells=cells, transpose=transpose)
+            
+    def _init_from_spreadsheet(self, spreadsheetfile, sheet, cells):
+            if spreadsheetfile.upper().endswith(
+                    '.XLS') or spreadsheetfile.upper().endswith('.XLSX'):
 
-            # A horrid kludge: to get rid of what Pandas did with empty headers, originally: called them "Unnamed: 0", etc.
-            df = df.applymap(
-                lambda x: '{}' if x.__class__ in [str, unicode] and x.startswith('Unnamed: ') else x
-            )
+                df = extractExcelRange(
+                    spreadsheetfile, sheet=sheet, cells=cells, transpose=transpose)
 
-            # At this point, let's also deal with at least some LaTeX special chars:
-            df = df.applymap(
-                lambda x: x if x.__class__ not in [str, unicode] else x.replace('$', r'\$')
-            )
+                # A horrid kludge: to get rid of what Pandas did with empty headers, originally: called them "Unnamed: 0", etc.
+                df = df.applymap(
+                    lambda x: '{}' if x.__class__ in [str, unicode] and x.startswith('Unnamed: ') else x
+                )
 
-            if footercell is not None:
-                fc = extractExcelRange(
-                    spreadsheetfile, sheet=sheet, cells=footercell)
-                assert fc.shape in [(1, 1)]
-                self._tablefooter = fc.values[0][0]
-        else:
-            raise ('unknown_spreadsheet_file_type')
+                # At this point, let's also deal with at least some LaTeX special chars:
+                df = df.applymap(
+                    lambda x: x if x.__class__ not in [str, unicode] else x.replace('$', r'\$')
+                )
 
-        formatDFforLaTeX(
-            df,
-            row=None,
-            sigdigs=sigdigs,
-            colour=None,
-            leadingZeros=leadingZeros)
-        self.df = df
-        return  # init() just return None
+                if footercell is not None:
+                    fc = extractExcelRange(
+                        spreadsheetfile, sheet=sheet, cells=footercell)
+                    assert fc.shape in [(1, 1)]
+                    self._tablefooter = fc.values[0][0]
+            else:
+                raise ('unknown_spreadsheet_file_type')
+
+            formatDFforLaTeX(
+                df,
+                row=None,
+                sigdigs=sigdigs,
+                colour=None,
+                leadingZeros=leadingZeros)
+            self.df = df
+            self.tdf = None # Transposed table
+
+
 
     def emboldenRow(self, row):
         """
@@ -326,7 +343,6 @@ Decide on and document combined decimals / sigdigs behaviour.
             centering=True
     ):  #   ncols=None,nrows=None,, alignment="c"): # tableName=None,landscape=None, masterLatexFile=None,
         """ Note that pandas already has a latex output function built in. If it deals with multiindices, etc, it may be better to edit it rather than to start over. However, my cpblTableC function expects it to be broken up into cells still.
-
 
     This function takes a dataframe whos entries have already been converted to LaTeX strings (where needed)!.
     So not much is left to do before passing to cpblTableStyc.
@@ -390,7 +406,7 @@ Implementaiton comments:  pandas has a to_latex(), and it offers to bold the fir
         if not boldHeaders and not boldFirstColumn and not columnWidths:
             cformat = None
         self._cformat = cformat
-
+        huh
         # Caution! toprule, bottomrule require booktabs
         self._tabular_body = ('\\\\ ' + '\\hline ' * hlines + '\n').join(
             ['&'.join(RR) for RR in self.df.as_matrix()[1:]
@@ -569,7 +585,6 @@ def test_interleave_se_columns_as_rows():
 
     df = df0[paircols]
     mdf = mdf0[paircols]
-
     
     df2 = interleave_se_columns_as_rows(df)
     assert  df2.columns.tolist()==['b', 'b2', 'b3']
@@ -604,9 +619,13 @@ def test_interleave_se_columns_as_rows():
     df5= interleave_se_columns_as_rows(mdf0, pairs_of_columns= mpaircols, wrap_se_for_LaTeX=True)
     assert df5.to_csv(index=False, sep='\t') == 'z\tb\tzz\tb2\tzaz\tb3\tfoo\nBz\tBb\tBzz\tBb2\tBzaz\tBb3\tBfoo\n10\t1\t10\t7\t10\t13\t5\n\t\\coefse{4}\t\t\\coefse{10}\t\t\\coefse{16}\t\n20\t2\t20\t8\t20\t14\t5\n\t\\coefse{5}\t\t\\coefse{11}\t\t\\coefse{17}\t\n30\t3\t30\t9\t30\t15\t5\n\t\\coefse{6}\t\t\\coefse{12}\t\t\\coefse{18}\t\n'
 
+    # What about if there is an index? In this case, we want to duplicate the values, unlike for all other columns which are not in the paircols list.
+    df7_i = interleave_se_columns_as_rows(df0.set_index(['foo','z']), pairs_of_columns= paircols, wrap_se_for_LaTeX=True, duplicate_index=True)
+    df7_noi = interleave_se_columns_as_rows(df0.set_index(['foo','z']), pairs_of_columns= paircols, wrap_se_for_LaTeX=True, duplicate_index=False)
+    print('Caution, the duplicate_index=False option does not yet work for MultiIndex row index. TO DO.')
 
     
-def interleave_se_columns_as_rows(odf, pairs_of_columns=None, wrap_se_for_LaTeX=False):
+def interleave_se_columns_as_rows(odf, pairs_of_columns=None, wrap_se_for_LaTeX=False, duplicate_index=True):
     """ 
 When pairs_of_columns=None, assume every second column of the data frame is a standard error value for the estimate (column) to its left. Move these values so they are below the point estimates.
 
@@ -645,9 +664,12 @@ When pairs_of_columns=None, assume every second column of the data frame is a st
     for oc in other_cols: # Doing this before append() avoids conversion of ints to NaNs
         alts.loc[:,oc] =''
     anewdf = newdf.append(alts).sort_values(['__origOrd', '_sorting']) # Pandas bug: append sorts columns
-    # Get rid of the row labels on every second line, so they're not duplicated (preserves MultiIndex row index)
-    anewdf.index = [x if not ii%2 else '' for ii,x in enumerate(anewdf.index)]
 
+
+    # If desired, get rid of the row labels on every second line, so they're not duplicated (preserves MultiIndex row index)
+    # (Otherwise, if you want not to have duplicated row labels, then use reset_index() before calling)
+    if not duplicate_index:
+        anewdf.index = [x if not ii%2 else '' for ii,x in enumerate(anewdf.index)]
     # Reimpose column order, to fix bug: https://github.com/pandas-dev/pandas/issues/4588
     # And also drop the sorting columns:
     anewdf = anewdf[orig_columns]
@@ -1356,7 +1378,10 @@ def dataframeWithLaTeXToTable(
         formatString=None,
         hlines=False,
         pdfcrop=False):  #   ncols=None,nrows=None,, alignment="c"):
-    """ Note that pandas already has a latex output function built in. If it deals with multiindices, etc, it may be better to edit it rather than to start over. [See issue #5 for columns]. However, my cpblTableC function expects it to be broken up into cells still.
+    """
+TODO: Clarify relationship between this method and toCPBLtable()
+
+ Note that pandas already has a latex output function built in. If it deals with multiindices, etc, it may be better to edit it rather than to start over. [See issue #5 for columns]. However, my cpblTableC function expects it to be broken up into cells still.
 
 This function takes a dataframe whose entries have already been converted to LaTeX strings (where needed).
 So not much is left to do before passing to cpblTableStyc.
@@ -1534,7 +1559,7 @@ if __name__ == '__main__':
     
     test_interleave_se_columns_as_rows()
     print('All tests succeeded.')
-    
+    astop    
     """ This should do a full demo(s):
     Write an excel file. Then create outputs from it.
     """

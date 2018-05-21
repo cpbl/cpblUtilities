@@ -62,11 +62,20 @@ def pvalue_to_latex_significance(estimate, pvalue, **vararg):
     
 def test_df_format_estimate_column_with_latex_significance():
     df= pd.DataFrame({
-        'mean': [3.1234567,2.394832234, 7.65432],
-        'p': [.8,.00013984, .01]})
+        'mean': [3.1234567,2.394832234, 7.65432, 2.234,3.345,4.456457],
+        'p': [.8,.00013984, .01, .8,.00013984, .01]})
     odf = df_format_estimate_column_with_latex_significance(df, 'mean','p')
     assert (odf.columns==['mean']).all()
-    assert odf['mean'].tolist() == ['3.1', '\\wrapSigOneThousandth{2.4}', '\\wrapSigOnePercent{7.7}']
+    assert odf['mean'].tolist() == ['3.1', '\\wrapSigOneThousandth{2.4}', '\\wrapSigOnePercent{7.7}', '2.2', '\\wrapSigOneThousandth{3.3}', '\\wrapSigOnePercent{4.5}']
+    df= pd.DataFrame({
+        'mean': [3.1234567,2.394832234, 7.65432, 2.234,3.345,4.456457],
+        'p': [.8,.00013984, .01, .8,.00013984, .01]})
+    df['A'] = [1,1,2,2,3,3]
+    df['B'] = 'a b c d e f'.split(' ')
+    odf = df_format_estimate_column_with_latex_significance(df.set_index(['A','B']), 'mean','p')
+    assert odf['mean'].tolist() == ['3.1', '\\wrapSigOneThousandth{2.4}', '\\wrapSigOnePercent{7.7}', '2.2', '\\wrapSigOneThousandth{3.3}', '\\wrapSigOnePercent{4.5}']
+    assert odf.index.names ==['A','B']
+
     
 def df_format_estimate_column_with_latex_significance(df,
                                                       est_col,
@@ -80,6 +89,8 @@ def df_format_estimate_column_with_latex_significance(df,
     Both columns should be float type.
 
     By default, the p-value column is dropped, and the est_col is replaced by a string version, with LaTeX formatting to denote the p-value significance.
+
+
     """
     s_est = pvalue_to_latex_significance(df[est_col], df[p_col])
     if replace_estimate_column:
@@ -612,6 +623,6 @@ significanceLevels = [
 
 
 if __name__ == '__main__':
-    test_pvalue_to_latex_significance()    
     test_df_format_estimate_column_with_latex_significance()
+    test_pvalue_to_latex_significance()    
     print ('All tests passed')
