@@ -1,13 +1,16 @@
 #!/usr/bin/python
 """
-Various tools for use with osm analysis
+Various tools for use with OSM and other country indices / matching.
+
+Also see cpbl's whr2017 for some WHR-related matching.
 
 """
 import os, sys #, platform, time, psutil
 import pandas as pd
 import numpy as np
 #from .cpblUtilities_config import paths
-from .cpblUtilities_config import defaults
+from ..cpblUtilities_config import defaults
+paths = defaults['paths']
 
 class country_tools():
     def __init__(self, forceUpdate=False):
@@ -39,7 +42,32 @@ class country_tools():
         This could easily be adapted to return WB codes as well
         """
         import pandas as pd
-        lookup = pd.read_table(paths['otherinput']+'CountryData/countrycodes.tsv', dtype={'ISO3digit':'str'})
+        lookup = pd.read_table(os.path.dirname(__file__)+'/nationsonline.org.tsv',         # Are these OSM-oriented??
+                               dtype={'ISO3digit=UN-M49-Numerical':'str'},
+                               encoding='utf8')
+        lookup['ISO3digit'] =lookup['ISO3digit=UN-M49-Numerical']
+        oldCPBLlookup_unused_here_so_far = pd.read_table(os.path.dirname(__file__)+'/countrycode_main.tsv',
+                               dtype={'ISO3digit':'str'},
+                               skiprows =3)
+        equivalents = zip(*[LL.split('\t') for LL in """
+Hong Kong, SAR China	Hong Kong
+Macao, SAR China	Macao
+Iran, Islamic Republic of	Iran
+Macedonia, Republic of	Macedonia
+Micronesia, Federated States of	Micronesia
+Taiwan, Republic of China	Taiwan
+Tanzania, United Republic of	Tanzania
+Korea (North)	North Korea
+Korea (South)	South Korea
+Palestinian Territory	Palestine
+Russian Federation	Russia
+Syrian Arab Republic (Syria)	Syria
+Venezuela (Bolivarian Republic)	Venezuela""".strip().split('\n')])
+        eq=pd.DataFrame({'countryname': equivalents[0], 'newname':equivalents[1]})
+        edf = lookup[lookup.countryname.isin(eq.countryname)].merge(eq)
+        edf['countryname']= edf['newname']
+        lookup = pd.concat([lookup, edf[lookup.columns] ] )
+
         cname2ISO = lookup.set_index('countryname').ISOalpha3.to_dict()
 
         ISO2cname = lookup.set_index('ISOalpha3').countryname.to_dict()
@@ -47,19 +75,23 @@ class country_tools():
         ISOalpha2ISOdigit = lookup.set_index('ISOalpha3').ISO3digit.to_dict()
         ISOdigit2ISOalpha = lookup.set_index('ISO3digit').ISOalpha3.to_dict()
 
-        lookup = pd.read_table(paths['otherinput']+'CountryData/shortNames.tsv', dtype={'ISO3digit':'str'})
+        lookup = pd.read_table(os.path.dirname(__file__)+'/shortNames.tsv', dtype={'ISO3digit':'str'})
         ISOalpha2shortName = lookup.set_index('ISOalpha3').shortName.to_dict()
         ISOalpha2shortName['ALL'] = 'World'
 
         # Add in some alternate names manually (different variants of country name)
         # these are only used in going TO iso from the country name
-        cname2ISO.update({'Russia': 'RUS', 'The Bahamas': 'BHS', 'United Republic of Tanzania': 'TZA', 'Ivory Coast': 'CIV', 
+        # We could also do some automatically, based on country names with parentheses in them.
+        # Most of these should be added instead as equivalents, above.
+        cname2ISO.update({'The Bahamas': 'BHS', 'United Republic of Tanzania': 'TZA', 'Ivory Coast': 'CIV', 
                           'Republic of Serbia': 'SRB', 'Guinea Bissau': 'GNB', 'Iran': 'IRN', 'Democratic Republic of the Congo': 'COD',
-                          'Republic of Congo': 'COG', 'Syria': 'SYR', 'Venezuela': 'VEN', 'Bolivia': 'BOL', 'South Korea': 'KOR', 'Laos': 'LAO',
+                          'Republic of Congo': 'COG',  'Bolivia': 'BOL', 'South Korea': 'KOR', 'Laos': 'LAO',
                           'Brunei': 'BRN', 'East Timor': 'TLS', 'Vietnam': 'VNM',  'North Korea': 'PRK', 'Moldova': 'MDA', 'Vatican City': 'VAT',
                           'Macedonia': 'MKD', 'United Kingdom': 'GBR', 'Tanzania':'TZA', 'Cape Verde':'CPV', 'Reunion':'REU', 'Falkland Islands':'FLK', 
                           'Micronesia':'FSM', 'United States':'USA'})
-
+        for kk,vv in cname2ISO: cname2ISO[kk.lower()] = vv
+        
+        
         return {'cname2ISO':cname2ISO, 'ISO2cname': ISO2cname, 'ISOalpha2ISOdigit': ISOalpha2ISOdigit, 'ISOdigit2ISOalpha': ISOdigit2ISOalpha, 'ISOalpha2shortName':ISOalpha2shortName }
     
     def update_downloads(self):
