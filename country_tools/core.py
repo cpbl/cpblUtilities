@@ -12,6 +12,7 @@ import numpy as np
 from ..cpblUtilities_config import defaults
 paths = defaults['paths']
 
+__local_input_path__ = os.path.dirname(__file__)+'/' 
 class country_tools():
     def __init__(self, forceUpdate=False):
         """
@@ -49,6 +50,8 @@ class country_tools():
         oldCPBLlookup_unused_here_so_far = pd.read_table(os.path.dirname(__file__)+'/countrycode_main.tsv',
                                dtype={'ISO3digit':'str'},
                                skiprows =3)
+        # The following, since we append them to the end, probably has the effect of overwriting country names to these simpler ones in ISO2cname, etc.
+        # Another way to do this would be to keep creating new columns of alternative names, and then when doing a name index, use them all, but otherwise have a preferred one (the shortest!?)
         equivalents = zip(*[LL.split('\t') for LL in """
 Hong Kong, SAR China	Hong Kong
 Macao, SAR China	Macao
@@ -62,6 +65,7 @@ Korea (South)	South Korea
 Palestinian Territory	Palestine
 Russian Federation	Russia
 Syrian Arab Republic (Syria)	Syria
+United Kingdom	Great Britain
 Venezuela (Bolivarian Republic)	Venezuela""".strip().split('\n')])
         eq=pd.DataFrame({'countryname': equivalents[0], 'newname':equivalents[1]})
         edf = lookup[lookup.countryname.isin(eq.countryname)].merge(eq)
@@ -89,7 +93,7 @@ Venezuela (Bolivarian Republic)	Venezuela""".strip().split('\n')])
                           'Brunei': 'BRN', 'East Timor': 'TLS', 'Vietnam': 'VNM',  'North Korea': 'PRK', 'Moldova': 'MDA', 'Vatican City': 'VAT',
                           'Macedonia': 'MKD', 'United Kingdom': 'GBR', 'Tanzania':'TZA', 'Cape Verde':'CPV', 'Reunion':'REU', 'Falkland Islands':'FLK', 
                           'Micronesia':'FSM', 'United States':'USA'})
-        for kk,vv in cname2ISO: cname2ISO[kk.lower()] = vv
+        for kk,vv in cname2ISO.items(): cname2ISO[kk.lower()] = vv
         
         
         return {'cname2ISO':cname2ISO, 'ISO2cname': ISO2cname, 'ISOalpha2ISOdigit': ISOalpha2ISOdigit, 'ISOdigit2ISOalpha': ISOdigit2ISOalpha, 'ISOalpha2shortName':ISOalpha2shortName }
@@ -122,6 +126,41 @@ Venezuela (Bolivarian Republic)	Venezuela""".strip().split('\n')])
 
         #df2=self.load_and_rename_cols('multilang')
         return df
+
+    @staticmethod
+    def get_Gallup_country_lookups(verbose=True):
+        """ Kosovo is the only GWP country not matched to a 3-letter ISO code. Let's ignore it.
+        """
+        dfr = pd.read_table(__local_input_path__+'GallupWorldPoll-region-country.tsv').rename(columns={'country':'rcountry'})
+        dfr['lccountry'] = dfr.rcountry.str.lower()
+        dfr = dfr.set_index('lccountry')
+        dfw = pd.read_table(__local_input_path__+'GallupWorldPoll-WP5-defs-2016.tsv').rename(columns={'country':'wcountry'})
+        dfw['lccountry'] = dfw.wcountry.str.lower()
+        dfw = dfw.set_index('lccountry')
+        wp5s = pd.read_table(__local_input_path__ +'countrycode_main.tsv',  skiprows=3).set_index('country_GWP3_wp5')
+        wp5s = wp5s[['countryCode_GWP3_wp5', 'countryCode_ISO3','country_bestShortName','country_bestName','twoletter_AlexShultz_svg']]
+        df= wp5s.join(dfr).join(dfw).rename(columns = {'countryCode_ISO3':'ISO',})
+        df.index.name = 'country'
+        assert 'South Africa'.lower() in dfr.rcountry
+        assert 'South Africa'.lower() in df.index
+
+
+        # Now several checks:
+        # Did regions get their ISO?
+        problems = {
+            ' Published WHR country lacks an ISO: ': df[pd.notnull(df.rcountry) & pd.isnull(df.ISO)][['ISO','countryCode_GWP3_wp5','WP5','rcountry']],
+            ' Published WHR country lacks a WP5: ': df[pd.notnull(df.rcountry) & pd.isnull(df.WP5)],
+            ' Published WHR country lacks a map code: ': df[pd.notnull(df.rcountry) & pd.isnull(df.twoletter_AlexShultz_svg)],
+            ' Old Gallup micro country lacks an ISO in my master lookup: ': df[pd.notnull(df.countryCode_GWP3_wp5) & pd.isnull(df.ISO)][['ISO','countryCode_GWP3_wp5','WP5','wcountry']],
+            ' 2016 Gallup micro country lacks an ISO in my master lookup: ': df[pd.notnull(df.WP5) & pd.isnull(df.ISO)][['ISO','countryCode_GWP3_wp5','WP5','wcountry']],
+        }
+
+        if verbose:
+            for tt,dd in problems.items():
+                if not dd.empty:
+                    print('\n\n -- country_tools WARNING: '+tt)
+                    print dd
+        return df.reset_index()
 
 
 # See / integrate country2... in osmTools.py
