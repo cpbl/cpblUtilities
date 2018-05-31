@@ -75,6 +75,27 @@ Some wisdom on graphics:
         if fontsize:
             item.set_fontsize(fontsize)
 
+def plot_diagonal(xdata=None, ydata=None, ax=None, **args):
+    """ Plot a 45-degree line 
+    """
+    import pandas as pd
+    if ax is None: ax = plt.gca()
+    #LL = min(min(df[xv]), min(df[yv])), max(max(df[xv]), max(df[yv]))
+    if xdata is None and ydata is None:
+        xl, yl = ax.get_xlim(), ax.get_ylim()
+        LL = max(min(xl), min(yl)),    min(max(xl), max(yl)),
+    elif xdata is not None and ydata is None:
+        assert isinstance(xdata, pd.DataFrame)
+        dd = xdata.dropna()
+        LL = dd.min().max(), dd.max().min()
+    else:
+        assert xdata is not None
+        assert ydata is not None
+        #if isinstance(xdata, pd.Series): xdata = xdata.vlu
+        xl, yl = xdata, ydata
+        LL = max(min(xl), min(yl)),    min(max(xl), max(yl)),
+    ax.plot(LL, LL,  **args)
+
                         
 def figureFontSetup(uniform=12,figsize='paper', amsmath=True):
     """
