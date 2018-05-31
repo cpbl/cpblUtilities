@@ -523,6 +523,14 @@ Implementaiton comments:  pandas has a to_latex(), and it offers to bold the fir
         """ Create a standalone PDF using a cpblTable filename and its wrapper info.  This should be part of the class or static? Not sure where this should go. Pystata does not seem to use these things yet."""
         stophere
 
+def underscores_to_hyphens_in_path(apath):
+    """ For simplicity, remove underscores from filenames (but not folders)
+    """
+    a,b= os.path.split(apath)
+    return a+os.sep+b.replace('_','-')
+def test_underscores_to_hyphens_in_path():
+    assert underscores_to_hyphens_in_path('/a_/b-/c_d._e')=='/a_/b-/c-d.-e' # Not OS-portable
+        
 def cpblTable_to_PDF(filename, aftertabulartex=None, caption=None, display=False, pdfcrop=False, transposed=False):
     """ caption not implemented yet
     aftertabulartex: footnotes, legend, etc to go below table
@@ -637,6 +645,8 @@ When pairs_of_columns=None, assume every second column of the data frame is a st
 
     wrap_se_for_LaTeX=True:  Assuming values are already formatted (ie strings), this wraps the strings of the standard errors in '\coefse{','}'.  No change is made to the point estimate columns.
 
+Normally, you should call this *after* formatting floating values for display, eg with
+
     """
     assert len(odf.columns) % 2 == 0 or (pairs_of_columns is not None and len(pairs_of_columns) % 2 == 0)
     if pairs_of_columns is None:
@@ -679,7 +689,8 @@ When pairs_of_columns=None, assume every second column of the data frame is a st
 
 def interleave_and_format_paired_columns_as_rows(odf,
                                                  method='standard_errors'):
-    return DEPRECATED__USE_FUNC_ABOVE
+    return DEPRECATED__USE_FUNC_ABOVE_interleave_se_columns_as_rows
+
     """ Assume every second column of the data frame is a standard error value for the column to its left. 
     
     This makes use of interleave_se_columns_as_rows, but in addition uses a formatter to format the estimates.  201804: I want to do that a bit differently, using new tools, so this function needs update. Just use the other (lower level) one, above, for now.
@@ -1386,6 +1397,8 @@ TODO: Clarify relationship between this method and toCPBLtable()
 This function takes a dataframe whose entries have already been converted to LaTeX strings (where needed).
 So not much is left to do before passing to cpblTableStyc.
 
+outfile should not contain underscores. Any that do exist are replace by hyphens.
+
 boldHeaders requires the array package. It inserts a command \rowstyle before the header. It requires definition of funny column format types, and it requires a special column format.
 
 boldFirstColumn just uses the built-in >{} column modifier (or array package?}.
@@ -1402,6 +1415,7 @@ footer: this is footnotes, legend, etc to put right below the table (elsewhere c
     """
     #cformat=list('l'+'c'*df.shape[1])
     # Pick the basic format codes to start with (ie ones which don't take arguments), e.g. lccccc....
+    outfile = underscores_to_hyphens_in_path(outfile)
     if formatString is not None: # This would overwrite cformat
         assert formatCodes is None and columnWidths is None
         assert not boldFirstColumn  # Alternative is not written yet
@@ -1558,6 +1572,7 @@ def wrapDFcells(df, xyindices, before='', after=''):
 if __name__ == '__main__':
     
     test_interleave_se_columns_as_rows()
+    test_underscores_to_hyphens_in_path()
     print('All tests succeeded.')
     astop    
     """ This should do a full demo(s):

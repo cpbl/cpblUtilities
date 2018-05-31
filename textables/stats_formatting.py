@@ -4,6 +4,7 @@ __author__ = 'cpbl'
 
 import numpy as np
 import pandas as pd
+import scipy.stats as stats
 from copy import deepcopy
 fNaN = np.nan
 #from cpblUtilities.textables  import chooseSFormat
@@ -26,6 +27,18 @@ def test_pvalue_to_latex_significance():
         'p': [.8,.00013984]})
     assert pvalue_to_latex_significance(df['mean'], df.p) == ['3.1', '\\wrapSigOneThousandth{2.4}']
     #assert pvalue_to_latex_significance(2.394832234, .0013984, sigdigs=3) == '\\wrapSigOnePercent{2.39}'
+
+def se_to_latex_significance(estimate, se, **vararg):
+    """ This is an interface to pvalue_to_latex_significance, in which you have only a point estimate and its standard error available.
+
+    estimate: scalar or vector float
+    se:   scalar or vector (of same length as estimate) float
+    
+    If you use this function, you're assuming the parameter estimate is normally distributed. Instead, keep the actual p-value from the estimate, and use pvalue_to_latex_significance directly.
+    """
+    tratio = np.abs(estimate/se)
+    pval = 2-2*stats.norm.cdf(tratio)
+    return  pvalue_to_latex_significance(estimate, pval, **vararg)
     
 def pvalue_to_latex_significance(estimate, pvalue, **vararg):
     """ Given a p-value, and a floating-point estimate, generate a LaTeX string to colour-code the formatted estimate according to its (p-value) significance.
@@ -61,6 +74,7 @@ def pvalue_to_latex_significance(estimate, pvalue, **vararg):
         
     
 def test_df_format_estimate_column_with_latex_significance():
+    """ This is only tested for p-value mode, not yet with providing se"""
     df= pd.DataFrame({
         'mean': [3.1234567,2.394832234, 7.65432, 2.234,3.345,4.456457],
         'p': [.8,.00013984, .01, .8,.00013984, .01]})
@@ -82,24 +96,38 @@ def df_format_estimate_column_with_latex_significance(df,
                                                       p_col=None,
                                                       se_col=None,
                                                       replace_estimate_column=True,
-                                                      drop_p_column=True):
+                                                      format_se_column = True, # If se is provided (as floats), also turn it into strings.
+                                                      drop_p_column=True,
+                                                      inplace=False,
+                                                      **varargs # These are to be passed to chooseSFormat, at least for the format_se_column case
+                                                       ):
     """
-    Either the p-value (p_col) or the standard error (se_col) [NOT YET IMPLEMENTDE] must be given.
+    Either the p-value (p_col) or the standard error (se_col)  must be given.
     The column names are passed. They can be strings or tuples (for MultiIndex columns)
     Both columns should be float type.
 
     By default, the p-value column is dropped, and the est_col is replaced by a string version, with LaTeX formatting to denote the p-value significance.
 
-
+    format_se_column = True: The "se" column can also be string-formatted (using chooseSFormat) if format_se_
     """
-    s_est = pvalue_to_latex_significance(df[est_col], df[p_col])
+    if inplace is False:
+        df = df.copy()
+    if p_col is not None:
+        assert se_col is None
+        s_est = pvalue_to_latex_significance(df[est_col], df[p_col], **varargs)
+    else:
+        assert se_col is not None
+        s_est = se_to_latex_significance(df[est_col], df[se_col], **varargs)
+        if format_se_column:
+            df[se_col] = chooseSFormat(df[se_col], **varargs)
     if replace_estimate_column:
         df[est_col] = s_est
     else:
         must_supply_prefix
-    if drop_p_column:
+    if p_col is not None and drop_p_column:
         df.drop(columns=[p_col], inplace=True)
-    return df
+    return None if inplace else df
+
 
     
     #pvalue_to_latex_significance(estimate, pvalue, **vararg)
@@ -152,6 +180,7 @@ To do: New parameter sigdigs only implemented for integers so far. And it needs 
     if lowCutoff == None:
         lowCutoff == 1.0e-99  # Sometimes "None" is explicitly passed to invoke default value.
     import numpy  #from numpy import ndarray
+    if isinstance(ff, pd.Series): ff= ff.values
     if isinstance(ff, list) or isinstance(ff,
                                           numpy.ndarray):  # Deal with lists
         return ([
